@@ -23,6 +23,7 @@
 #'
 #' @examples
 #'
+#'
 #' @export
 #' @import matrixStats
 #' @importFrom matrixStats rowVars rowMeans2
