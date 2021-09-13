@@ -289,8 +289,15 @@ plot.bremla = function(x,
       plot.label = plot.DO_depth$label
     }
     xlim = range(x$linramp$param$t0$marg.t0[,1])
+    if(!is.null(plot.DO_depth$depth.reference)){
+      xlim=range(xlim,plot.DO_depth$depth.reference)
+    }else{
+      if(!is.null(x$linramp$.args$depth.reference)){
+        xlim=range(xlim,x$linramp$.args$depth.reference)
+      }
+    }
     if(plot.DO_age$xrev) xlim=rev(xlim)
-    plot(x$linramp$param$t0$marg.t0,type="l",lwd=2,xlab="Onset depth (m)",ylab="Density",main=plot.label)
+    plot(x$linramp$param$t0$marg.t0,type="l",lwd=2,xlab="Onset depth (m)",ylab="Density",main=plot.label,xlim=xlim)
     abline(v=x$linramp$param$t0$mean,lwd=2)
     abline(v=c(x$linramp$param$t0$q0.025,x$linramp$param$t0$q0.975),lwd=2,col="gray")
 
@@ -312,7 +319,7 @@ plot.bremla = function(x,
     if(!is.null(plot.DO_age$age.reference)){
       abline(v=plot.DO_age$age.reference,lwd=2,lty=3)
     }else{
-      if(!is.null(x$linramp$.args$age.reference)){
+      if(!is.null(x$DO_dating$.args$age.reference)){
         abline(v=x$DO_dating$.args$age.reference,lwd=2,lty=3)
       }
     }
