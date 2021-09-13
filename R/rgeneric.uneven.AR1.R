@@ -82,7 +82,7 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
     i = c(1L, n, 2L:(n - 1L), 1L:(n - 1L))
     j = c(1L, n, 2L:(n - 1L), 2L:n)
 
-    Q = sparseMatrix(
+    Q = Matrix::sparseMatrix(
       i = i,
       j = j,
       x = xx,
