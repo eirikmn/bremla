@@ -41,7 +41,7 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
   object = bremla_modelfitter(object, method=method,print.progress=print.progress)
 
   object = bremla_chronology_simulation(object, nsims=nsims, method=method,store.means=store.everything,print.progress=print.progress)
-  object = bremla_simulationsummarizer(data,print.progress=print.progress)
+  object = bremla_simulationsummarizer(object$data,print.progress=print.progress)
   if(!is.null(DO.estimation)){
     object = linrampfitter(object,interval=DO.estimation$interval,h=DO.estimation$h,t1.sims=DO.estimation$t1.sims,
                rampsims=DO.estimation$rampsims,label=DO.estimation$label,print.progress=print.progress)
