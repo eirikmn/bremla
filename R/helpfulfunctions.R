@@ -72,10 +72,8 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
   eventindexes = unique(c(1,eventindexes[!is.na(eventindexes)])) #Placing transition at the start of record. Removing NA and duplicates
   return(eventindexes)
 }
-
 #' @export
-#' @import matrixStats
-#' @importFrom matrixStats rowVars rowMeans2
+#' @importFrom matrixStats rowMeans2 rowVars
 #' @importFrom INLA inla.hpdmarginal
 bremla_simulationsummarizer = function(object,print.progress=FALSE){
   if(print.progress) cat("Computing posterior marginal mean and 95% hpd intervals from chronology samples...\n",sep="")
@@ -83,12 +81,12 @@ bremla_simulationsummarizer = function(object,print.progress=FALSE){
   n = dim(object$simulation$age)[1]
   nsims = dim(object$simulation$age)[2]
   hpdlower = numeric(n); hpdupper = numeric(n)
-  meanvek = matrixStats::rowMeans2(object$simulation$age)
-  sdvek = sqrt(matrixStats::rowVars(object$simulation$age))
+  meanvek = rowMeans2(object$simulation$age)
+  sdvek = sqrt(rowVars(object$simulation$age))
   for(i in 1:n){
     dens = density(object$simulation$age[i,])
-    hpdlower[i] = INLA::inla.hpdmarginal(0.95,dens)[1]
-    hpdupper[i] = INLA::inla.hpdmarginal(0.95,dens)[2]
+    hpdlower[i] = inla.hpdmarginal(0.95,dens)[1]
+    hpdupper[i] = inla.hpdmarginal(0.95,dens)[2]
   }
   time.summary = Sys.time()
   if(print.progress) cat(" completed in ",difftime(time.summary,time.start,units="secs")[[1]],"\n",sep="")

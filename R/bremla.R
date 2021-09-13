@@ -23,10 +23,8 @@
 #'
 #' @examples
 #'
-#'
 #' @export
 #' @import matrixStats
-#' @importFrom matrixStats rowVars rowMeans2
 bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "depth",reg.model = list(
   const=FALSE,depth1=FALSE,depth2=TRUE,proxy=TRUE,psi0=TRUE,psi1=TRUE), noise="ar1", method="inla",
   DO.estimation = NULL, bias = NULL,store.everything=FALSE,print.progress=FALSE){
