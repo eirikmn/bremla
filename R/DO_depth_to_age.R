@@ -50,7 +50,7 @@ DO_depth_to_age = function(object, nsims = 10000, print.progress=FALSE, label=NU
       zgrid = sort(c(z.sample[i],z))
       sampleindex = which(zgrid==z.sample[i] )
       distance = (z.sample[i]-zgrid[sampleindex-1])/(zgrid[sampleindex+1]-zgrid[sampleindex-1])
-
+      ysamps[i] = (1-distance)*object$simulation$age[sampleindex-1,i] +distance*object$simulation$age[sampleindex,i]
     }
   }
   time.endsim = Sys.time()
