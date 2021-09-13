@@ -58,7 +58,7 @@ plot.bremla = function(x,
   }
 
   figure.count = 1L
-  gicc05 = x$data$y; z = x$data$z; x = x$data$x; n=length(gicc05)
+  gicc05 = x$data$y; z = x$data$z; xx = x$data$x; n=length(gicc05)
   eventindexes = x$.args$eventindexes; nevents = length(eventindexes)
   oldpar = par()
 
@@ -72,7 +72,7 @@ plot.bremla = function(x,
     }
     xlim = c(xdata[1],xdata[n])
     if(plot.proxydata$xrev) xlim=rev(xlim)
-    plot(xdata,x,type="l",xlab=xlab,ylab=expression(paste(delta^18,"O (permil)")),main=plot.proxydata$label,xlim=xlim)
+    plot(xdata,xx,type="l",xlab=xlab,ylab=expression(paste(delta^18,"O (permil)")),main=plot.proxydata$label,xlim=xlim)
     if(nevents>0) abline(v=xdata[eventindexes],lwd=0.6,col="gray")#rgb(red=0.5,green=0.5,blue=0.5,alpha=1),lwd=0.8)
 
     if(postscript || pdf){
