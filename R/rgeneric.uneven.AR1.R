@@ -89,7 +89,7 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
       giveCsparse = FALSE,
       symmetric = T
     )
-    diag(Q)=diag(Q)
+    #diag(Q)=diag(Q)
 
     return (Q)
   }
