@@ -1,7 +1,4 @@
 #' @export
-#' @import matrixStats
-#' @importFrom matrixStats rowVars rowMeans2
-#' @importFrom INLA inla.hpdmarginal
 meanmaker = function(coefs,reg.model,nevents=69,data){
   ## Computes mean vector from given fixed effects 'coefs'.
   ## Requires specification of which effects to include ('reg.model'), the number of climate transitions ('nevents') and a data.frame with covariates ('data')
@@ -39,7 +36,7 @@ meanmaker = function(coefs,reg.model,nevents=69,data){
   }
   return(fitted)
 }
-
+#' @export
 linramp = function(t,t0=0,dt=1,y0=0,dy=1){
   y = numeric(length(t))
   y = y0 + dy*(t-t0)/dt
@@ -60,7 +57,7 @@ linramprev = function(t,t0=0,dt=1,y0=0,dy=1){
 }
 
 
-
+#' @export
 which.index = function(events, record){ ## Finds which indices of 'record' that are located closest to the 'event's
   eventindexes = numeric(length(events))
   for(i in 1:length(events)){
@@ -76,6 +73,10 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
   return(eventindexes)
 }
 
+#' @export
+#' @import matrixStats
+#' @importFrom matrixStats rowVars rowMeans2
+#' @importFrom INLA inla.hpdmarginal
 bremla_simulationsummarizer = function(object,print.progress=FALSE){
   if(print.progress) cat("Computing posterior marginal mean and 95% hpd intervals from chronology samples...\n",sep="")
   time.start = Sys.time()
