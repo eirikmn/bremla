@@ -1,2 +1,2 @@
 # bremla
-Bayesian REgression Modeling of Layered Archives
+Repository for the bremla R-package
