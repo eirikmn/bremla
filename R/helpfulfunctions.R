@@ -72,7 +72,7 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
   return(eventindexes)
 }
 
-bremla_simulationsummarizer = function(data,print.progress=FALSE){
+bremla_simulationsummarizer = function(object,print.progress=FALSE){
   if(print.progress) cat("Computing posterior marginal mean and 95% hpd intervals from chronology samples...\n",sep="")
   time.start = Sys.time()
   n = dim(object$simulation$age)[1]
