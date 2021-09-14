@@ -32,6 +32,7 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
   #bias = list(bias.model="uniform",biasparams=cbind(c(1,1),c(0.98,1.02),c(0.96,1.04)),store.samples=FALSE)
 
   time.start = Sys.time()
+  bremla.call = sys.call(which=1)
   if(print.progress) cat("Initiating data formatting...",sep="")
 
   object = bremla_prepare(age,depth,proxy, events=events,nsims=nsims, eventmeasure = eventmeasure,reg.model = reg.model,
@@ -51,6 +52,7 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
     object = bremla_biased_chronologies(object,bias.model=bias$bias.model,biasparams = bias$biasparams,nsims=nsims,store.samples=store.everything)
   }
   time.total = Sys.time() - time.start
+  object$.args$call = bremla.call
   object$time = list(total=time.total)
   class(object) = "bremla"
 

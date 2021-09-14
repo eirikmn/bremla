@@ -192,7 +192,7 @@ linrampfitter = function(object,interval,interval.what="index",optparams=c(round
   time.total = difftime(Sys.time(),time.start,units="secs")[[1]]
 
   object$linramp$.args = list(t1.sims=t1.sims,rampsims=rampsims,depth.reference=depth.reference,label=label)
-  object$time$total=time.total
+  object$time$linramp=time.total
 
   return(object)
 

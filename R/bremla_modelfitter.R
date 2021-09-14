@@ -106,6 +106,7 @@ bremla_modelfitter = function(object, method="inla",print.progress=FALSE,verbose
 
     object$time$fit$inla = elapsed.inla
     object$time$fit$ls = difftime(time.ls,time.start,units="secs")[[1]]
+    object$time$fit$total = time.inla-time.start
   }
 
   return(object)
