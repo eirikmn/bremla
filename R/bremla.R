@@ -47,6 +47,9 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
 
     object = DO_depth_to_age(object, nsims = nsims, print.progress=print.progress,label=DO.estimation$label,age.reference = DO.estimation$age.reference)
   }
+  if(!is.null(bias)){
+    object = bremla_biased_chronologies(object,bias.model=bias$bias.model,biasparams = bias$biasparams,nsims=nsims,store.samples=store.everything)
+  }
   time.total = Sys.time() - time.start
   object$time = list(total=time.total)
   class(object) = "bremla"

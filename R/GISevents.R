@@ -10,7 +10,7 @@
 #'   \item{Age..a.b2k}{Corresponding GICC05 age in years before 2000 AD}
 #'   \item{Maximum.counting.error..years.}{The maximum counting error of each climate event (half the number of uncertain layers).}
 #'   }
-#' @references Will be added soon!
-#' @source \url{}
+#' @references Sune O. Rasmussen, Matthias Bigler, Simon P. Blockley, Thomas Blunier, Susanne L. Buchardt, Henrik B. Clausen, Ivana Cvijanovic, Dorthe Dahl-Jensen, Sigfus J. Johnsen, Hubertus Fischer, Vasileios Gkinis, Myriam Guillevic, Wim Z. Hoek, J. John Lowe, Joel B. Pedro, Trevor Popp, Inger K. Seierstad, Jørgen Peder Steffensen, Anders M. Svensson, Paul Vallelonga, Bo M. Vinther, Mike J.C. Walker, Joe J. Wheatley, Mai Winstrup, A stratigraphic framework for abrupt climatic changes during the Last Glacial period based on three synchronized Greenland ice-core records: refining and extending the INTIMATE event stratigraphy, Quaternary Science Reviews, Volume 106, 2014, Pages 14-28, https://doi.org/10.1016/j.quascirev.2014.09.007. (https://www.sciencedirect.com/science/article/pii/S0277379114003485)
+#' @source \url{https://www.iceandclimate.nbi.ku.dk/data}
 
 "GISevents"
