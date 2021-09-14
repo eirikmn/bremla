@@ -5,17 +5,16 @@
 \alias{GISevents}
 \title{Climatic transitions in NGRIP}
 \format{
-A data.frame with 117 rows and 5 columns:
+A data.frame with 117 rows and 4 columns:
 \describe{
   \item{Event}{Description of event}
   \item{NGRIP.depth..m.}{Recorded depth in NGRIP (meter)}
   \item{Age..a.b2k}{Corresponding GICC05 age in years before 2000 AD}
-  \item{Event.definition.uncertainty}{The dating uncertainty arising from the layer counting process.}
   \item{Maximum.counting.error..years.}{The maximum counting error of each climate event (half the number of uncertain layers).}
   }
 }
 \source{
-\url{}
+\url{https://www.iceandclimate.nbi.ku.dk/data}
 }
 \usage{
 GISevents
@@ -24,6 +23,6 @@ GISevents
 A data set containing the onsets of climatic events as recorded in the NGRIP ice core records.
 }
 \references{
-Will be added soon!
+Sune O. Rasmussen, Matthias Bigler, Simon P. Blockley, Thomas Blunier, Susanne L. Buchardt, Henrik B. Clausen, Ivana Cvijanovic, Dorthe Dahl-Jensen, Sigfus J. Johnsen, Hubertus Fischer, Vasileios Gkinis, Myriam Guillevic, Wim Z. Hoek, J. John Lowe, Joel B. Pedro, Trevor Popp, Inger K. Seierstad, Jørgen Peder Steffensen, Anders M. Svensson, Paul Vallelonga, Bo M. Vinther, Mike J.C. Walker, Joe J. Wheatley, Mai Winstrup, A stratigraphic framework for abrupt climatic changes during the Last Glacial period based on three synchronized Greenland ice-core records: refining and extending the INTIMATE event stratigraphy, Quaternary Science Reviews, Volume 106, 2014, Pages 14-28, https://doi.org/10.1016/j.quascirev.2014.09.007. (https://www.sciencedirect.com/science/article/pii/S0277379114003485)
 }
 \keyword{datasets}

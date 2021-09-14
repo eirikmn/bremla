@@ -20,15 +20,15 @@ A data.frame with 29 rows and 10 columns:
   }
 }
 \source{
-\url{}
+\url{https://www.iceandclimate.nbi.ku.dk/data}
 }
 \usage{
 DO_intervals
 }
 \description{
-Data windows enclosing DO-events found by optimization scheme to be used in linear ramp model fit.
+Data windows enclosing DO-events found by optimization scheme to be used in linear ramp model fit. Also includes onset depth and dating given by Rasmussen et al. (2014).
 }
 \references{
-Will be added soon!
+Sune O. Rasmussen, Matthias Bigler, Simon P. Blockley, Thomas Blunier, Susanne L. Buchardt, Henrik B. Clausen, Ivana Cvijanovic, Dorthe Dahl-Jensen, Sigfus J. Johnsen, Hubertus Fischer, Vasileios Gkinis, Myriam Guillevic, Wim Z. Hoek, J. John Lowe, Joel B. Pedro, Trevor Popp, Inger K. Seierstad, Jørgen Peder Steffensen, Anders M. Svensson, Paul Vallelonga, Bo M. Vinther, Mike J.C. Walker, Joe J. Wheatley, Mai Winstrup, A stratigraphic framework for abrupt climatic changes during the Last Glacial period based on three synchronized Greenland ice-core records: refining and extending the INTIMATE event stratigraphy, Quaternary Science Reviews, Volume 106, 2014, Pages 14-28, https://doi.org/10.1016/j.quascirev.2014.09.007. (https://www.sciencedirect.com/science/article/pii/S0277379114003485)
 }
 \keyword{datasets}

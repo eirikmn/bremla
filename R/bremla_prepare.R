@@ -47,24 +47,30 @@ bremla_prepare = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure
   if(!is.null(events)){
     eventindexes = numeric(length(events))
 
-    for(i in 1:length(events)){
-      if(tolower(eventmeasure) %in% c("depth","z")){
-        if(events[i] < min(z) || events[i]>max(z)){
-          warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'depth' (",min(z),", ",max(z),"). The event will be omitted!"))
-          eventindexes[i] = NA
-        }else{
-          eventindexes[i] = which(abs(events[i]-z) == min(abs(events[i]-z)))
-        }
-      }else if(tolower(eventmeasure) %in% c("age","time","y")){
-        if(events[i] < min(y) || events[i]>max(y)){
-          warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'age' (",min(age),", ",max(age),"). The event will be omitted!"))
-          eventindexes[i] = NA
-        }else{
-          eventindexes[i] = which(abs(events[i]-y) == min(abs(events[i]-y)))
-        }
-      }
-
+    if(tolower(eventmeasure) %in% c("depth","z")){
+      eventindexes = which.index (events, z)
+    }else if(tolower(eventmeasure) %in% c("age","time","y")){
+      eventindexes = which.index (events, y)
     }
+    # for(i in 1:length(events)){
+    #   if(tolower(eventmeasure) %in% c("depth","z")){
+    #     eventindexes = which.index (events, record)
+    #     if(events[i] < min(z) || events[i]>max(z)){
+    #       warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'depth' (",min(z),", ",max(z),"). The event will be omitted!"))
+    #       eventindexes[i] = NA
+    #     }else{
+    #       eventindexes[i] = which(abs(events[i]-z) == min(abs(events[i]-z)))
+    #     }
+    #   }else if(tolower(eventmeasure) %in% c("age","time","y")){
+    #     if(events[i] < min(y) || events[i]>max(y)){
+    #       warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'age' (",min(age),", ",max(age),"). The event will be omitted!"))
+    #       eventindexes[i] = NA
+    #     }else{
+    #       eventindexes[i] = which(abs(events[i]-y) == min(abs(events[i]-y)))
+    #     }
+    #   }
+    #
+    # }
     eventindexes = unique(c(1,eventindexes[!is.na(eventindexes)]))
     nevents = length(eventindexes)
   }
