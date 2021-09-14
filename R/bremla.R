@@ -40,6 +40,7 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
   if(print.progress) cat(" completed!\n",sep="")
   object = bremla_modelfitter(object, method=method,print.progress=print.progress)
 
+
   object = bremla_chronology_simulation(object, nsims=nsims, method=method,store.means=store.everything,print.progress=print.progress)
   object = bremla_simulationsummarizer(object,print.progress=print.progress)
   if(!is.null(DO.estimation)){
@@ -53,7 +54,7 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
   }
   time.total = Sys.time() - time.start
   object$.args$call = bremla.call
-  object$time = list(total=time.total)
+  object$time$total=time.total
   class(object) = "bremla"
 
   return(object)
