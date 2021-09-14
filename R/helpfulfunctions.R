@@ -148,7 +148,7 @@ bremla_simulationsummarizer = function(object,interval="hpd",print.progress=FALS
     hpdupper[i] = inla.hpdmarginal(0.95,dens)[2]
   }
   time.summary = Sys.time()
-  object$simulation$summary = list(mean=meanvek,sd=sdvek,hpd0.025=hpdlower,hpd0.975=hpdupper, sim.sum.time=time.summary,.args=interval=interval,print.progress=print.progress)
+  object$simulation$summary = list(mean=meanvek,sd=sdvek,hpd0.025=hpdlower,hpd0.975=hpdupper, sim.sum.time=time.summary,.args=list(interval=interval,print.progress=print.progress))
   if(print.progress) cat(" completed in ",difftime(time.summary,time.start,units="secs")[[1]],"\n",sep="")
   object$time$samplesummary = list(total=difftime(time.summary,time.start,units="secs")[[1]])
   return(object)
