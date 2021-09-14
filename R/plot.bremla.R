@@ -230,13 +230,16 @@ plot.bremla = function(x,
       lines(z,plot.bias$MCE,lwd=2)
       lines(z,-plot.bias$MCE,lwd=2)
     }
-    leg=plot.bias$legend
-    legend(leg$x,leg$y,leg$legend,col=leg$col,lty=leg$lty,cex=leg$cex,pch=leg$pch,lwd=leg$lwd,pt.cex=leg$pt.cex)
+    if(!is.null(plot.bias$legend)){
+      leg=plot.bias$legend
+      legend(leg$x,leg$y,leg$legend,col=leg$col,lty=leg$lty,cex=leg$cex,pch=leg$pch,lwd=leg$lwd,pt.cex=leg$pt.cex)
+    }
     if(postscript || pdf){
       if (names(dev.cur()) != "null device") {
         dev.off()
       }
     }
+
   }
 
   if(!is.null(plot.linramp) && !is.null(x$linramp)){
