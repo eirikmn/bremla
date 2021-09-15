@@ -52,7 +52,7 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
   if(!is.null(bias)){
     object = bremla_biased_chronologies(object,bias.model=bias$bias.model,biasparams = bias$biasparams,nsims=nsims,store.samples=store.everything)
   }
-  time.total = Sys.time() - time.start
+  time.total = difftime(Sys.time(), time.start,units="secs")[[1]]
   object$.args$call = bremla.call
   object$time$total=time.total
   class(object) = "bremla"

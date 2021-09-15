@@ -41,101 +41,109 @@ if(sum(nchar(object$.args$call)) > maxlength){
   ut=c(ut, list(call=object$.args$call))
 }
 
-cpu = round(object$time$inla,digits=digits)
-cpu.navn="Running INLA"
 
 
-if(!is.null(object$TCR)){
-  cpu=c(cpu,round(object$time$TCR,digits=digits))
-  cpu.navn=c(cpu.navn,"Sampling TCR")
-}
-if(!is.null(object$mu)){
-  cpu=c(cpu,round(object$time$mu,digits=digits))
-  cpu.navn=c(cpu.navn,"Sampling mu")
+if(!is.null(object$fitting)){
+  cpu = as.numeric(round(object$time$fit$total,digits=digits))
+  cpu.navn="Fitting model"
 }
 
+if(!is.null(object$simulation)){
+  cpu=as.numeric(c(cpu,round(object$time$simulation$total,digits=digits)))
+  cpu.navn=c(cpu.navn,"Chronology sampling")
+}
+if(!is.null(object$linramp) && !is.null(object$DO_dating)){
+  cpu=as.numeric(c(cpu,round(object$time$t1_and_ramp + object$time$DO_age$total,digits=digits)))
+  cpu.navn=c(cpu.navn,"DO dating")
+}
+if(!is.null(object$biases)){
+  cpu=as.numeric(c(cpu,round(object$time$biases,digits=digits)))
+  cpu.navn=c(cpu.navn,"Bias sampling")
+}
 
-cpu=c(cpu,round(object$time$Total,digits=digits))
+cpu=as.numeric(c(cpu,round(object$time$total,digits=digits)))
 cpu.navn=c(cpu.navn,"Total")
 names(cpu)=cpu.navn
 ut=c(ut, list(cpu.used=cpu))
 
-if(is.lrd){
-  hypers=matrix(round(as.numeric(c(object$hyperparam$means,object$hyperparam$sd,object$hyperparam$quant0.025,
-                                   object$hyperparam$quant0.5,object$hyperparam$quant0.975)),digits=digits),
-                nrow=length(object$inla.result$summary.hyperpar$mean),ncol=5)
-}else if(object$misc$model=="ar1"){
-  hypers=matrix(round(as.numeric(c(object$hyperparam$means,object$hyperparam$sd,object$hyperparam$quant0.025,
-                                   object$hyperparam$quant0.5,object$hyperparam$quant0.975)),digits=digits),
-                nrow=(length(object$inla.result$summary.hyperpar$mean)+(object$misc$m>1)),ncol=5)
+if(tolower(object$.args$noise) %in% c(0,"iid","independent")){
+  noise = "iid"
+}else if(tolower(object$.args$noise) %in% c(1,"ar1","ar(1)")){
+  noise = "ar1"
+}else if(tolower(object$.args$noise) %in% c(2,"ar2","ar(2)")){
+  noise = "ar2"
 }
 
-hypers=as.data.frame(hypers)
-colnames(hypers)=c("mean","sd","0.025quant","0.5quant","0.975quant")
-hyper.navn=c()
-if(!object$misc$INLA.options$control.family$hyper$prec$fixed){
-  hyper.navn=c(hyper.navn,"Precision for the Gaussian observations")
-}
-hyper.navn=c(hyper.navn,var.name,"Sigmax","Sigmaf","F0")
-if(object$misc$model == "ar1"){
-  if(object$misc$m == 1){
-    hyper.navn = c(hyper.navn, "p")
-  }else{
-    for(k in 1:object$misc$m){
-      hyper.navn = c(hyper.navn, paste0("w",k))
-    }
-    for(k in 1:object$misc$m){
-      hyper.navn = c(hyper.navn, paste0("p",k))
-    }
+if(!is.null(object$fitting)){
+  if(noise == "iid"){
+
+    hypers = matrix(round(as.numeric(object$fitting$hyperparameters$results$sigma_epsilon),digits=digits),nrow=1)
+    #hypers = matrix( round(as.numeric(object$fitting$hyperparameters$results$sigma_epsilon),digits=digits),ncol=mm )
+    hypers = as.data.frame(hypers)
+    colnames(hypers) = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
+    rownames(hypers) = c("sigma_epsilon")
+  }else if(noise == "ar1"){
+    hypers = rbind(round(as.numeric(object$fitting$hyperparameters$results$sigma_epsilon),digits=digits),
+                   round(as.numeric(object$fitting$hyperparameters$results$phi),digits=digits))
+    hypers = as.data.frame(hypers)
+    colnames(hypers) = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
+    rownames(hypers) = c("sigma_epsilon","phi")
+  }else if(noise == "ar2"){
+    hypers = rbind(round(as.numeric(object$fitting$hyperparameters$results$sigma_epsilon),digits=digits),
+                   round(as.numeric(object$fitting$hyperparameters$results$phi1),digits=digits),
+                   round(as.numeric(object$fitting$hyperparameters$results$phi2),digits=digits))
+    hypers = as.data.frame(hypers)
+    colnames(hypers) = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
+    rownames(hypers) = c("sigma_epsilon","phi1","phi2")
   }
-}
-rownames(hypers)=hyper.navn
-
-ut=c(ut, list(hyperpar=hypers))
-
-if(!is.null(object$TCR)){
-  tcr=matrix(round(c(object$TCR$mean,object$TCR$sd,object$TCR$quant0.025,object$TCR$quant0.5,object$TCR$quant0.975),digits=digits),nrow=1)
-  tcr=as.data.frame(tcr)
-  colnames(tcr)=c("mean","sd","0.025quant","0.5quant","0.975quant")
-  rownames(tcr)="TCR"
-  ut=c(ut, list(TCR=tcr,tcr.nsamples=object$misc$TCR.options$nsamples,Qco2=object$misc$TCR.options$Qco2))
+  fit.arg = list(formula = object$formula,noise=object$.args$noise, nevents=object$.args$nevents)
 }
 
-if(!is.null(object$mu)){
+ut=c(ut, list(hyperpar=hypers,fit.arg=fit.arg))
+
+if(!is.null(object$simulation)){
+  sim = list(nsims = dim(object$simulation$age)[2],n = dim(object$simulation$age)[1], store.means = !is.null(object$simulation$dmean) )
+}
+ut = c(ut,sim)
+
+if(!is.null(object$linramp)){
+  hyperramp = rbind(c(object$linramp$param$t0$mean,object$linramp$param$t0$sd,object$linramp$param$t0$q0.025,object$linramp$param$t0$q0.5,object$linramp$param$t0$q0.975),
+                    c(object$linramp$param$dtpos$mean,object$linramp$param$dtpos$sd,object$linramp$param$dtpos$q0.025,object$linramp$param$dtpos$q0.5,object$linramp$param$dtpos$q0.975),
+                    c(object$linramp$param$y0$mean,object$linramp$param$y0$sd,object$linramp$param$y0$q0.025,object$linramp$param$y0$q0.5,object$linramp$param$y0$q0.975),
+                    c(object$linramp$param$dy$mean,object$linramp$param$dy$sd,object$linramp$param$dy$q0.025,object$linramp$param$dy$q0.5,object$linramp$param$dy$q0.975)
+                    )
+  colnames(hyperramp) = c("mean","sd","quant0.025","quant0.5","quant0.975")
+  if(object$linramp$.args$t1.sims>0){
+    hyperramp = rbind(hyperramp, c(object$linramp$param$t1$mean,object$linramp$param$t1$sd,object$linramp$param$t1$q0.025,object$linramp$param$t1$q0.5,object$linramp$param$t1$q0.975))
+    rownames(hyperramp) = c("t0", "dt", "y0","dy","t1")
+  }else{
+    rownames(hyperramp) = c("t0", "dt", "y0","dy")
+  }
+  hyperramp = as.data.frame(round(hyperramp,digits=digits))
+  linramplist = list(hyperramp = hyperramp,t1sims=object$linramp$.args$t1.sims,rampsims = object$linramp$.args$rampsims,label=object$linramp$.args$label,depth.reference=object$linramp$.args$depth.reference)
+  ut = c(ut,linramplist)
+}
+
+if(!is.null(object$DO_dating)){
+  DO_age = matrix(c(object$DO_dating$mean,object$DO_dating$sd,object$DO_dating$q0.025,object$DO_dating$q0.5,object$DO_dating$q0.975),nrow=1)
+  colnames(DO_age) = c("mean","sd","quant0.025","quant0.5","quant0.975")
+  rownames(DO_age) = "Onset age"
+  DO_age = as.data.frame(round(DO_age,digits=digits))
+  DOlist = list(DO_age=DO_age,datingsims = object$DO_dating$.args$nsims,label=object$DO_dating$.args$label,age.reference=object$DO_dating$.args$age.reference)
+  ut = c(ut,linramplist)
+}
+
+if(!is.null(object$biases)){
+  nbiases = length(object$biases)
   mu=matrix(round(c(object$mu$mean,object$mu$sd,object$mu$quant0.025,object$mu$quant0.5,object$mu$quant0.975),digits=digits),nrow=1)
   mu=as.data.frame(mu)
 
-  #### FIKS DETTE
-  ut=c(ut, list(mu = mu,mu.full.Bayesian= object$misc$mu.options$compute.mu %in% c(2,"full","complete"),mu.nsamples=object$misc$mu.options$nsamples))
+  biaslist = list(nbiases = nbiases, bias.model = object$biases$.args$bias.model, biasparam = object$biases$.args$biasparam, store.samples = object$biases$.args$store.samples,nsims=object$biases$.args$nsims)
+  ut = c(ut,biaslist)
 }
 
-neffp = object$inla.result$neffp
-ut = c(ut, list(neffp = round(neffp, digits)))
 
-if(!is.null(object$inla.result$dic)){
-  ut=c(ut,list(dic=object$inla.result$dic))
-}
-if(!is.null(object$inla.result$waic)){
-  ut=c(ut,list(waic=object$inla.result$waic))
-}
-if(!is.null(object$inla.result$mlik)){
-  ut=c(ut,list(mlik=object$inla.result$mlik))
-}
-if(!is.null(object$inla.result$cpo$cpo) && length(object$inla.result$cpo$cpo)>0L){
-  ut=c(ut, list(cpo=lapply(object$inla.result$cpo,round,digits=digits)))
-}
-if(!is.null(object$inla.result$summary.linear.predictor)){
-  ut=c(ut, list(linear.predictor=round(object$inla.result$summary.linear.predictor),digits=digits))
-}
-if(!is.null(object$inla.result$summary.random) && length(object$inla.result$summary.random)>0L){
-  ut=c(ut, list(random.names=names(object$inla.result$summary.random),random.model=object$inla.result$model.random))
-}
-if(!is.null(object$inla.result$summary.linear.predictor)){
-  ut=c(ut, list(linear.predictor=round(object$inla.result$summary.linear.predictor),digits=digits))
-}
-ut = c(ut, list(model = object$misc$model))
-ut=c(ut, list(family=object$inla.result$family))
-class(ut) = "summary.inla.climate"
+class(ut) = "summary.bremla"
 
 return(ut)
 }

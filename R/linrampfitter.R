@@ -162,7 +162,7 @@ linrampfitter = function(object,interval,interval.what="index",optparams=c(round
     t1dens = density(t1sims)
     margt1 = cbind(t1dens$x,t1dens$y); colnames(margt1) = c("x","y")
     z.t1 = inla.zmarginal(margt1,silent=TRUE)
-    object$linramp$param$t1 = list(marginal=margt1,samples = t1sims,mean=z.t1$mean,sd=z.t1$sd,q0.025=z.t1$quant0.025,q0.975=z.t1$quant0.975)
+    object$linramp$param$t1 = list(marginal=margt1,samples = t1sims,mean=z.t1$mean,sd=z.t1$sd,q0.025=z.t1$quant0.025,q0.5=z.t1$quant0.5,q0.975=z.t1$quant0.975)
   }
   if(rampsims>0){
     vekmat = matrix(NA,nrow=n,ncol=rampsims)

@@ -19,6 +19,7 @@
 #' @importFrom stats runif
 bremla_biased_chronologies = function(object,bias.model="uniform",biasparams = c(0.99,1.01),nsims=10000,store.samples=FALSE){
   if(nsims > dim(object$simulation$age)[2]) stop("Number of simulated biases exceeds number of simulated chronologies! Shutting down...")
+  time.start = Sys.time()
   n = dim(object$simulation$age)[1]
   m = dim(biasparams)[2]
   for(iter in 1:m){
@@ -47,8 +48,12 @@ bremla_biased_chronologies = function(object,bias.model="uniform",biasparams = c
     if(store.samples){
       object$biases[[listr]]$simulations = biasedages
     }
-    object$biases[[listr]]$.args = list(bias.model=bias.model,biasparam=biasparam,nsims=nsims,store.samples=store.samples)
-  }
 
+  }
+  object$biases$.args = list(bias.model=bias.model,biasparam=biasparam,nsims=nsims,store.samples=store.samples)
+  time.end = Sys.time()
+  time.full = difftime(time.end,time.start,units="secs")[[1]]
+  object$biases$time = time.full
+  object$time$biases = time.full
   return(object)
 }
