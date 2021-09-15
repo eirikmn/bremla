@@ -4,6 +4,7 @@
 #'
 #' @param object \code{bremla} S3 class. Output of \code{\link{bremla}} function
 #' @param digits Number of digits displayed.
+#' @param ... Other arguments
 #'
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @seealso \code{\link{bremla},\link{bremla_chronology_simulation}}
@@ -95,10 +96,10 @@ summary.bremla = function(object,digits=4L,...){
   ut = c(ut,sim)
 
   if(!is.null(object$linramp)){
-    hyperramp = rbind(c(object$linramp$param$t0$mean,object$linramp$param$t0$sd,object$linramp$param$t0$q0.025,object$linramp$param$t0$q0.5,object$linramp$param$t0$q0.975),
+    hyperramp = rbind(round(c(object$linramp$param$t0$mean,object$linramp$param$t0$sd,object$linramp$param$t0$q0.025,object$linramp$param$t0$q0.5,object$linramp$param$t0$q0.975),
                       c(object$linramp$param$dtpos$mean,object$linramp$param$dtpos$sd,object$linramp$param$dtpos$q0.025,object$linramp$param$dtpos$q0.5,object$linramp$param$dtpos$q0.975),
                       c(object$linramp$param$y0$mean,object$linramp$param$y0$sd,object$linramp$param$y0$q0.025,object$linramp$param$y0$q0.5,object$linramp$param$y0$q0.975),
-                      c(object$linramp$param$dy$mean,object$linramp$param$dy$sd,object$linramp$param$dy$q0.025,object$linramp$param$dy$q0.5,object$linramp$param$dy$q0.975)
+                      c(object$linramp$param$dy$mean,object$linramp$param$dy$sd,object$linramp$param$dy$q0.025,object$linramp$param$dy$q0.5,object$linramp$param$dy$q0.975),digits=digits)
                       )
     colnames(hyperramp) = c("mean","sd","quant0.025","quant0.5","quant0.975")
     if(object$linramp$.args$t1.sims>0){
@@ -113,7 +114,7 @@ summary.bremla = function(object,digits=4L,...){
   }
 
   if(!is.null(object$DO_dating)){
-    DO_age = matrix(c(object$DO_dating$mean,object$DO_dating$sd,object$DO_dating$q0.025,object$DO_dating$q0.5,object$DO_dating$q0.975),nrow=1)
+    DO_age = matrix(round(c(object$DO_dating$mean,object$DO_dating$sd,object$DO_dating$q0.025,object$DO_dating$q0.5,object$DO_dating$q0.975),digits=digits),nrow=1)
     colnames(DO_age) = c("mean","sd","quant0.025","quant0.5","quant0.975")
     rownames(DO_age) = "Onset age"
     DO_age = as.data.frame(round(DO_age,digits=digits))
@@ -124,13 +125,20 @@ summary.bremla = function(object,digits=4L,...){
   if(!is.null(object$biases)){
     nbiases = object$biases$.args$nbiases
 
-    if(nbiases == 1){
-      biasparam = object$biases$.args$biasparam
-    }else{
-      biasparam = object$biases$.args$biasparam
-    }
+    # if(nbiases == 1){
+    #   #biasparam = object$biases$.args$biasparam
+    #   biasparam = matrix(object$biases$.args$biasparam,nrow=1)
+    #   colnames(biasparam) = c("param1","param2")
+    #   rownames(biasparam) = ""
+    #   biasparam = as.data.frame(biasparam)
+    # }else{
+      biasparam = t(matrix(object$biases$.args$biasparam,ncol=nbiases))
+      colnames(biasparam) = c("param1","param2")
+      rownames(biasparam) = 1:nbiases
+      biasparam = as.data.frame(biasparam)
+    #}
 
-    biaslist = list(nbiases = nbiases, bias.model = object$biases$.args$bias.model, biasparam = biasparam, store.samples = object$biases$.args$store.samples,nsims=object$biases$.args$nsims)
+    biaslist = list(nbiases = nbiases, bias.model = object$biases$.args$bias.model, biasparam = biasparam, store.samples = object$biases$.args$store.samples,biasnsims=object$biases$.args$nsims)
     ut = c(ut,biaslist)
   }
 
@@ -193,7 +201,7 @@ print.summary.bremla = function(x,digits=4L,...){
   }
 
   if(!is.null(x$biasparam)){
-    cat("\nGenerated ",x$nbiases, " sets of (",x$bias.model,") biased chronologies, with parameters:\n",sep="")
+    cat("\nGenerated ",x$biasnsims," samples for ",x$nbiases, " sets of (",x$bias.model,") biased chronologies, with parameters:\n",sep="")
     print(x$biasparam)
   }
 
