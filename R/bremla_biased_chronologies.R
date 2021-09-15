@@ -50,7 +50,7 @@ bremla_biased_chronologies = function(object,bias.model="uniform",biasparams = c
     }
 
   }
-  object$biases$.args = list(bias.model=bias.model,biasparam=biasparam,nsims=nsims,store.samples=store.samples)
+  object$biases$.args = list(bias.model=bias.model,biasparam=biasparam,nsims=nsims,store.samples=store.samples,nbiases = m)
   time.end = Sys.time()
   time.full = difftime(time.end,time.start,units="secs")[[1]]
   object$biases$time = time.full

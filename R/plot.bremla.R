@@ -204,7 +204,7 @@ plot.bremla = function(x,
 
   if(!is.null(plot.bias) && !is.null(x$biases)){
     figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
-    nbiases = length(x$biases)-2
+    nbiases = x$biases$.args$nbiases
 
     yrange = c(0,0)
     for( iter in 1:nbiases){
