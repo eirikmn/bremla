@@ -1,34 +1,17 @@
-#' Plot bremla model
+#' Summary bremla model
 #'
-#' Plots results from bremla S3 class.
+#' Summarizes results from bremla S3 class.
 #'
-#' @param x \code{bremla} S3 class. Output of \code{\link{bremla}} function
-#' @param plot.proxydata List specifying how the proxies should be plotted. Either as a function of age or depth. Also includes title (\code{label}) and a boolean describing whether the x-axis should be reversed to give a chronological representation (\code{xrev})
-#' @param plot.ls List specifying how the least square fit should be illustrated. \code{fitted=TRUE} plots the fitted values with label \code{label.fit}, \code{legend} specifies the legend, \code{residuals=TRUE} means the residuals are plotted with title \code{label.res}.
-#' if \code{histogram=TRUE} the residuals are represented in a histogram with label \code{label.hist}, if \code{qqplot=TRUE} a quantile-quantile plot of the residuals are plotted with title \code{label.qq} and if
-#' \code{acf=TRUE} the empirical autocorrelations are plotted with title \code{label.acf}.
-#' @param plot.inla.posterior list specifying how the results from the inla regression fit should be plotted. If \code{posteriors=TRUE} then the posterior marginal distributions of the hyperparameters are plotted with title \code{label}.
-#' @param plot.inlasims list specifying how the simulated chronologies from the INLA posterior should be plotted. \code{nsims} gives how many simulated chronologies should be included in the plot (with title \code{label}), \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.
-#' @param plot.bias list specifying how the simulations under the assumptions of unknown counting bias should be represented. If \code{MCE} is given as a numeric vector it will be included in the plot (with title \code{label}). \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.
-#' @param plot.linramp list specifying how the linear ramp fit should be plotted. If \code{depth.reference} is given, it will be represented by a vertical dotted line. If \code{show.t0=TRUE} the posterior marginal distribution of the onset is included (non-normalized). If \code{show.t1=TRUE} the posterior marginal distribution of the end point of the transition is included (non-normalized). If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.
-#' @param plot.DO_depth list specifying how the posterior distribution of the onset depth should be plotted. If \code{depth.reference} is given, it will be represented by a vertical dotted line. If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.
-#' @param plot.DO_age list specifying how the histogram of the simulated onset ages should be plotted. If \code{age.reference} is given, it will be represented by a vertical dotted line. If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.
-#' @param postscript Boolean variable indicating if postscript files should be produced instead.
-#' @param pdf Boolean variable indicating if pdf files should be produced instead.
-#' @param prefix The prefix for created files. Additional numbering is added.
-#' @param ... Additional arguments to \code{postscripts()}, \code{pdf()} or \code{dev.new()}.
+#' @param object \code{bremla} S3 class. Output of \code{\link{bremla}} function
+#' @param digits Number of digits displayed.
 #'
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @seealso \code{\link{bremla},\link{bremla_chronology_simulation}}
-#' @keywords bremla plot
+#' @keywords bremla sumary
 #'
 #' @examples
 #'
 #' @export
-#' @importFrom INLA inla inla.tmarginal inla.zmarginal inla.ar.pacf2phi
-#' @importFrom grDevices dev.cur dev.new dev.off
-#' @importFrom graphics abline hist legend lines par
-#' @importFrom stats qqline qqnorm
 #'
 summary.bremla = function(object,digits=4L,...){
 
