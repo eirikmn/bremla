@@ -74,6 +74,7 @@ linrampfitter = function(object,interval,interval.what="index",optparams=c(round
 
 
 
+  ### use least squares estimates for fixed effects as initial values in inla
 
   muvek = linramp(timepoints,t0=fit$par[1],dt=fit$par[2],y0=fit$par[3],dy=fit$par[4])
 
