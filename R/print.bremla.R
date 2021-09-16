@@ -13,7 +13,7 @@
 #' @examples
 #'
 #' @export
-#'
+#' @method print bremla
 print.bremla = function(x,
                         digits=4L,
                         ...){

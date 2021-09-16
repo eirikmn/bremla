@@ -13,6 +13,7 @@
 #' @examples
 #'
 #' @export
+#' @method summary bremla
 summary.bremla = function(object,
                           digits=4L,
                           ...){

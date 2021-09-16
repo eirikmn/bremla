@@ -77,7 +77,7 @@ bremla_modelfitter = function(object, method="inla",print.progress=FALSE,verbose
 
     inlafit = inla(object$formula, family="gaussian",data=object$data, control.family=list(hyper=list(prec=list(initial=12, fixed=TRUE))),
                    control.fixed=my.control.fixed,
-                   control.compute=list(config=TRUE),verbose=FALSE,control.inla=list(restart=TRUE,h=0.1), control.mode=list(theta=initialmodes)  )
+                   control.compute=list(config=TRUE),verbose=verbose,control.inla=list(restart=TRUE,h=0.1), control.mode=list(theta=initialmodes)  )
 
     #control.fixed=list(mean.intercept=df$layers[1],prec.intercept=0.001)
     object$fitting = list(fit=inlafit)
