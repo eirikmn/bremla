@@ -14,7 +14,9 @@
 #'
 #' @export
 #'
-print.bremla = function(x,digits=4L,...){
+print.bremla = function(x,
+                        digits=4L,
+                        ...){
 
   cat("Call:\n")
   cat(deparse(x$.args$call),"\n\n",sep="")

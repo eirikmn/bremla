@@ -13,7 +13,9 @@
 #' @examples
 #'
 #' @export
-summary.bremla = function(object,digits=4L,...){
+summary.bremla = function(object,
+                          digits=4L,
+                          ...){
 
   ut=list()
 
@@ -147,7 +149,9 @@ summary.bremla = function(object,digits=4L,...){
 return(ut)
 }
 
-print.summary.bremla = function(x,digits=4L,...){
+print.summary.bremla = function(x,
+                                digits=4L,
+                                ...){
   cat("\nCall:\n",deparse(x$call),"\n\n",sep="")
   cat("Time used:\n")
   print(x$cpu.used)
