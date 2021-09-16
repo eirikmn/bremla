@@ -174,6 +174,30 @@ bremla_simulationsummarizer = function(object,CI.type="hpd",print.progress=FALSE
 
 
 
+control.fixed.priors = function(reg.model, fit, nevents){
+
+  my.control.fixed = list(mean=list(  ))
+
+  if(reg.model$depth1) my.control.fixed$mean[["z1"]] = fit$coefficients[["z1"]]
+  if(reg.model$depth2) my.control.fixed$mean[["z2"]] = fit$coefficients[["z2"]]
+  if(reg.model$proxy) my.control.fixed$mean[["x"]] = fit$coefficients[["x"]]
+
+  if(reg.model$psi0 || reg.model$psi1){
+    for(i in 1:(nevents-1)){
+      if(reg.model$psi0){
+        my.control.fixed$mean[[paste0("a",i)]] = fit$coefficients[[paste0("a",i)]]
+      }
+      if(reg.model$psi0){
+        my.control.fixed$mean[[paste0("c",i)]] = fit$coefficients[[paste0("c",i)]]
+      }
+    }
+  }
+
+  return(my.control.fixed)
+}
+
+
+
 
 
 

@@ -73,9 +73,13 @@ bremla_modelfitter = function(object, method="inla",print.progress=FALSE,verbose
       initialmodes = c(initialmodes, log( (1+phi1/(1-phi2))/(1-phi1/(1-phi2)) ), log( (1+phi2)/(1-phi2) ) )
     }
 
+    my.control.fixed = control.fixed.priors(reg.model, fit, nevents)
+
     inlafit = inla(object$formula, family="gaussian",data=object$data, control.family=list(hyper=list(prec=list(initial=12, fixed=TRUE))),
+                   control.fixed=my.control.fixed,
                    control.compute=list(config=TRUE),verbose=FALSE,control.inla=list(restart=TRUE,h=0.1), control.mode=list(theta=initialmodes)  )
 
+    #control.fixed=list(mean.intercept=df$layers[1],prec.intercept=0.001)
     object$fitting = list(fit=inlafit)
     posterior_sigma = inla.tmarginal(function(x)1/sqrt(x),inlafit$marginals.hyperpar$`Precision for idy`); zmarg_sigma=inla.zmarginal(posterior_sigma,silent=TRUE)
     object$fitting$hyperparameters = list(posteriors=list(sigma_epsilon=posterior_sigma))
