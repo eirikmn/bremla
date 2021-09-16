@@ -144,7 +144,7 @@ bremla_simulationsummarizer = function(object,CI.type="hpd",print.progress=FALSE
   sdvek = sqrt(rowVars(object$simulation$age))
 
   lower = numeric(n); upper = numeric(n)
-  if(CI.type="hpd"){
+  if(CI.type=="hpd"){
     modevek = numeric(n)
     for(i in 1:n){
       dens = density(object$simulation$age[i,])
@@ -162,7 +162,7 @@ bremla_simulationsummarizer = function(object,CI.type="hpd",print.progress=FALSE
   time.summary = Sys.time()
   object$simulation$summary = list(mean=meanvek,sd=sdvek,lower=lower,upper=upper,
                                    .args=list(interval=interval,print.progress=print.progress,CI.type=CI.type))
-  if(CI.type="hpd") object$simulation$summary$mode = modevek
+  if(CI.type=="hpd") object$simulation$summary$mode = modevek
   if(print.progress) cat(" completed in ",difftime(time.summary,time.start,units="secs")[[1]],"\n",sep="")
 
   object$time$samplesummary = list(total=difftime(time.summary,time.start,units="secs")[[1]])

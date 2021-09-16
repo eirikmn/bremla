@@ -15,6 +15,7 @@ bremla(
     TRUE, psi1 = TRUE),
   noise = "ar1",
   method = "inla",
+  CI.type = "quantiles",
   DO.estimation = NULL,
   bias = NULL,
   store.everything = FALSE,
@@ -39,6 +40,8 @@ bremla(
 \item{noise}{Character specifying the noise model: independent identically distributed (\code{iid}), first order autoregressive (\code{ar1}) or second order autoregressive (\code{ar2})}
 
 \item{method}{Character specifying how the model is fitted. Currently only least squares (\code{ls}) and INLA (\code{inla}) are supported, and least squares is always run.}
+
+\item{CI.type}{Character describing which type of uncertainty intervals to be used. \code{CI.type="quantiles"} is computed from the quantiles, \code{CI.type="hpd"} computes highest posterior density intervals (takes a little longer to compute). If distribution is unimodal and symmetric these are equivalent.}
 
 \item{DO.estimation}{List specifying the settings for the linear ramp fit and subsequent age simulation of a specified DO-event. See example.}
 

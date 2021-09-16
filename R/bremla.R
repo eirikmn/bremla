@@ -14,6 +14,7 @@
 #' @param DO.estimation List specifying the settings for the linear ramp fit and subsequent age simulation of a specified DO-event. See example.
 #' @param bias List specifying the settings for the simulation of chronologies subjected to unknown counting bias. See example for implementation.
 #' @param store.everything Boolean describing whether optional information (e.g. simulation of age vectors) should be stored.
+#' @param CI.type Character describing which type of uncertainty intervals to be used. \code{CI.type="quantiles"} is computed from the quantiles, \code{CI.type="hpd"} computes highest posterior density intervals (takes a little longer to compute). If distribution is unimodal and symmetric these are equivalent.
 #' @param print.progress Boolean. If \code{TRUE} progress will be printed to screen
 #'
 #' @return Returns an S3 object of class "bremla". This includes output from all functions nested within the bremla function. Including fitted marginals and summary statistics, simulated chronologies, time spent on each step.
@@ -38,11 +39,11 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
   object = bremla_prepare(age,depth,proxy, events=events,nsims=nsims, eventmeasure = eventmeasure,reg.model = reg.model,
                          noise=noise, method=method)
   if(print.progress) cat(" completed!\n",sep="")
-  object = bremla_modelfitter(object, method=method,CI.type=CI.type,print.progress=print.progress)
+  object = bremla_modelfitter(object, method=method,print.progress=print.progress)
 
 
   object = bremla_chronology_simulation(object, nsims=nsims, method=method,store.means=store.everything,print.progress=print.progress)
-  object = bremla_simulationsummarizer(object,print.progress=print.progress)
+  object = bremla_simulationsummarizer(object,CI.type=CI.type,print.progress=print.progress)
   if(!is.null(DO.estimation)){
     object = linrampfitter(object,interval=DO.estimation$interval,h=DO.estimation$h,t1.sims=DO.estimation$t1.sims,
                rampsims=DO.estimation$rampsims,label=DO.estimation$label,depth.reference = DO.estimation$depth.reference,print.progress=print.progress)
