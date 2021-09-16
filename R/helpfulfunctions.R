@@ -122,7 +122,7 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
 #' Computes posterior marginal mean and uncertainty intervals from simulations.
 #'
 #' @param object List object which is the output of function \code{\link{bremla_chronology_simulation}}
-#' @param interval character describing which uncertainty intervals should be used. Highest posterior density is used by default
+#' @param CI.type character describing which uncertainty intervals should be used (\code{"quantiles" or "hpd"}). Highest posterior density is used by default
 #' @param print.progress Boolean describing whether or not progress should be printed on screen.
 #'
 #' @return Returns the \code{object} list from the input and appends additional summary statistics: posterior marginal mean and uncertainty interval-
@@ -134,22 +134,48 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
 #' @export
 #' @importFrom matrixStats rowMeans2 rowVars
 #' @importFrom INLA inla.hpdmarginal
-bremla_simulationsummarizer = function(object,interval="hpd",print.progress=FALSE){
+bremla_simulationsummarizer = function(object,CI.type="hpd",print.progress=FALSE){
   if(print.progress) cat("Computing posterior marginal mean and 95% hpd intervals from chronology samples...\n",sep="")
   time.start = Sys.time()
   n = dim(object$simulation$age)[1]
   nsims = dim(object$simulation$age)[2]
-  hpdlower = numeric(n); hpdupper = numeric(n)
+
   meanvek = rowMeans2(object$simulation$age)
   sdvek = sqrt(rowVars(object$simulation$age))
-  for(i in 1:n){
-    dens = density(object$simulation$age[i,])
-    hpdlower[i] = inla.hpdmarginal(0.95,dens)[1]
-    hpdupper[i] = inla.hpdmarginal(0.95,dens)[2]
+
+  lower = numeric(n); upper = numeric(n)
+  if(CI.type="hpd"){
+    modevek = numeric(n)
+    for(i in 1:n){
+      dens = density(object$simulation$age[i,])
+      modevek[i]=dens$x[which(dens$y == max(dens$y))]
+
+      lower[i] = inla.hpdmarginal(0.95,dens)[1]
+      upper[i] = inla.hpdmarginal(0.95,dens)[2]
+
+    }
+  }else{
+    lower = meanvek-1.96*sdvek
+    upper = meanvek+1.96*sdvek
   }
+
   time.summary = Sys.time()
-  object$simulation$summary = list(mean=meanvek,sd=sdvek,hpd0.025=hpdlower,hpd0.975=hpdupper, sim.sum.time=time.summary,.args=list(interval=interval,print.progress=print.progress))
+  object$simulation$summary = list(mean=meanvek,sd=sdvek,lower=lower,upper=upper,
+                                   .args=list(interval=interval,print.progress=print.progress,CI.type=CI.type))
+  if(CI.type="hpd") object$simulation$summary$mode = modevek
   if(print.progress) cat(" completed in ",difftime(time.summary,time.start,units="secs")[[1]],"\n",sep="")
+
   object$time$samplesummary = list(total=difftime(time.summary,time.start,units="secs")[[1]])
+  object$simulation$summary$sim.sum.time = difftime(time.summary,time.start,units="secs")[[1]]
+
   return(object)
 }
+
+
+
+
+
+
+
+
+

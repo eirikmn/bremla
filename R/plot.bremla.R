@@ -186,15 +186,21 @@ plot.bremla = function(x,
     nsims = plot.inlasims$nsims
     xlim=range(z)
     if(plot.inlasims$xrev) xlim=rev(xlim)
-    ylim=range(x$simulation$summary$hpd0.025-gicc05,x$simulation$summary$hpd0.975-gicc05)*1.1
+
+    ylim=range(x$simulation$summary$lower-gicc05,x$simulation$summary$upper-gicc05)*1.1
     plot(NA,xlim=xlim,ylim=ylim,xlab="Depth (m)",ylab="Simulated time scale - GICC05 (years)",main=plot.inlasims$label)
     for(iter in 1:nsims){
       lines(z,x$simulation$age[,iter]-gicc05,col="gray",lwd=0.8)
     }
-    lines(z,x$simulation$summary$hpd0.025-gicc05,col="red",lwd=2)
-    lines(z,x$simulation$summary$hpd0.975-gicc05,col="red",lwd=2)
+    lines(z,x$simulation$summary$lower-gicc05,col="red",lwd=2)
+    lines(z,x$simulation$summary$upper-gicc05,col="red",lwd=2)
     abline(h=0,lty=3)
-    lines(z,x$simulation$summary$mean-gicc05,col="blue",lwd=2)
+    if(x$simulation$summary$.args$CI.type == "hpd"){
+      lines(z,x$simulation$summary$mode-gicc05,col="blue",lwd=2)
+    }else{
+      lines(z,x$simulation$summary$mean-gicc05,col="blue",lwd=2)
+    }
+
     if(postscript || pdf){
       if (names(dev.cur()) != "null device") {
         dev.off()
