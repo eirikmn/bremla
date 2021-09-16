@@ -135,7 +135,7 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
 #' @importFrom matrixStats rowMeans2 rowVars
 #' @importFrom INLA inla.hpdmarginal
 bremla_simulationsummarizer = function(object,CI.type="hpd",print.progress=FALSE){
-  if(print.progress) cat("Computing posterior marginal mean and 95% hpd intervals from chronology samples...\n",sep="")
+  if(print.progress) cat("Computing posterior marginal mean and 95% credible intervals from chronology samples...\n",sep="")
   time.start = Sys.time()
   n = dim(object$simulation$age)[1]
   nsims = dim(object$simulation$age)[2]

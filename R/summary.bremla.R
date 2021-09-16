@@ -13,7 +13,6 @@
 #' @examples
 #'
 #' @export
-#'
 summary.bremla = function(object,digits=4L,...){
 
   ut=list()

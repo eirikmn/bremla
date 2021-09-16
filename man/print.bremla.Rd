@@ -4,7 +4,7 @@
 \alias{print.bremla}
 \title{Print bremla model}
 \usage{
-print.bremla(x, digits = 4L, ...)
+\method{print}{bremla}(x, digits = 4L, ...)
 }
 \arguments{
 \item{x}{\code{bremla} S3 class. Output of \code{\link{bremla}} function}

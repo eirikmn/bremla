@@ -4,7 +4,7 @@
 \alias{summary.bremla}
 \title{Summary bremla model}
 \usage{
-summary.bremla(object, digits = 4L, ...)
+\method{summary}{bremla}(object, digits = 4L, ...)
 }
 \arguments{
 \item{object}{\code{bremla} S3 class. Output of \code{\link{bremla}} function}
