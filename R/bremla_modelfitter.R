@@ -73,7 +73,7 @@ bremla_modelfitter = function(object, method="inla",print.progress=FALSE,verbose
       initialmodes = c(initialmodes, log( (1+phi1/(1-phi2))/(1-phi1/(1-phi2)) ), log( (1+phi2)/(1-phi2) ) )
     }
 
-    my.control.fixed = control.fixed.priors(reg.model, fit, object$.args$nevents)
+    my.control.fixed = bremla::control.fixed.priors(reg.model, fit, object$.args$nevents)
 
     inlafit = inla(object$formula, family="gaussian",data=object$data, control.family=list(hyper=list(prec=list(initial=12, fixed=TRUE))),
                    control.fixed=my.control.fixed,
