@@ -55,7 +55,7 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
   }
   time.total = difftime(Sys.time(), time.start,units="secs")[[1]]
   object$.args$call = bremla.call
-  object$time$total=time.total
+  object$time$total = time.total
   class(object) = "bremla"
 
   return(object)

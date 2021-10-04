@@ -2,6 +2,7 @@
 
 S3method(plot,bremla)
 S3method(print,bremla)
+S3method(print,summary.bremla)
 S3method(summary,bremla)
 export(DO_depth_to_age)
 export(bremla)

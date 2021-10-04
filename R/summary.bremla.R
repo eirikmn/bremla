@@ -8,7 +8,7 @@
 #'
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @seealso \code{\link{bremla},\link{bremla_chronology_simulation}}
-#' @keywords bremla sumary
+#' @keywords bremla summary
 #'
 #' @examples
 #'
@@ -150,6 +150,22 @@ summary.bremla = function(object,
 return(ut)
 }
 
+#' Print summary.bremla class
+#'
+#' Prints summary.bremla S3 class.
+#'
+#' @param x \code{summary.bremla} S3 class. Output of \code{\link{summary.bremla}} function
+#' @param digits Number of digits displayed.
+#' @param ... Other arguments
+#'
+#' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
+#' @seealso \code{\link{bremla},\link{bremla_chronology_simulation}}
+#' @keywords bremla summary.print
+#'
+#' @examples
+#'
+#' @export
+#' @method print summary.bremla
 print.summary.bremla = function(x,
                                 digits=4L,
                                 ...){
