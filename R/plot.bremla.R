@@ -58,7 +58,11 @@ plot.bremla = function(x,
   }
 
   figure.count = 1L
-  gicc05 = x$data$y; z = x$data$z; xx = x$data$x; n=length(gicc05)
+  ageref = x$data$y; z = x$data$z; xx = x$data$x; n=length(ageref)
+  reference.label = x$.args$reference.label
+  if(is.null(reference.label)){
+    reference.label = "reference"
+  }
   eventindexes = x$.args$eventindexes; nevents = length(eventindexes)
   oldpar = par()
 
@@ -66,7 +70,7 @@ plot.bremla = function(x,
     figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
     par(mfrow=c(1,1),mar=(c(5,4.5,4,2)+0.1))
     if(plot.proxydata$age){
-      xdata = gicc05; xlab="GICC05 (yr b2k)"
+      xdata = ageref; xlab=paste0(reference.label," (yr b2k)")
     }else if(plot.proxydata$depth){
       xdata = z; xlab = "Depth (m)"
     }
@@ -187,18 +191,18 @@ plot.bremla = function(x,
     xlim=range(z)
     if(plot.inlasims$xrev) xlim=rev(xlim)
 
-    ylim=range(x$simulation$summary$lower-gicc05,x$simulation$summary$upper-gicc05)*1.1
-    plot(NA,xlim=xlim,ylim=ylim,xlab="Depth (m)",ylab="Simulated time scale - GICC05 (years)",main=plot.inlasims$label)
+    ylim=range(x$simulation$summary$lower-ageref,x$simulation$summary$upper-ageref)*1.1
+    plot(NA,xlim=xlim,ylim=ylim,xlab="Depth (m)",ylab=paste0("Simulated time scale - ",reference.label," (years)"),main=plot.inlasims$label)
     for(iter in 1:nsims){
-      lines(z,x$simulation$age[,iter]-gicc05,col="gray",lwd=0.8)
+      lines(z,x$simulation$age[,iter]-ageref,col="gray",lwd=0.8)
     }
-    lines(z,x$simulation$summary$lower-gicc05,col="red",lwd=2)
-    lines(z,x$simulation$summary$upper-gicc05,col="red",lwd=2)
+    lines(z,x$simulation$summary$lower-ageref,col="red",lwd=2)
+    lines(z,x$simulation$summary$upper-ageref,col="red",lwd=2)
     abline(h=0,lty=3)
     if(x$simulation$summary$.args$CI.type == "hpd"){
-      lines(z,x$simulation$summary$mode-gicc05,col="blue",lwd=2)
+      lines(z,x$simulation$summary$mode-ageref,col="blue",lwd=2)
     }else{
-      lines(z,x$simulation$summary$mean-gicc05,col="blue",lwd=2)
+      lines(z,x$simulation$summary$mean-ageref,col="blue",lwd=2)
     }
 
     if(postscript || pdf){
@@ -214,7 +218,7 @@ plot.bremla = function(x,
 
     yrange = c(0,0)
     for( iter in 1:nbiases){
-      yrange = range(yrange,x$biases[[paste0("bias",iter)]]$quant0.975-gicc05,x$biases[[paste0("bias",iter)]]$quant0.025-gicc05)
+      yrange = range(yrange,x$biases[[paste0("bias",iter)]]$quant0.975-ageref,x$biases[[paste0("bias",iter)]]$quant0.025-ageref)
     }
     if(!is.null(plot.bias$MCE)){
       yrange = range(yrange,-plot.bias$MCE,plot.bias$MCE)
@@ -226,11 +230,11 @@ plot.bremla = function(x,
     }
 
     if(plot.bias$xrev) xlim=rev(xlim)
-    plot(NA, xlim=xlim,xlab="Depth (m)", ylab="Simulated timescale - GICC05 (years)",type="l",col="blue",ylim=yrange,main=plot.bias$label)
+    plot(NA, xlim=xlim,xlab="Depth (m)", ylab=paste0("Simulated timescale - ",reference.label," (years)"),type="l",col="blue",ylim=yrange,main=plot.bias$label)
     abline(h=0,lty=3,lwd=1,col="gray")
     for(iter in 1:nbiases){
-      lines(z,x$biases[[paste0("bias",iter)]]$quant0.975-gicc05,col="blue",lty=iter)
-      lines(z,x$biases[[paste0("bias",iter)]]$quant0.025-gicc05,col="blue",lty=iter)
+      lines(z,x$biases[[paste0("bias",iter)]]$quant0.975-ageref,col="blue",lty=iter)
+      lines(z,x$biases[[paste0("bias",iter)]]$quant0.025-ageref,col="blue",lty=iter)
     }
     if(!is.null(plot.bias$MCE)){
       lines(z,plot.bias$MCE,lwd=2)

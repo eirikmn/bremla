@@ -26,7 +26,7 @@
 #'
 #' @export
 #' @import matrixStats
-bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "depth",reg.model = list(
+bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "depth",reference.label=NULL,reg.model = list(
   const=FALSE,depth1=FALSE,depth2=TRUE,proxy=TRUE,psi0=TRUE,psi1=TRUE), noise="ar1", method="inla", CI.type="quantiles",
   DO.estimation = NULL, bias = NULL,store.everything=FALSE,print.progress=FALSE){
   #DO.estimation = list(interval=...,h=0.1,t1.sims=50000,rampsims=50000,label="GI-11,depth.reference=NULL,age.reference=NULL)
@@ -37,7 +37,7 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
   if(print.progress) cat("Initiating data formatting...",sep="")
 
   object = bremla_prepare(age,depth,proxy, events=events,nsims=nsims, eventmeasure = eventmeasure,reg.model = reg.model,
-                         noise=noise, method=method)
+                         noise=noise, method=method,reference.label=reference.label)
   if(print.progress) cat(" completed!\n",sep="")
   object = bremla_modelfitter(object, method=method,print.progress=print.progress)
 

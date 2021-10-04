@@ -185,7 +185,12 @@ print.summary.bremla = function(x,
   }
 
   if(!is.null(x$nsims)){
-    cat("\nSimulating ",x$nsims," chronologies.\n",sep="")
+    if(!is.null(x$.args$reference.age)){
+      cat("\nSimulating ",x$nsims," chronologies, using ",x$.args$reference.age," as reference.\n",sep="")
+    }else{
+      cat("\nSimulating ",x$nsims," chronologies.\n",sep="")
+    }
+
     if(x$store.means){
       cat(" Storing means")
     }

@@ -21,7 +21,7 @@
 #'
 #' @export
 bremla_prepare = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "depth",reg.model = list(
-  const=FALSE,depth1=FALSE,depth2=TRUE,proxy=TRUE,psi0=TRUE,psi1=TRUE), noise="ar1", method="inla"){
+  const=FALSE,depth1=FALSE,depth2=TRUE,proxy=TRUE,psi0=TRUE,psi1=TRUE), noise="ar1", method="inla",reference.label=NULL){
   n = length(age)
   y = age[2:n]
   dy = diff(age)
@@ -113,6 +113,7 @@ bremla_prepare = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure
   formula = as.formula(formulastring)
   object$formula = formula
   object$.args$formulastring=formulastring
+  object$.args$reference.label=reference.label
 
   ## move to separate function
 
