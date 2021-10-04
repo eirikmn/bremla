@@ -143,7 +143,7 @@ summary.bremla = function(object,
     biaslist = list(nbiases = nbiases, bias.model = object$biases$.args$bias.model, biasparam = biasparam, store.samples = object$biases$.args$store.samples,biasnsims=object$biases$.args$nsims)
     ut = c(ut,biaslist)
   }
-
+    ut = c(ut,reference.label=list(label=object$.args$reference.label))
 
   class(ut) = "summary.bremla"
 
@@ -185,8 +185,8 @@ print.summary.bremla = function(x,
   }
 
   if(!is.null(x$nsims)){
-    if(!is.null(x$.args$reference.age)){
-      cat("\nSimulating ",x$nsims," chronologies, using ",x$.args$reference.age," as reference.\n",sep="")
+    if(!is.null(x$reference.label)){
+      cat("\nSimulating ",x$nsims," chronologies, using ",x$reference.age," as reference.\n",sep="")
     }else{
       cat("\nSimulating ",x$nsims," chronologies.\n",sep="")
     }
