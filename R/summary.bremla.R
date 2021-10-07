@@ -143,7 +143,7 @@ summary.bremla = function(object,
     biaslist = list(nbiases = nbiases, bias.model = object$biases$.args$bias.model, biasparam = biasparam, store.samples = object$biases$.args$store.samples,biasnsims=object$biases$.args$nsims)
     ut = c(ut,biaslist)
   }
-    ut = c(ut,reference.label=list(label=object$.args$reference.label))
+    ut = c(ut,reference.label=list(reference.label=object$.args$reference.label))
 
   class(ut) = "summary.bremla"
 

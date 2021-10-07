@@ -170,7 +170,7 @@ linrampfitter = function(object,interval,interval.what="index",optparams=c(round
     for(i in 1:rampsims){
       t01 = hpars[i,3]
       dt1 = hpars[i,4]
-      vekmat[,i] = bremla:::linramprev(object$linramp$data$x,t0=t01,dt=dt1,y0=hpars[i,1],dy=hpars[i,2])
+      vekmat[,i] = bremla::linramprev(object$linramp$data$x,t0=t01,dt=dt1,y0=hpars[i,1],dy=hpars[i,2])
     }
     vek.quant0.025 = numeric(n)
     vek.quant0.5 = numeric(n)

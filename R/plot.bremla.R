@@ -192,7 +192,7 @@ plot.bremla = function(x,
     if(plot.inlasims$xrev) xlim=rev(xlim)
 
     ylim=range(x$simulation$summary$lower-ageref,x$simulation$summary$upper-ageref)*1.1
-    plot(NA,xlim=xlim,ylim=ylim,xlab="Depth (m)",ylab=paste0("Simulated time scale - ",reference.label," (years)"),main=plot.inlasims$label)
+    plot(NA,xlim=xlim,ylim=ylim,xlab="Depth (m)",ylab=paste0("Simulated timescale - ",reference.label," (years)"),main=plot.inlasims$label)
     for(iter in 1:nsims){
       lines(z,x$simulation$age[,iter]-ageref,col="gray",lwd=0.8)
     }

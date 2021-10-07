@@ -11,6 +11,7 @@
 #' @param reg.model List of booleans specifies which effects to be included in the linear regression model: intercept (\code{const}), linear response to depth (\code{depth1}), quadratic response to depth (\code{depth2}), linear response to proxy (\code{proxy}), individual intercepts for each climate period (\code{psi0}), individual linear responses to depth for each climate period (\code{psi1})
 #' @param noise Character specifying the noise model: independent identically distributed (\code{iid}), first order autoregressive (\code{ar1}) or second order autoregressive (\code{ar2})
 #' @param method Character specifying how the model is fitted. Currently only least squares (\code{ls}) and INLA (\code{inla}) are supported, and least squares is always run.
+#' @param reference.label String denoting the label used for age data/reference
 #'
 #' @return Returns a list containing data in internal formatting (\code{data}), linear regression formula (\code{ls.formula}), inla formula (\code{formula}), input settings and indices corresponding to climate transitions (\code{.args}) and z_0, y_0 and x_0 (\code{preceeding})
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
