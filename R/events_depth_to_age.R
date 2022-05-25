@@ -1,17 +1,17 @@
-#' Complete dating uncertainty of DO-onsets
+#' Complete dating uncertainty of abrupt warming transitions
 #'
 #' Combines linear ramp model fit and Bayesian regression modeling to estimate complete dating uncertainty of the onset of Dansgaard-Oeschger events using Monte Carlo simulation.
 #'
 #' @param object List object which is the output of function \code{\link{linrampfitter}}
-#' @param nsims Integer denoting the number of simulations of DO onset age. Cannot exceed the number of simulated age chronologies from \code{\link{bremla_chronology_simulation}}.
+#' @param nsims Integer denoting the number of simulations of transition onset age. Cannot exceed the number of simulated age chronologies from \code{\link{bremla_chronology_simulation}}.
 #' @param print.progress Boolean. If \code{TRUE} progress will be printed to screen
 #' @param label character string describing the label designed the transition, e.g. \code{label="GI-11"}.
 #' @param age.reference numeric denoting a reference value such as the transition onset age obtained by other means. This appears when using \code{plot}. If \code{depth.reference=NULL} then this is not used.
 #'
-#' @return Returns the same \code{object} list from the input, but appends the simulated DO onset ages along with summary statistics.
+#' @return Returns the same \code{object} list from the input, but appends the simulated transition onset ages along with summary statistics.
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @seealso \code{\link{bremla_chronology_simulation},\link{linrampfitter}}
-#' @keywords bremla dating DO
+#' @keywords bremla dating transition
 #'
 #' @examples
 #'
@@ -20,15 +20,15 @@
 #' @importFrom INLA inla.rgeneric.define inla.emarginal inla.smarginal
 #' @importFrom stats optim
 #'
-DO_depth_to_age = function(object, nsims = 10000, print.progress=FALSE, label=NULL,age.reference=NULL){
+events_depth_to_age = function(object, nsims = 10000, print.progress=FALSE, label=NULL,age.reference=NULL){
   time.start=Sys.time()
   n=length(object$data$y)
   if(is.null(label)) label=object$linramp$.args$label
   if(print.progress){
     if(!is.null(label) && label !=""){
-      cat("Initiating simulation from complete dating uncertainty of DO-event: ",label,"\n",sep="")
+      cat("Initiating simulation from complete dating uncertainty of event: ",label,"\n",sep="")
     }else{
-      cat("Initiating simulation from complete dating uncertainty of unlabeled DO-event...\n",sep="")
+      cat("Initiating simulation from complete dating uncertainty of unlabeled event...\n",sep="")
     }
   }
 
@@ -61,10 +61,10 @@ DO_depth_to_age = function(object, nsims = 10000, print.progress=FALSE, label=NU
   dens = density(ysamps); Y0marg= cbind(dens$x,dens$y); colnames(Y0marg) = c("x","y"); Y0marg = inla.smarginal(Y0marg)
   z.Y0 = inla.zmarginal(Y0marg,silent=TRUE)
 
-  object$DO_dating = list(samples = ysamps, mean = z.Y0$mean,sd=z.Y0$sd,q0.025=z.Y0$quant0.025,q0.5=z.Y0$quant0.5,q0.975=z.Y0$quant0.975)
+  object$event_dating = list(samples = ysamps, mean = z.Y0$mean,sd=z.Y0$sd,q0.025=z.Y0$quant0.025,q0.5=z.Y0$quant0.5,q0.975=z.Y0$quant0.975)
 
-  object$DO_dating$.args = list(nsims = nsims,label=label,age.reference=age.reference)
-  object$time$DO_age = list(simulation = difftime(time.endsim,time.startsim,units="secs")[[1]],total = difftime(Sys.time(),time.start,units="secs")[[1]])
+  object$event_dating$.args = list(nsims = nsims,label=label,age.reference=age.reference)
+  object$time$event_age = list(simulation = difftime(time.endsim,time.startsim,units="secs")[[1]],total = difftime(Sys.time(),time.start,units="secs")[[1]])
 
   return(object)
 }

@@ -12,12 +12,15 @@ bremla(
   nsims = 10000,
   eventmeasure = "depth",
   reference.label = NULL,
+  proxy.type = "d18O",
+  transform = "identity",
   reg.model = list(const = FALSE, depth1 = FALSE, depth2 = TRUE, proxy = TRUE, psi0 =
     TRUE, psi1 = TRUE),
   noise = "ar1",
   method = "inla",
   CI.type = "quantiles",
-  DO.estimation = NULL,
+  synchronization = NULL,
+  event.estimation = NULL,
   bias = NULL,
   store.everything = FALSE,
   print.progress = FALSE
@@ -38,6 +41,10 @@ bremla(
 
 \item{reference.label}{String denoting the label used for age data/reference}
 
+\item{proxy.type}{String denoting which proxy is used (for plot-labels).}
+
+\item{transform}{String denoting which transformation should be applied to the residuals. Default "identity", "log" is also supported, but experimental.}
+
 \item{reg.model}{List of booleans specifies which effects to be included in the linear regression model: intercept (\code{const}), linear response to depth (\code{depth1}), quadratic response to depth (\code{depth2}), linear response to proxy (\code{proxy}), individual intercepts for each climate period (\code{psi0}), individual linear responses to depth for each climate period (\code{psi1})}
 
 \item{noise}{Character specifying the noise model: independent identically distributed (\code{iid}), first order autoregressive (\code{ar1}) or second order autoregressive (\code{ar2})}
@@ -46,7 +53,9 @@ bremla(
 
 \item{CI.type}{Character describing which type of uncertainty intervals to be used. \code{CI.type="quantiles"} is computed from the quantiles, \code{CI.type="hpd"} computes highest posterior density intervals (takes a little longer to compute). If distribution is unimodal and symmetric these are equivalent.}
 
-\item{DO.estimation}{List specifying the settings for the linear ramp fit and subsequent age simulation of a specified DO-event. See example.}
+\item{synchronization}{List containing information used for simulating tie-points and synchronizing age-depth model to them.}
+
+\item{event.estimation}{List specifying the settings for the linear ramp fit and subsequent age simulation of a specified transition. See example.}
 
 \item{bias}{List specifying the settings for the simulation of chronologies subjected to unknown counting bias. See example for implementation.}
 

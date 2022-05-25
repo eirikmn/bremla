@@ -8,8 +8,7 @@ linrampfitter(
   object,
   interval,
   interval.what = "index",
-  optparams = c(round(length(interval)/2), round(length(interval)/10), df_event$yy[1],
-    df_event$yy[length(interval)] - df_event$yy[1]),
+  optparams = NULL,
   h = 0.01,
   verbose = FALSE,
   t1.sims = 50000,
@@ -55,7 +54,7 @@ Fits the linear ramp described by Erhardt et al. (2019) to proxy values using IN
 Erhardt et al. (2019)
 }
 \seealso{
-\code{\link{bremla_chronology_simulation},\link{DO_depth_to_age}}
+\code{\link{bremla_chronology_simulation},\link{events_depth_to_age}}
 }
 \author{
 Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}

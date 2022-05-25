@@ -15,7 +15,9 @@ bremla_prepare(
     TRUE, psi1 = TRUE),
   noise = "ar1",
   method = "inla",
-  reference.label = NULL
+  reference.label = NULL,
+  transform = "identity",
+  proxy.type = "d18O"
 )
 }
 \arguments{
@@ -38,6 +40,10 @@ bremla_prepare(
 \item{method}{Character specifying how the model is fitted. Currently only least squares (\code{ls}) and INLA (\code{inla}) are supported, and least squares is always run.}
 
 \item{reference.label}{String denoting the label used for age data/reference}
+
+\item{transform}{String denoting which transformation should be applied to the residuals. Default "identity", "log" is also supported, but experimental.}
+
+\item{proxy.type}{String denoting which proxy is used (for use in plot-labels).}
 }
 \value{
 Returns a list containing data in internal formatting (\code{data}), linear regression formula (\code{ls.formula}), inla formula (\code{formula}), input settings and indices corresponding to climate transitions (\code{.args}) and z_0, y_0 and x_0 (\code{preceeding})

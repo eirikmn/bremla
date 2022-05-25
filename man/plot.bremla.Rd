@@ -11,7 +11,10 @@
     qqplot = TRUE, acf = TRUE, xrev = FALSE, label.fit = NULL, label.res = NULL,
     label.hist = NULL, label.qq = NULL, label.acf = NULL),
   plot.inla.posterior = list(posteriors = TRUE, label = NULL),
-  plot.inlasims = list(nsims = 30, legend = NULL, xrev = FALSE, label = NULL),
+  plot.inlasims = list(nsims = 0, legend = NULL, xrev = FALSE, label = NULL),
+  plot.syncsims = list(nsims = 0, legend = NULL, xrev = FALSE, label = NULL),
+  plot.tiepoints = list(col.hist = "orange", breaks.hist = 50, label.x = "Age (yb2k)",
+    label.main = NULL),
   plot.bias = list(MCE = NULL, legend = NULL, xrev = FALSE, label = NULL),
   plot.linramp = list(depth.reference = NULL, show.t0 = TRUE, show.t1 = TRUE, xrev =
     TRUE, label = NULL),
@@ -35,6 +38,10 @@ if \code{histogram=TRUE} the residuals are represented in a histogram with label
 \item{plot.inla.posterior}{list specifying how the results from the inla regression fit should be plotted. If \code{posteriors=TRUE} then the posterior marginal distributions of the hyperparameters are plotted with title \code{label}.}
 
 \item{plot.inlasims}{list specifying how the simulated chronologies from the INLA posterior should be plotted. \code{nsims} gives how many simulated chronologies should be included in the plot (with title \code{label}), \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.}
+
+\item{plot.syncsims}{list specifying how the simulated synchronized chronologies from the INLA posterior should be plotted. \code{nsims} gives how many simulated chronologies should be included in the plot (with title \code{label}), \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.}
+
+\item{plot.tiepoints}{list containing specifications for plotting histogram of sampled tie-points.}
 
 \item{plot.bias}{list specifying how the simulations under the assumptions of unknown counting bias should be represented. If \code{MCE} is given as a numeric vector it will be included in the plot (with title \code{label}). \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.}
 

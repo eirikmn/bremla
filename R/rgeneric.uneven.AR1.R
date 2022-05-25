@@ -1,6 +1,9 @@
 #' rgeneric model specification of linear ramp function
 #'
-#' Non-standard models in INLA requires specification using the rgeneric modeling framework. This includes key functions that provide information on precision matrix, mean vector, priors, graph etc. This is intended for internal use only, but the documentation is included here in case someone want to change something. See example below for how rgeneric is used can be used.
+#' Non-standard models in INLA requires specification using the rgeneric modeling framework.
+#' This includes key functions that provide information on precision matrix, mean vector, priors, graph etc.
+#' This is intended for internal use only, but the documentation is included here in case someone want to change something.
+#'  See example below for how rgeneric is used can be used.
 #'
 #' @param cmd Vector containing list of function names necessary for the rgeneric model.
 #' @param theta Vector describing the hyperparameters in internal scaling.
@@ -20,6 +23,9 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
   cmd = c("graph", "Q","mu", "initial", "log.norm.const", "log.prior", "quit"),
   theta = NULL)
 {
+
+  envir = environment(sys.call()[[1]])
+
   linramp = function(t,t0=0,dt=1,y0=0,dy=1){ #linear ramp function
     y = numeric(length(t))
     y = y0 + dy*(t-t0)/dt
@@ -46,6 +52,10 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
   }
 
   mu = function() { #mean vector defined as a linear ramp
+    if(!is.null(envir)){
+      timepoints=get("timepoints",envir)
+
+    }
     param = interpret.theta()
     y0=param$y0; dy=param$dy; y1=param$y1; t0=param$t0; t1=param$t1; Dt = param$Dt; dt=Dt
 
@@ -62,6 +72,10 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
   }
 
   Q = function(){ #inverse covariance matrix: AR(1) that allow for unequal spacing
+    if(!is.null(envir)){
+      n=get("n",envir)
+      timepoints=get("timepoints",envir)
+    }
     param=interpret.theta()
     ii = 1:n
     jj = 1:n
@@ -99,6 +113,11 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
   }
 
   log.prior = function(){
+    if(!is.null(envir)){
+      tslutt=get("tslutt",envir)
+      tstart=get("tstart",envir)
+      ystart=get("ystart",envir)
+    }
     params = interpret.theta()
 
     #log-priors are given for internal parametrisation using the change of variables theorem

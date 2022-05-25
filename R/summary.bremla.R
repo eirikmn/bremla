@@ -97,6 +97,14 @@ summary.bremla = function(object,
   }
   ut = c(ut,sim)
 
+  if(!is.null(object$tie_points)){
+    tiepoints = list(tie_n=object$tie_points$tie_n,free_n=object$tie_points$free_n,
+                     method=object$tie_points$method,nsims=object$tie_points$nsims,
+                     locations=object$tie_points$locations,
+                     locations.type=object$tie_points$locations.type)
+    ut = c(ut,list(tiepoints=tiepoints))
+  }
+
   if(!is.null(object$linramp)){
     hyperramp = rbind(round(c(object$linramp$param$t0$mean,object$linramp$param$t0$sd,object$linramp$param$t0$q0.025,object$linramp$param$t0$q0.5,object$linramp$param$t0$q0.975),digits=digits),
                       round(c(object$linramp$param$dtpos$mean,object$linramp$param$dtpos$sd,object$linramp$param$dtpos$q0.025,object$linramp$param$dtpos$q0.5,object$linramp$param$dtpos$q0.975),digits=digits),
@@ -186,15 +194,15 @@ print.summary.bremla = function(x,
 
   if(!is.null(x$nsims)){
     if(!is.null(x$reference.label)){
-      cat("\nSimulating ",x$nsims," chronologies, using ",x$reference.age," as reference.\n",sep="")
+      cat("\nSimulating ",x$nsims," chronologies, using ",x$reference.label," as reference.\n",sep="")
     }else{
       cat("\nSimulating ",x$nsims," chronologies.\n",sep="")
     }
 
     if(x$store.means){
-      cat(" Storing means")
+      cat(" Storing means\n")
     }
-    cat("\n")
+    #cat("\n")
   }
 
   if(!is.null(x$hyperramp)){
@@ -212,6 +220,40 @@ print.summary.bremla = function(x,
     }
 
     print(x$hyperramp)
+
+    if(!is.null(x$tiepoints)){
+      cat("\n",x$tiepoints$nsims, " samples generated from ", x$tiepoints$tie_n ,
+          " tie-point distributions",sep="")
+      if(tolower(x$tiepoints$method) %in% c("adolphi")){
+        cat(" (Adolphi).",sep="")
+      }else if(tolower(x$tiepoints$method) %in% c("precomputed", "given")){
+        cat(" (precomputed).",sep="")
+      }else if(tolower(x$tiepoints$method) %in% c("normal", "gauss","gaussian")){
+        cat(" (Gaussian).",sep="")
+      }else if(tolower(x$tiepoints$method) %in% c("semigauss","semi-gauss","quasigauss","quasi-gauss",
+                                                  "skewered","skewered-gauss")){
+        cat(" (merged Gaussians).",sep="")
+      }else{cat(".")}
+
+      if(x$tiepoints$tie_n <= 6){
+        cat("\nTie-points are fixed at ")
+        if(tolower(x$tiepoints$locations.type) %in% c("depth","z")){
+          cat("NGRIP depths (m) ",sep="")
+          cat(x$tiepoints$locations, sep=", ")
+          cat(".")
+        }else if(tolower(x$tiepoints$locations.type) %in% c("age","y")){
+          cat(x$reference.label," ages (yb2k) ",sep="")
+          cat(x$tiepoints$locations, sep=", ")
+          cat(".")
+        }else if(tolower(x$tiepoints$locations.type) %in% c("index","ind")){
+          cat("indices ",sep="")
+          cat(x$tiepoints$locations, sep=", ")
+          cat(".")
+        }
+        cat("\n",sep="")
+      }
+
+    }
 
     if(x$rampsims>0) cat("\n",x$rampsims, " samples of linear ramp function produced.\n",sep="")
 

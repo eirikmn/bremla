@@ -95,6 +95,25 @@ print.bremla = function(x,
     cat("\nGenerated ",nsims," chronologies.\n",sep="")
   }
 
+    if(!is.null(x$tie_points)){
+      nsims = dim(x$tie_points$nsims)
+      if(tolower(x$tie_points$method) %in% c("adolphi")){
+        cat("\nGenerated ",nsims," samples from ",x$tie_points$tie_n," Adolphi tie-point distributions.\n",sep="")
+      }else if(tolower(x$tie_points$method) %in% c("gauss","gaussian","normal")){
+        cat("\nGenerated ",nsims," samples from ",x$tie_points$tie_n," normal tie-point distributions.\n",sep="")
+      }else if(tolower(x$tie_points$method) %in% c("precomputed","given")){
+        cat("\nUsing ",nsims," precomputed tie-point samples.\n",sep="")
+      }else if(tolower(x$tie_points$method) %in% c("semigauss","semigaussian","skewered","skewered-gauss",
+                                                   "semi-gauss","semi-gaussian","merged","merged-normal")){
+        cat("\nGenerated ",nsims," samples from ",x$tie_points$tie_n," merged-normal tie-point distributions.\n",sep="")
+      }
+
+    }
+    if(!is.null(x$simulation$age_sync)){
+      nsims = dim(x$simulation$age_sync)[2]
+      cat("\nGenerated ",nsims," synchronized chronologies.\n",sep="")
+    }
+
   if(!is.null(x$linramp)){
     hyperramp = matrix(round(c(x$linramp$param$t0$mean,x$linramp$param$t0$sd,x$linramp$param$t0$q0.025,x$linramp$param$t0$q0.5,x$linramp$param$t0$q0.975),digits=digits),nrow=1)
 

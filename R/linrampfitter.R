@@ -18,7 +18,7 @@
 #' @return Returns the same \code{object} list from the input, but appends another list of results from the linear ramp fit, including posterior marginal distributions of the hyperparameters, summary statistics, and simulations of linear ramp and transition end point (if any).
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @references Erhardt et al. (2019)
-#' @seealso \code{\link{bremla_chronology_simulation},\link{DO_depth_to_age}}
+#' @seealso \code{\link{bremla_chronology_simulation},\link{events_depth_to_age}}
 #' @keywords bremla linear_ramp
 #'
 #' @examples
@@ -29,12 +29,28 @@
 #' @importFrom stats optim
 #' @importFrom numDeriv grad
 #'
-linrampfitter = function(object,interval,interval.what="index",optparams=c(round(length(interval)/2),round(length(interval)/10),df_event$yy[1],df_event$yy[length(interval)]-df_event$yy[1]),h=0.01,verbose=FALSE,
-                             t1.sims=50000,rampsims=50000,label="",depth.reference=NULL,print.progress=print.progress){
+linrampfitter = function(object,interval,interval.what="index",
+                         optparams=NULL,
+                         h=0.01,verbose=FALSE,t1.sims=50000,rampsims=50000,
+                         label="",depth.reference=NULL,print.progress=print.progress){
   time.start = Sys.time()
-  if(print.progress) cat("Initializing linear ramp fit using INLA.\n",sep="")
-  df_event = data.frame(xx=rev(object$data$z[interval]),yy=rev(object$data$x[interval])) #reverse: Want depth axis representing old->new
 
+  if(interval.what == "depth"){
+    intervalrange = which.index(range(interval),object$data$z)
+    interval = intervalrange[1]:intervalrange[2]
+  }else if(interval.what == "age"){
+    intervalrange = which.index(range(interval),object$data$y)
+    interval = intervalrange[1]:intervalrange[2]
+  }
+
+  if(print.progress) cat("Initializing linear ramp fit using INLA.\n",sep="")
+  df_event = data.frame(xx=rev(object$data$z[interval]),
+                        yy=rev(object$data$x[interval])) #reverse: Want depth axis representing old->new
+
+  ## default initial values for optim function
+  if(is.null(optparams)){
+    optparams = c(round(length(interval)/2),round(length(interval)/10),df_event$yy[1],df_event$yy[length(interval)]-df_event$yy[1])
+  }
 
   n=length(interval)
   df0=data.frame(y=df_event$yy,x=df_event$xx)
@@ -45,11 +61,12 @@ linrampfitter = function(object,interval,interval.what="index",optparams=c(round
   y = df0$y
   if(print.progress) cat("Using 'optim' to find initial positions for hyperparameters in INLA.\n",sep="")
   ## for stability the x-axis is transformed to values ranging from 1:n.
-  #timepoints=1:n
+
   timepoints = round((df_event$xx - df_event$xx[1])/(df_event$xx[n]-df_event$xx[1])*(n-1)+1,digits=4)
   df0$time = timepoints
 
   ## Finding initial values in INLA optimization procedure by first using a simple optimization
+  ## gradient and cost function given here
   minfun.grad = function(param, args = NULL){
     return (grad(minfun, param, args=args, method.args = list(r=6)))
   }
@@ -59,7 +76,7 @@ linrampfitter = function(object,interval,interval.what="index",optparams=c(round
     return(sqrt(mse))
   }
 
-
+  ## perform optimization to find good starting values for INLA
   param=optparams
   args=list(y=y)
   fit = optim(param,
@@ -88,8 +105,8 @@ linrampfitter = function(object,interval,interval.what="index",optparams=c(round
 
   r = inla(formula,family="gaussian", data=data.frame(y=df0$y,idx=as.integer(df0$time)),
            control.mode=list(theta=init,
-                             restart=TRUE),
-           verbose=verbose,control.inla=list(h=h),#int.strategy="ccd"),
+                             restart=TRUE),num.threads = 1,
+           verbose=verbose,control.inla=list(h=h),
            control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))) )#, num.threads = 1)
   time.endinla = Sys.time()
   elapsedinla = difftime(time.endinla,time.startinla,units="secs")[[1]]

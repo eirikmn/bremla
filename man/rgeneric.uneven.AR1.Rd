@@ -18,7 +18,10 @@ rgeneric.uneven.AR1(
 
 }
 \description{
-Non-standard models in INLA requires specification using the rgeneric modeling framework. This includes key functions that provide information on precision matrix, mean vector, priors, graph etc. This is intended for internal use only, but the documentation is included here in case someone want to change something. See example below for how rgeneric is used can be used.
+Non-standard models in INLA requires specification using the rgeneric modeling framework.
+This includes key functions that provide information on precision matrix, mean vector, priors, graph etc.
+This is intended for internal use only, but the documentation is included here in case someone want to change something.
+ See example below for how rgeneric is used can be used.
 }
 \examples{
 

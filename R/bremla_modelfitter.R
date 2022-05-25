@@ -18,20 +18,23 @@
 #' @importFrom INLA inla inla.tmarginal inla.zmarginal inla.ar.pacf2phi
 #' @importFrom stats acf arima density lm sd
 
-bremla_modelfitter = function(object, method="inla",print.progress=FALSE,verbose=FALSE){
+bremla_modelfitter = function(object, method="inla",
+                              print.progress=FALSE,verbose=FALSE){
+
 
   time.start = Sys.time()
+
   formula = object$formula
   if(print.progress) cat("Performing least squares fit...",sep="")
-  #if(tolower(method) != "inla"){
-  fit = lm(object$ls.formula,object$data)
-  #plot(data$z,data$dy,typ="l",col="gray"); lines(data$z,fit$fitted.values,col="red")
+
+  fit = lm(object$ls.formula,object$data) #fits model using least squares
+
   dmean = fit$fitted.value
-  mean = object$data$y[1]+cumsum(dmean)
   resi = fit$residuals
 
-  object$LS.fitting = list(fit=fit, params=list(meanvector=as.numeric(mean)))
-  #object$params = list(mean=mean)
+  ## extract parameter estimates
+  object$LS.fitting = list(fit=fit, params=list(meanvector=as.numeric(dmean)))
+
   if(tolower(object$.args$noise) %in% c("iid","independent","ar(0)")){
     sigma = sd(resi)
     object$LS.fitting$params[["sigma"]] = sigma
@@ -63,29 +66,48 @@ bremla_modelfitter = function(object, method="inla",print.progress=FALSE,verbose
     ## will use results from least squares fit as starting point in INLA optimization. Requires proper parametrization
     if(print.progress) cat("Performing INLA fit...\n",sep="")
 
+    #set initial values for fixed parameters based on least squares 'fit'
+    my.control.fixed = control.fixed.priors(object$.args$reg.model, fit, object$.args$nevents)
+
+    resi = object$LS.fitting$fit$residuals
+
     initialmodes = log(1/object$LS.fitting$params$sigma^2)
+
     if(tolower(object$.args$noise) %in% c(1,"ar1","ar(1)")){
       phi.ls = object$LS.fitting$params$phi
       initialmodes = c(initialmodes, log( (1+phi)/(1-phi) ))
+
     }else if(tolower(object$.args$noise) %in% c(2,"ar2","ar(2)")){
       phi1.ls = object$LS.fitting$params$phi1
       phi2.ls = object$LS.fitting$params$phi2
-      initialmodes = c(initialmodes, log( (1+phi1/(1-phi2))/(1-phi1/(1-phi2)) ), log( (1+phi2)/(1-phi2) ) )
+
+      initialmodes=c(initialmodes, log( (1+phi1/(1-phi2))/(1-phi1/(1-phi2)) ), log( (1+phi2)/(1-phi2) ) )
     }
 
-    my.control.fixed = bremla:::control.fixed.priors(reg.model, fit, object$.args$nevents)
+    num.threads=1 #rgeneric can sometimes be more stable if more than one core is used
 
-    inlafit = inla(object$formula, family="gaussian",data=object$data, control.family=list(hyper=list(prec=list(initial=12, fixed=TRUE))),
-                   control.fixed=my.control.fixed,
-                   control.compute=list(config=TRUE),verbose=verbose,control.inla=list(restart=TRUE,h=0.1), control.mode=list(theta=initialmodes)  )
+    object$data$idy=1:nrow(object$data) #create covariate for random effect in INLA
 
-    #control.fixed=list(mean.intercept=df$layers[1],prec.intercept=0.001)
+    ## fit using INLA
+    inlafit = inla(object$formula, family="gaussian",data=object$data,
+                   control.family=list(hyper=list(prec=list(initial=12, fixed=TRUE))) ,
+                   control.fixed=my.control.fixed,num.threads = num.threads,
+                   control.compute=list(config=TRUE),verbose=FALSE,
+                   control.inla=list(restart=TRUE,h=0.1),
+                   control.mode=list(theta=initialmodes,restart=TRUE)  )
+
+
     object$fitting = list(fit=inlafit)
+
+
+    if(print.progress){
+      cat("Computing remaining posteriors using Monte Carlo simulation...\n",sep="")
+    }
+
+    ## extract posteriors for hyperparameters
     posterior_sigma = inla.tmarginal(function(x)1/sqrt(x),inlafit$marginals.hyperpar$`Precision for idy`); zmarg_sigma=inla.zmarginal(posterior_sigma,silent=TRUE)
     object$fitting$hyperparameters = list(posteriors=list(sigma_epsilon=posterior_sigma))
-    object$fitting$hyperparameters$results = list(sigma_epsilon = zmarg_sigma)
-
-
+    object$fitting$hyperparameters$results$sigma_epsilon = zmarg_sigma
     if(tolower(object$.args$noise)%in% c(1,"ar1","ar(1)") ){
       posterior_phi = inlafit$marginals.hyperpar$`Rho for idy`; zmarg_phi = inla.zmarginal(posterior_phi,silent=TRUE)
       object$fitting$hyperparameters$posteriors$phi = posterior_phi
@@ -104,6 +126,8 @@ bremla_modelfitter = function(object, method="inla",print.progress=FALSE,verbose
       object$fitting$hyperparameters$posteriors$phi2 = posterior_phi2
       object$fitting$hyperparameters$results$phi2 = zmarg_phi2
     }
+
+
     time.inla=Sys.time()
     elapsed.inla = difftime(time.inla,time.ls,units="secs")[[1]]
     if(print.progress) cat("INLA fit completed in ",elapsed.inla, " seconds!\n",sep="")

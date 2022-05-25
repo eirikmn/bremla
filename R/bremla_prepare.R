@@ -12,6 +12,8 @@
 #' @param noise Character specifying the noise model: independent identically distributed (\code{iid}), first order autoregressive (\code{ar1}) or second order autoregressive (\code{ar2})
 #' @param method Character specifying how the model is fitted. Currently only least squares (\code{ls}) and INLA (\code{inla}) are supported, and least squares is always run.
 #' @param reference.label String denoting the label used for age data/reference
+#' @param transform String denoting which transformation should be applied to the residuals. Default "identity", "log" is also supported, but experimental.
+#' @param proxy.type String denoting which proxy is used (for use in plot-labels).
 #'
 #' @return Returns a list containing data in internal formatting (\code{data}), linear regression formula (\code{ls.formula}), inla formula (\code{formula}), input settings and indices corresponding to climate transitions (\code{.args}) and z_0, y_0 and x_0 (\code{preceeding})
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
@@ -21,16 +23,28 @@
 #' @examples
 #'
 #' @export
-bremla_prepare = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "depth",reg.model = list(
-  const=FALSE,depth1=FALSE,depth2=TRUE,proxy=TRUE,psi0=TRUE,psi1=TRUE), noise="ar1", method="inla",reference.label=NULL){
+bremla_prepare = function(age,depth,proxy, events=NULL,nsims=10000,
+                          eventmeasure = "depth",reg.model = list(
+                            const=FALSE,depth1=FALSE,depth2=TRUE,proxy=TRUE,psi0=TRUE,psi1=TRUE),
+                          noise="ar1", method="inla",reference.label=NULL,
+                          transform="identity",proxy.type="d18O"){
   n = length(age)
   y = age[2:n]
   dy = diff(age)
   z = depth[2:n]
 
-  data = data.frame(y=y,dy=dy,z=z)
+  data = data.frame(y=y,dy=dy,z=z) #format dataset into data.frame object
 
-  formulastring = "dy ~ "
+  ## create formula string to be used for least squares (and INLA)
+  if(transform %in% c("log","logarithmic")){
+    data$logdy = log(dy)
+    formulastring = "logdy ~ "
+  }else{
+    formulastring = "dy ~ "
+  }
+
+  ## model components are expressed using reg.model
+
   if(!reg.model$const) formulastring=paste0(formulastring,"-1") else formulastring=paste0(formulastring,"1")
   if(reg.model$depth1) formulastring=paste0(formulastring," + z")
   if(reg.model$depth2) {
@@ -48,30 +62,12 @@ bremla_prepare = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure
   if(!is.null(events)){
     eventindexes = numeric(length(events))
 
-    if(tolower(eventmeasure) %in% c("depth","z")){
+    if(tolower(eventmeasure) %in% c("depth","z")){ #find indexes corresponding to 'events' location
       eventindexes = which.index (events, z)
     }else if(tolower(eventmeasure) %in% c("age","time","y")){
       eventindexes = which.index (events, y)
     }
-    # for(i in 1:length(events)){
-    #   if(tolower(eventmeasure) %in% c("depth","z")){
-    #     eventindexes = which.index (events, record)
-    #     if(events[i] < min(z) || events[i]>max(z)){
-    #       warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'depth' (",min(z),", ",max(z),"). The event will be omitted!"))
-    #       eventindexes[i] = NA
-    #     }else{
-    #       eventindexes[i] = which(abs(events[i]-z) == min(abs(events[i]-z)))
-    #     }
-    #   }else if(tolower(eventmeasure) %in% c("age","time","y")){
-    #     if(events[i] < min(y) || events[i]>max(y)){
-    #       warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'age' (",min(age),", ",max(age),"). The event will be omitted!"))
-    #       eventindexes[i] = NA
-    #     }else{
-    #       eventindexes[i] = which(abs(events[i]-y) == min(abs(events[i]-y)))
-    #     }
-    #   }
-    #
-    # }
+
     eventindexes = unique(c(1,eventindexes[!is.na(eventindexes)]))
     nevents = length(eventindexes)
   }
@@ -81,7 +77,7 @@ bremla_prepare = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure
     }
 
 
-    for(i in 2:nevents){
+    for(i in 2:nevents){ #express covariates for psi-functions (for each climate period)
       ev = numeric(n-1)
       ev[ eventindexes[i-1]:(eventindexes[i]-1) ] = data$z[eventindexes[i-1]:(eventindexes[i]-1)]
       data[[paste0("a",i-1)]] = ev
@@ -93,8 +89,8 @@ bremla_prepare = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure
   }
   if(tolower(method)=="inla") data$idy=data$z
 
+  ## create main object which will include all input and output from function
   object = list(data=data)
-  #object$model = list(reg.model=reg.model,noise=noise,method=method,eventmeasure=eventmeasure)
   object$.args = list(reg.model = reg.model, noise=noise,method=method, eventmeasure=eventmeasure)
   object$.args$ls.formulastring = formulastring
   object$.args$eventindexes = eventindexes
@@ -102,7 +98,10 @@ bremla_prepare = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure
   object$.args$nevents=nevents
   object$preceeding = list(y0 = age[1],z0=depth[1],x0=proxy[1])
 
-  if(tolower(method)=="inla"){
+
+
+
+  if(tolower(method)=="inla"){ #add random effect to formula string for use in INLA
     if(tolower(noise) %in% c("iid","independent","ar(0)")){
       formulastring = paste0(formulastring, " + f(idy,model=\"iid\")")
     }else if(tolower(noise) %in% c("ar1","ar(1)")){
@@ -111,12 +110,18 @@ bremla_prepare = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure
       formulastring = paste0(formulastring, " + f(idy,model=\"ar\",order=2)")
     }
   }
+
+
+
+
   formula = as.formula(formulastring)
   object$formula = formula
   object$.args$formulastring=formulastring
   object$.args$reference.label=reference.label
+  object$.args$transform = transform
+  object$.args$proxy.type = proxy.type
 
-  ## move to separate function
+  class(object) = "bremla"
 
   return(object)
 
