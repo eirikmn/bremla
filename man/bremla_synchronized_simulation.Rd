@@ -10,7 +10,8 @@ bremla_synchronized_simulation(
   nsims = 10000,
   tie_locations = NULL,
   tie_locations_type = "depth",
-  tiepointsims = NULL
+  tiepointsims = NULL,
+  ncores = 2
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ bremla_synchronized_simulation(
 \item{tiepointsims}{data.frame which gives the tiepoint-samples to which the models should be synchronized.
 \code{nrow} should correspond to \code{nsims} and \code{ncol} should correspond to the number of tie-points.
 For fixed tie-points you can just repeat each tie-point \code{nsims} times.}
+
+\item{ncores}{The number of cores to use in simulating from inla.posterior.sample}
 }
 \value{
 Returns the \code{object} list from the input and appends a list which includes all synchronized simulations
@@ -32,6 +35,33 @@ Returns the \code{object} list from the input and appends a list which includes 
 \description{
 Simulate synchronized chronologies
 Produces simulations from the synchronized time scale given tie-point samples.
+}
+\examples{
+\donttest{
+data("event_intervals")
+data("events_rasmussen")
+data("NGRIP_5cm")
+
+age = NGRIP_5cm$age
+depth = NGRIP_5cm$depth
+d18O = NGRIP_5cm$d18O
+proxy=d18O
+
+eventdepths = events_rasmussen$depth
+eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+eventindexes = unique(eventindexes[!is.na(eventindexes)])
+
+nsims = 5000
+object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=nsims)
+object = bremla_modelfitter(object)
+object = bremla_chronology_simulation(object,nsims=nsims)
+object = tiepointsimmer(object,nsims=nsims,method="adolphi")
+object = bremla_synchronized_simulation(object,nsims=nsims)
+object = bremla_simulationsummarizer(object,CI.type="hpd",sync=TRUE)
+plot(object)
+}
+
+
 }
 \seealso{
 \code{\link{bremla_chronology_simulation}} \code{\link{bremla}}

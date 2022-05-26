@@ -27,6 +27,45 @@
 #' @keywords bremla
 #'
 #' @examples
+#' \donttest{
+#' data("event_intervals")
+#' data("events_rasmussen")
+#' data("NGRIP_5cm")
+#'
+#' age = NGRIP_5cm$age
+#' depth = NGRIP_5cm$depth
+#' d18O = NGRIP_5cm$d18O
+#' proxy=d18O
+#'
+#' eventdepths = events_rasmussen$depth
+#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#'
+#'
+#' lowerints = which.index(event_intervals$depth_int_lower.m, depth[2:length(depth)])
+#' upperints = which.index(event_intervals$depth_int_upper.m, depth[2:length(depth)])
+#'
+#' eventnumber=13 #number between 1 and 29. specifies which transition to consider
+#' depth.reference = event_intervals$NGRIP_depth_m[eventnumber]
+#' age.reference = event_intervals$GICC_age.yb2k[eventnumber]
+#' interval = lowerints[eventnumber]:upperints[eventnumber]
+#'
+#' object = bremla(age,depth,proxy,events=eventdepths,nsims=10000,
+#'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
+#'                           locations.type="age",method="adolphi",
+#'                           samples=NULL),
+#'   event.estimation = list(interval=interval,t1.sims=50000,rampsims=50000,label="GI-11",
+#'                           depth.reference=event_intervals$NGRIP_depth_m[eventnumber],
+#'                           age.reference=event_intervals$NGRIP_agee_m[eventnumber]),
+#'   bias = list(bias.model="uniform",biasparams=cbind( c(1,1),c(0.98,1.02),c(0.96,1.04) ),
+#'               store.samples=FALSE),
+#'   print.progress=TRUE
+#'   )
+#'   summary(object)
+#'   plot(object)
+#' }
+#'
+#'
 #'
 #' @export
 #' @import matrixStats
@@ -52,11 +91,14 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
   #fit the data, first by least squares, then by INLA (if specified)
   object = bremla_modelfitter(object, method=method,print.progress=print.progress)
 
-  #produce samples from the chronologies
-  object = bremla_chronology_simulation(object, nsims=nsims, method=method,store.means=store.everything,print.progress=print.progress)
+  if(nsims>0){
+    #produce samples from the chronologies
+    object = bremla_chronology_simulation(object, nsims=nsims, method=method,store.means=store.everything,print.progress=print.progress)
 
-  #compute posterior marginal mean, quantiles and other summary statistics
-  object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=FALSE,print.progress=print.progress)
+    #compute posterior marginal mean, quantiles and other summary statistics
+    object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=FALSE,print.progress=print.progress)
+
+  }
 
   if(!is.null(synchronization)){
     if(tolower(noise) %in% c("iid","ar2","2","ar(2)") ){
@@ -68,12 +110,13 @@ bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "dept
                               method=synchronization$method,samples=synchronization$samples)
       ##simulate synchronized chronologies
       object = bremla_synchronized_simulation(object,nsims=nsims) #rest of input arguments are collected from 'object'
+      #compute posterior marginal mean, quantiles and other summary statistics for synchronous time scale
+      object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=TRUE,print.progress=print.progress)
+
     }
   }
 
 
-  #compute posterior marginal mean, quantiles and other summary statistics for synchronous time scale
-  object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=TRUE,print.progress=print.progress)
 
   #if event.estimation list object (containing specifications) is included, perform dating estimation
   if(!is.null(event.estimation)){

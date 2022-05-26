@@ -11,20 +11,43 @@
 #' @keywords bremla sumary
 #'
 #' @examples
+#' \donttest{
+#' data("event_intervals")
+#' data("events_rasmussen")
+#' data("NGRIP_5cm")
 #'
+#' age = NGRIP_5cm$age
+#' depth = NGRIP_5cm$depth
+#' d18O = NGRIP_5cm$d18O
+#' proxy=d18O
+#'
+#' eventdepths = events_rasmussen$depth
+#' object = bremla(age,depth,proxy,events=eventdepths,nsims=100,
+#'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
+#'                           locations.type="age",method="adolphi",
+#'                           samples=NULL),
+#'   print.progress=TRUE
+#'   )
+#' print(object)
+#' }
 #' @export
 #' @method print bremla
 print.bremla = function(x,
                         digits=4L,
                         ...){
 
-  cat("Call:\n")
-  cat(deparse(x$.args$call),"\n\n",sep="")
-  cat("Time used:\n",sep="")
+  if(!is.null(x$.args$call)){
+    cat("Call:\n")
+    cat(deparse(x$.args$call),"\n\n",sep="")
+    cat("Time used:\n",sep="")
+  }
+
 
   if(!is.null(x$fitting)){
     cpu = as.numeric(round(x$time$fit$total,digits=digits))
     cpu.navn="Model fitting"
+  }else{
+    cat("bremla object has been prepared, but no analysis has been performed yet.")
   }
 
   if(!is.null(x$simulation)){
@@ -40,15 +63,18 @@ print.bremla = function(x,
     cpu.navn=c(cpu.navn,"Bias sampling")
   }
 
-  cpu=as.numeric(c(cpu,round(x$time$total,digits=digits)))
-  cpu.navn=c(cpu.navn,"Total")
-  names(cpu)=cpu.navn
+  if(!is.null(x$fitting)){
+    cpu=as.numeric(c(cpu,round(x$time$total,digits=digits)))
+    cpu.navn=c(cpu.navn,"Total")
+    names(cpu)=cpu.navn
 
     print(cpu)
+  }
 
 
 
 
+  if(!is.null(x$.args$noise)){
     if(tolower(x$.args$noise) %in% c(0,"iid","independent")){
       noise = "iid"
     }else if(tolower(x$.args$noise) %in% c(1,"ar1","ar(1)")){
@@ -56,6 +82,8 @@ print.bremla = function(x,
     }else if(tolower(x$.args$noise) %in% c(2,"ar2","ar(2)")){
       noise = "ar2"
     }
+  }
+
 
 
     if(!is.null(x$fitting)){

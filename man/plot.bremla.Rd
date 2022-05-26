@@ -18,8 +18,8 @@
   plot.bias = list(MCE = NULL, legend = NULL, xrev = FALSE, label = NULL),
   plot.linramp = list(depth.reference = NULL, show.t0 = TRUE, show.t1 = TRUE, xrev =
     TRUE, label = NULL),
-  plot.DO_depth = list(depth.reference = NULL, xrev = TRUE, label = NULL),
-  plot.DO_age = list(age.reference = NULL, xrev = TRUE, label = NULL),
+  plot.event_depth = list(depth.reference = NULL, xrev = TRUE, label = NULL),
+  plot.event_age = list(age.reference = NULL, xrev = TRUE, label = NULL),
   postscript = FALSE,
   pdf = FALSE,
   prefix = "bemla.plots/figure-",
@@ -47,9 +47,9 @@ if \code{histogram=TRUE} the residuals are represented in a histogram with label
 
 \item{plot.linramp}{list specifying how the linear ramp fit should be plotted. If \code{depth.reference} is given, it will be represented by a vertical dotted line. If \code{show.t0=TRUE} the posterior marginal distribution of the onset is included (non-normalized). If \code{show.t1=TRUE} the posterior marginal distribution of the end point of the transition is included (non-normalized). If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.}
 
-\item{plot.DO_depth}{list specifying how the posterior distribution of the onset depth should be plotted. If \code{depth.reference} is given, it will be represented by a vertical dotted line. If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.}
+\item{plot.event_depth}{list specifying how the posterior distribution of the onset depth should be plotted. If \code{depth.reference} is given, it will be represented by a vertical dotted line. If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.}
 
-\item{plot.DO_age}{list specifying how the histogram of the simulated onset ages should be plotted. If \code{age.reference} is given, it will be represented by a vertical dotted line. If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.}
+\item{plot.event_age}{list specifying how the histogram of the simulated onset ages should be plotted. If \code{age.reference} is given, it will be represented by a vertical dotted line. If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.}
 
 \item{postscript}{Boolean variable indicating if postscript files should be produced instead.}
 
@@ -63,6 +63,25 @@ if \code{histogram=TRUE} the residuals are represented in a histogram with label
 Plots results from bremla S3 class.
 }
 \examples{
+\donttest{
+data("event_intervals")
+data("events_rasmussen")
+data("NGRIP_5cm")
+
+age = NGRIP_5cm$age
+depth = NGRIP_5cm$depth
+d18O = NGRIP_5cm$d18O
+proxy=d18O
+
+eventdepths = events_rasmussen$depth
+object = bremla(age,depth,proxy,events=eventdepths,nsims=10000,
+  synchronization = list(locations=c(11050,12050,13050,22050,42050),
+                          locations.type="age",method="adolphi",
+                          samples=NULL),
+  print.progress=TRUE
+  )
+plot(object)
+}
 
 }
 \seealso{

@@ -15,7 +15,7 @@ rgeneric.uneven.AR1(
 \item{theta}{Vector describing the hyperparameters in internal scaling.}
 }
 \value{
-
+When used an an input argument for \code{inla.rgeneric.define} this will return a model eligible to be used within the R-INLA framework (see example).
 }
 \description{
 Non-standard models in INLA requires specification using the rgeneric modeling framework.
@@ -24,6 +24,42 @@ This is intended for internal use only, but the documentation is included here i
  See example below for how rgeneric is used can be used.
 }
 \examples{
+\donttest{
+n=500
+timepoints = 1:n/n #should be scaled so that timepoints is between 0 and 1
+                   #(you can always transform back later, but this helps
+                   #avoiding to tune priors)
+require(stats)
+require(INLA)
+sigma=1
+noise = stats::arima.sim(model=list(ar=c(0.8)),n=n,sd=sqrt(1-0.8^2))*sigma
+
+t0 = 150/n
+dt = 100/n
+y0 = 0
+dy = 5
+
+linvek = linramp(timepoints,t0=t0,dt=dt,y0=y0,dy=dy)
+y = linvek+noise
+
+model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,
+                   n=n,tstart=timepoints[1],tslutt=timepoints[n],ystart=y[1],
+                   timepoints = timepoints)
+formula = y ~ -1+ f(idx, model=model.rgeneric)
+
+result = inla(formula,family="gaussian", data=data.frame(y=y,idx=as.integer(1:n)),
+         num.threads = 1,
+         control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))) )
+summary(result)
+t0.mean = inla.emarginal(function(x)x,result$marginals.hyperpar$`Theta1 for idx`)
+dt.mean = inla.emarginal(function(x)exp(x),result$marginals.hyperpar$`Theta2 for idx`)
+y0.mean = inla.emarginal(function(x)x,result$marginals.hyperpar$`Theta3 for idx`)
+dy.mean = inla.emarginal(function(x)x,result$marginals.hyperpar$`Theta4 for idx`)
+sd.mean = inla.emarginal(function(x)1/sqrt(exp(x)),result$marginals.hyperpar$`Theta6 for idx`)
+tau.mean = inla.emarginal(function(x)exp(x),result$marginals.hyperpar$`Theta5 for idx`)
+##rho=exp(tau*(time_k-time_(k-1)))
+}
+
 
 }
 \seealso{

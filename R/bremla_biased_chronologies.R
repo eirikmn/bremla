@@ -12,9 +12,26 @@
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @seealso \code{\link{bremla_chronology_simulation}}
 #' @keywords bremla bias
-#'
 #' @examples
-#'
+#' \donttest{
+#' data("event_intervals")
+#' data("events_rasmussen")
+#' data("NGRIP_5cm")
+#' age = NGRIP_5cm$age
+#' depth = NGRIP_5cm$depth
+#' d18O = NGRIP_5cm$d18O
+#' proxy=d18O
+#' eventdepths = events_rasmussen$depth
+#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#' nsims=5000
+#' object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=nsims)
+#' object = bremla_modelfitter(object)
+#' object = bremla_chronology_simulation(object,nsims=nsims)
+#' object = bremla_biased_chronologies(object,bias.model="uniform",nsims=nsims,
+#'            biasparams=cbind( c(1,1),c(0.98,1.02),c(0.96,1.04) ) )
+#' plot(object)
+#' }
 #' @export
 #' @importFrom stats runif
 bremla_biased_chronologies = function(object,bias.model="uniform",biasparams = c(0.99,1.01),nsims=10000,store.samples=FALSE){

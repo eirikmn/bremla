@@ -40,6 +40,29 @@ returns the same \code{object} from input but appends tie-point samples and info
 Tie-point simulation
 Wrapper function which calls specified functions to produce samples from tie-point distributions and places them in \code{bremla} object.
 }
+\examples{
+\donttest{
+data("event_intervals")
+data("events_rasmussen")
+data("NGRIP_5cm")
+
+age = NGRIP_5cm$age
+depth = NGRIP_5cm$depth
+d18O = NGRIP_5cm$d18O
+proxy=d18O
+
+eventdepths = events_rasmussen$depth
+eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+eventindexes = unique(eventindexes[!is.na(eventindexes)])
+
+object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=0)
+object = tiepointsimmer(object,nsims=10000,method="adolphi")
+hist(object$tie_points$samples[,2],col="orange",freq=0,breaks=40,
+    main="Tie-point 3",xlab="Age (yb2k)")
+}
+
+
+}
 \author{
 Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 }

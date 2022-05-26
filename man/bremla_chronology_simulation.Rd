@@ -9,7 +9,8 @@ bremla_chronology_simulation(
   nsims = 10000,
   method = "inla",
   store.means = FALSE,
-  print.progress = FALSE
+  print.progress = FALSE,
+  ncores = 2
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ bremla_chronology_simulation(
 \item{store.means}{Boolean. If \code{TRUE} then simulated mean vectors will be stored. Default is \code{FALSE} to save memory.}
 
 \item{print.progress}{Boolean. If \code{TRUE} progress will be printed to screen}
+
+\item{ncores}{The number of cores to use in simulating from inla.posterior.sample}
 }
 \value{
 Returns the same \code{object} list from the input, but appends simulated chronologies, and mean vectors (if \code{store.means=TRUE})
@@ -30,6 +33,27 @@ Returns the same \code{object} list from the input, but appends simulated chrono
 Simulates chronologies based on the fitted regression model.
 }
 \examples{
+\donttest{
+data("event_intervals")
+data("events_rasmussen")
+data("NGRIP_5cm")
+
+age = NGRIP_5cm$age
+depth = NGRIP_5cm$depth
+d18O = NGRIP_5cm$d18O
+proxy=d18O
+
+eventdepths = events_rasmussen$depth
+eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+eventindexes = unique(eventindexes[!is.na(eventindexes)])
+
+nsims = 5000
+object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=nsims)
+object = bremla_modelfitter(object)
+object = bremla_chronology_simulation(object,nsims=nsims)
+plot(object,plot.inlasims = list(nsims=30,legend=NULL,xrev=FALSE,label=NULL))
+}
+
 
 }
 \seealso{

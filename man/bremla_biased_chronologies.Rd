@@ -30,7 +30,25 @@ Returns the same \code{object} list from the input, but appends another list of 
 Fits the linear ramp described by Erhardt et al. (2019) to proxy values using INLA.
 }
 \examples{
-
+\donttest{
+data("event_intervals")
+data("events_rasmussen")
+data("NGRIP_5cm")
+age = NGRIP_5cm$age
+depth = NGRIP_5cm$depth
+d18O = NGRIP_5cm$d18O
+proxy=d18O
+eventdepths = events_rasmussen$depth
+eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+eventindexes = unique(eventindexes[!is.na(eventindexes)])
+nsims=5000
+object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=nsims)
+object = bremla_modelfitter(object)
+object = bremla_chronology_simulation(object,nsims=nsims)
+object = bremla_biased_chronologies(object,bias.model="uniform",nsims=nsims,
+           biasparams=cbind( c(1,1),c(0.98,1.02),c(0.96,1.04) ) )
+plot(object)
+}
 }
 \seealso{
 \code{\link{bremla_chronology_simulation}}

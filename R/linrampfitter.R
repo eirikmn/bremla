@@ -23,6 +23,42 @@
 #'
 #' @examples
 #'
+#'\donttest{
+#' data("event_intervals")
+#' data("events_rasmussen")
+#' data("NGRIP_5cm")
+#'
+#' age = NGRIP_5cm$age
+#' depth = NGRIP_5cm$depth
+#' d18O = NGRIP_5cm$d18O
+#' proxy=d18O
+#'
+#' eventdepths = events_rasmussen$depth
+#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#'
+#' object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=0)
+#'
+#' lowerints = which.index(event_intervals$depth_int_lower.m, depth[2:length(depth)])
+#' upperints = which.index(event_intervals$depth_int_upper.m, depth[2:length(depth)])
+#'
+#' eventnumber=13 #number between 1 and 29. specifies which transition to consider
+#' depth.reference = event_intervals$NGRIP_depth_m[eventnumber]
+#' interval = lowerints[eventnumber]:upperints[eventnumber]
+#'
+#' object = linrampfitter(object,interval,label="GI-11",depth.reference=depth.reference)
+#'
+#' plot(object,plot.proxydata=list(age=TRUE,depth=FALSE,xrev=FALSE,label=NULL),
+#'     plot.ls = NULL,
+#'     plot.inla.posterior = NULL,
+#'     plot.inlasims = NULL,
+#'     plot.syncsims = NULL,
+#'     plot.tiepoints = NULL,
+#'     plot.bias = NULL,
+#'     plot.linramp = list(depth.reference=NULL,show.t0=TRUE,show.t1=TRUE,xrev=TRUE,label=NULL))
+#'
+#'}
+#'
 #' @export
 #' @import INLA numDeriv
 #' @importFrom INLA inla.rgeneric.define inla.emarginal inla.smarginal
@@ -32,7 +68,7 @@
 linrampfitter = function(object,interval,interval.what="index",
                          optparams=NULL,
                          h=0.01,verbose=FALSE,t1.sims=50000,rampsims=50000,
-                         label="",depth.reference=NULL,print.progress=print.progress){
+                         label="",depth.reference=NULL,print.progress=FALSE){
   time.start = Sys.time()
 
   if(interval.what == "depth"){
@@ -124,7 +160,7 @@ linrampfitter = function(object,interval,interval.what="index",
   z.t0 = inla.zmarginal(margt0,silent=TRUE)
 
   object$linramp$param$t0 = list(marg.t0=margt0,mean=z.t0$mean,sd=z.t0$sd,q0.025=z.t0$quant0.025,q0.5=z.t0$quant0.5,q0.975=z.t0$quant0.975)
-  if(abs(r$summary.hyperpar$mean[2])>1000 || r$summary.hyperpar$sd>1000){
+  if((abs(r$summary.hyperpar$mean[2])>1000) || (r$summary.hyperpar$sd[2]>1000)){
     margdt=NA
     margdtpos=NA
   }else{

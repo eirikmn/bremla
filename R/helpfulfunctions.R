@@ -143,6 +143,27 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
 #' @seealso \code{\link{bremla_chronology_simulation}}
 #' @keywords indices
 #'
+#' @examples
+#' \donttest{
+#' data("event_intervals")
+#' data("events_rasmussen")
+#' data("NGRIP_5cm")
+#'
+#' age = NGRIP_5cm$age
+#' depth = NGRIP_5cm$depth
+#' d18O = NGRIP_5cm$d18O
+#' proxy=d18O
+#'
+#' eventdepths = events_rasmussen$depth
+#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#'
+#' object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=0)
+#' object = bremla_modelfitter(object)
+#' object = bremla_chronology_simulation(object,nsims=1000)
+#' object = bremla_simulationsummarizer(object,CI.type="quant",sync=FALSE)
+#' plot(object)
+#' }
 #' @export
 #' @importFrom matrixStats rowMeans2 rowSds rowMedians
 #' @importFrom INLA inla.hpdmarginal
@@ -181,13 +202,10 @@ bremla_simulationsummarizer = function(object,CI.type="hpd",sync=TRUE,print.prog
         lower[i] = inla.hpdmarginal(0.95,dens)[1]
         upper[i] = inla.hpdmarginal(0.95,dens)[2]
       }
-
-
     }
   }else{
     lower = meanvek-1.96*sdvek
     upper = meanvek+1.96*sdvek
-
   }
 
   time.summary = Sys.time()
@@ -204,7 +222,14 @@ bremla_simulationsummarizer = function(object,CI.type="hpd",sync=TRUE,print.prog
 
   object$time$samplesummary = list(total=difftime(time.summary,time.start,units="secs")[[1]])
 
-  object$simulation$summary$sim.sum.time = difftime(time.summary,time.start,units="secs")[[1]]
+  if(sync){
+    object$time$samplesyncsummary = list(total=difftime(time.summary,time.start,units="secs")[[1]])
+    object$simulation$summary_sync$sim.sum.time = difftime(time.summary,time.start,units="secs")[[1]]
+  }else{
+    object$time$samplesummary = list(total=difftime(time.summary,time.start,units="secs")[[1]])
+    object$simulation$summary$sim.sum.time = difftime(time.summary,time.start,units="secs")[[1]]
+  }
+
 
   return(object)
 }
@@ -270,9 +295,10 @@ skewsampler = function(n,mode=0,sdL=1,sdU=1,log=FALSE,plothist=list(compute=FALS
 #' @param tieshifts numeric which gives the amount each tie-point should be shifted, e.g. to go from describing offset from GICC05 to years before present.
 #' @param plotdens boolean. If \code{TRUE} plot pdfs.
 #' @param x.ref numeric. Gives reference value on the x-axis when distributions are plotted.
-#'
 #' @return returns a list containing the pdfs for each tie-point.
-#'
+#' @examples
+#' adolphipdfs = adolphiloader(tieshifts=c(11050,12050,13050,22050,42050))
+#' plot(adolphipdfs$tie1,type="l",xlab="Time (yb2k)",ylab="Density",main="Tie-point #1")
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @references Adolphi, F., Bronk Ramsey, C., Erhardt, T., Edwards, R. L., Cheng, H., Turney, C. S. M., Cooper, A., Svensson, A., Rasmussen, S. O., Fischer, H., and Muscheler, R. (2018).
 #' Connecting the Greenland ice-core and U∕Th timescales via cosmogenic radionuclides: testing the synchroneity of Dansgaard–Oeschger events,
@@ -284,7 +310,7 @@ skewsampler = function(n,mode=0,sdL=1,sdU=1,log=FALSE,plothist=list(compute=FALS
 #' @export
 #' @importFrom utils data
 adolphiloader = function(tieshifts=numeric(5), plotdens=FALSE, x.ref=NULL){
-  data("adolphi_tiepoints",package = "bremla",envir=environment())
+  #data("adolphi_tiepoints",package = "bremla",envir=environment())
 
 
   #adolphi_tiepoints[adolphi_tiepoints[,3]==1,1]
@@ -329,9 +355,11 @@ adolphiloader = function(tieshifts=numeric(5), plotdens=FALSE, x.ref=NULL){
 #' @param plotdens boolean that is passed on to adolphiloader. Set \code{TRUE} if you want to plot distributions
 #' @param x.ref numeric. Gives reference value on the x-axis when distributions are plotted.
 #' @param plothist list object describing if and how histogram of samples should be plotted
-#'
 #' @return returns a list containing the pdfs for each tie-point.
-#'
+#' @examples
+#' tieshifts= c(11050,12050,13050,22050,42050)
+#' samples = adolphi_tiepoint_simmer(nsims=2000,tieshifts=tieshifts)
+#' hist(samples[,3],col="orange",freq=0,breaks=50,main="Tie-point 3",xlab="Age (yb2k)")
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @keywords adolphi tiepoint pdf
 #' @export
@@ -383,6 +411,28 @@ adolphi_tiepoint_simmer = function(nsims=10000,tieshifts = numeric(5), plotdens=
 #' @param ... Further arguments to be passed down to the selected tie-point simulation function.
 #'
 #' @return returns the same \code{object} from input but appends tie-point samples and information.
+#'
+#' @examples
+#' \donttest{
+#' data("event_intervals")
+#' data("events_rasmussen")
+#' data("NGRIP_5cm")
+#'
+#' age = NGRIP_5cm$age
+#' depth = NGRIP_5cm$depth
+#' d18O = NGRIP_5cm$d18O
+#' proxy=d18O
+#'
+#' eventdepths = events_rasmussen$depth
+#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#'
+#' object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=0)
+#' object = tiepointsimmer(object,nsims=10000,method="adolphi")
+#' hist(object$tie_points$samples[,2],col="orange",freq=0,breaks=40,
+#'     main="Tie-point 3",xlab="Age (yb2k)")
+#' }
+#'
 #'
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @keywords tiepoint sample

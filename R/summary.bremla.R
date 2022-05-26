@@ -11,6 +11,25 @@
 #' @keywords bremla summary
 #'
 #' @examples
+#' \donttest{
+#' data("event_intervals")
+#' data("events_rasmussen")
+#' data("NGRIP_5cm")
+#'
+#' age = NGRIP_5cm$age
+#' depth = NGRIP_5cm$depth
+#' d18O = NGRIP_5cm$d18O
+#' proxy=d18O
+#'
+#' eventdepths = events_rasmussen$depth
+#' object = bremla(age,depth,proxy,events=eventdepths,nsims=10000,
+#'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
+#'                           locations.type="age",method="adolphi",
+#'                           samples=NULL),
+#'   print.progress=TRUE
+#'   )
+#'   summary(object)
+#' }
 #'
 #' @export
 #' @method summary bremla
@@ -46,11 +65,16 @@ summary.bremla = function(object,
     cpu=as.numeric(c(cpu,round(object$time$biases,digits=digits)))
     cpu.navn=c(cpu.navn,"Bias sampling")
   }
+  if(!is.null(object$fitting)){
+    if(!is.null(object$time$total)){
+      cpu=as.numeric(c(cpu,round(object$time$total,digits=digits)))
+      cpu.navn=c(cpu.navn,"Total")
+    }
 
-  cpu=as.numeric(c(cpu,round(object$time$total,digits=digits)))
-  cpu.navn=c(cpu.navn,"Total")
-  names(cpu)=cpu.navn
-  ut=c(ut, list(cpu.used=cpu))
+    names(cpu)=cpu.navn
+    ut=c(ut, list(cpu.used=cpu))
+  }
+
 
   if(tolower(object$.args$noise) %in% c(0,"iid","independent")){
     noise = "iid"
@@ -88,14 +112,17 @@ summary.bremla = function(object,
       formulastring = paste0( substr(deparse(object$.args$formulastring),1L,maxlength),"...")
     }
     fit.arg = list(formula = formulastring,noise=object$.args$noise, nevents=object$.args$nevents, method = object$.args$method)
+
+    ut=c(ut, list(hyperpar=hypers,fit.arg=fit.arg))
   }
 
-  ut=c(ut, list(hyperpar=hypers,fit.arg=fit.arg))
+
 
   if(!is.null(object$simulation)){
     sim = list(nsims = dim(object$simulation$age)[2],n = dim(object$simulation$age)[1], store.means = !is.null(object$simulation$dmean) )
+    ut = c(ut,sim)
   }
-  ut = c(ut,sim)
+
 
   if(!is.null(object$tie_points)){
     tiepoints = list(tie_n=object$tie_points$tie_n,free_n=object$tie_points$free_n,
@@ -171,26 +198,57 @@ return(ut)
 #' @keywords bremla summary.print
 #'
 #' @examples
+#' \donttest{
+#' data("event_intervals")
+#' data("events_rasmussen")
+#' data("NGRIP_5cm")
+#'
+#' age = NGRIP_5cm$age
+#' depth = NGRIP_5cm$depth
+#' d18O = NGRIP_5cm$d18O
+#' proxy=d18O
+#'
+#' eventdepths = events_rasmussen$depth
+
+#' object = bremla(age,depth,proxy,events=eventdepths,nsims=100,
+#'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
+#'                           locations.type="age",method="adolphi",
+#'                           samples=NULL),
+#'   print.progress=TRUE
+#'   )
+#' ss = summary(object)
+#' print(ss)
+#' }
 #'
 #' @export
 #' @method print summary.bremla
 print.summary.bremla = function(x,
                                 digits=4L,
                                 ...){
-  cat("\nCall:\n",deparse(x$call),"\n\n",sep="")
-  cat("Time used:\n")
-  print(x$cpu.used)
-  cat("\n",sep="")
+  if(!is.null(x$call)) cat("\nCall:\n",deparse(x$call),"\n\n",sep="")
 
-  cat("The fixed component is explained by linear predictor: \n",x$fit.arg$formula,"\n\nThe noise component is explained by an ",x$fit.arg$noise," process.\n",sep="")
-
-  if(tolower(x$fit.arg$method) %in% c("inla")){
-    cat("\nThe model is fitted using INLA, with following estimates for the hyperparameters:\n")
-    print(format(x$hyperpar,digits=digits,nsmall=2),quote=FALSE)
-  }else{
-    cat("\nThe model is fitted using least squares, with following estimates for the model parameters:\n")
-    print(format(x$hyperpar,digits=digits,nsmall=2),quote=FALSE)
+  if(!is.null(x$cpu.used)){
+    cat("Time used:\n")
+    print(x$cpu.used)
+    cat("\n",sep="")
   }
+
+  if(!is.null(x$fit.arg$formula)){
+    cat("The fixed component is explained by linear predictor: \n",x$fit.arg$formula,"\n\nThe noise component is explained by an ",x$fit.arg$noise," process.\n",sep="")
+  }else{
+    cat("bremla object is prepared, but no analysis has been performed yet.")
+  }
+
+  if(!is.null(x$fit.arg$method)){
+    if(tolower(x$fit.arg$method) %in% c("inla")){
+      cat("\nThe model is fitted using INLA, with following estimates for the hyperparameters:\n")
+      print(format(x$hyperpar,digits=digits,nsmall=2),quote=FALSE)
+    }else{
+      cat("\nThe model is fitted using least squares, with following estimates for the model parameters:\n")
+      print(format(x$hyperpar,digits=digits,nsmall=2),quote=FALSE)
+    }
+  }
+
 
   if(!is.null(x$nsims)){
     if(!is.null(x$reference.label)){

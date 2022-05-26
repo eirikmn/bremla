@@ -31,6 +31,11 @@ returns a list containing the pdfs for each tie-point.
 Simulate from Adolphi tie-point distributions
 Returns the probability distributions for the tie-points given by Adolphi et al. (2018) and Muscheler et al. (2020)
 }
+\examples{
+tieshifts= c(11050,12050,13050,22050,42050)
+samples = adolphi_tiepoint_simmer(nsims=2000,tieshifts=tieshifts)
+hist(samples[,3],col="orange",freq=0,breaks=50,main="Tie-point 3",xlab="Age (yb2k)")
+}
 \author{
 Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 }

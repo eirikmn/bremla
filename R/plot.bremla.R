@@ -13,8 +13,8 @@
 #' @param plot.tiepoints list containing specifications for plotting histogram of sampled tie-points.
 #' @param plot.bias list specifying how the simulations under the assumptions of unknown counting bias should be represented. If \code{MCE} is given as a numeric vector it will be included in the plot (with title \code{label}). \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.
 #' @param plot.linramp list specifying how the linear ramp fit should be plotted. If \code{depth.reference} is given, it will be represented by a vertical dotted line. If \code{show.t0=TRUE} the posterior marginal distribution of the onset is included (non-normalized). If \code{show.t1=TRUE} the posterior marginal distribution of the end point of the transition is included (non-normalized). If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.
-#' @param plot.DO_depth list specifying how the posterior distribution of the onset depth should be plotted. If \code{depth.reference} is given, it will be represented by a vertical dotted line. If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.
-#' @param plot.DO_age list specifying how the histogram of the simulated onset ages should be plotted. If \code{age.reference} is given, it will be represented by a vertical dotted line. If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.
+#' @param plot.event_depth list specifying how the posterior distribution of the onset depth should be plotted. If \code{depth.reference} is given, it will be represented by a vertical dotted line. If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.
+#' @param plot.event_age list specifying how the histogram of the simulated onset ages should be plotted. If \code{age.reference} is given, it will be represented by a vertical dotted line. If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.
 #' @param postscript Boolean variable indicating if postscript files should be produced instead.
 #' @param pdf Boolean variable indicating if pdf files should be produced instead.
 #' @param prefix The prefix for created files. Additional numbering is added.
@@ -25,12 +25,32 @@
 #' @keywords bremla plot
 #'
 #' @examples
+#' \donttest{
+#' data("event_intervals")
+#' data("events_rasmussen")
+#' data("NGRIP_5cm")
+#'
+#' age = NGRIP_5cm$age
+#' depth = NGRIP_5cm$depth
+#' d18O = NGRIP_5cm$d18O
+#' proxy=d18O
+#'
+#' eventdepths = events_rasmussen$depth
+#' object = bremla(age,depth,proxy,events=eventdepths,nsims=10000,
+#'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
+#'                           locations.type="age",method="adolphi",
+#'                           samples=NULL),
+#'   print.progress=TRUE
+#'   )
+#' plot(object)
+#' }
 #'
 #' @export
 #' @importFrom INLA inla inla.tmarginal inla.zmarginal inla.ar.pacf2phi
 #' @importFrom grDevices dev.cur dev.new dev.off
 #' @importFrom graphics abline hist legend lines par
 #' @importFrom stats qqline qqnorm
+#' @importFrom rlang .data
 #' @importFrom ggplot2 ggplot aes geom_line geom_ribbon theme_bw xlab ylab geom_segment geom_point
 plot.bremla = function(x,
                        plot.proxydata=list(age=TRUE,depth=FALSE,xrev=FALSE,label=NULL),
@@ -43,8 +63,8 @@ plot.bremla = function(x,
                                              label.main=NULL),
                        plot.bias = list(MCE=NULL,legend=NULL,xrev=FALSE,label=NULL),
                        plot.linramp = list(depth.reference=NULL,show.t0=TRUE,show.t1=TRUE,xrev=TRUE,label=NULL),
-                       plot.DO_depth = list(depth.reference=NULL,xrev=TRUE,label=NULL),
-                       plot.DO_age = list(age.reference=NULL,xrev=TRUE,label=NULL),
+                       plot.event_depth = list(depth.reference=NULL,xrev=TRUE,label=NULL),
+                       plot.event_age = list(age.reference=NULL,xrev=TRUE,label=NULL),
                        postscript=FALSE,
                        pdf=FALSE,
                        prefix = "bemla.plots/figure-",
@@ -72,6 +92,8 @@ plot.bremla = function(x,
   }
   eventindexes = x$.args$eventindexes; nevents = length(eventindexes)
   oldpar = par()
+
+
 
   if(!is.null(plot.proxydata)){
     figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
@@ -197,8 +219,7 @@ plot.bremla = function(x,
     xlim=range(z)
     if(plot.inlasims$xrev) xlim=rev(xlim)
 
-    ylim=range(x$simulation$summary$lower-ageref,x$simulation$summary$upper-ageref)*1.1
-    if(sum(is.na(ylim))==0){
+
       figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
 
 
@@ -206,31 +227,45 @@ plot.bremla = function(x,
 
       gicc = x$data$y
 
-      fullpd = data.frame(depth = x$data$z, medians=x$simulation$summary$median-gicc,
-                          lower=x$simulation$summary$lower-gicc,
-                          upper=x$simulation$summary$upper-gicc)
-      gg2 = ggplot(data=fullpd,aes(x=depth)) +
+      if(!is.null(x$simulation$summary)){
+
+        fullpd = data.frame(depth = x$data$z, medians=x$simulation$summary$median-gicc,
+                            lower=x$simulation$summary$lower-gicc,
+                            upper=x$simulation$summary$upper-gicc)
+      }else{
+        fullpd = data.frame(depth = x$data$z)
+      }
+
+      gg2 = ggplot(data=fullpd,aes(x=.data$depth)) +
         geom_line(aes(y=0),color="blue",linetype="dotted",size=0.2)+
-        geom_line(aes(y=medians))+
-        geom_ribbon(aes(ymin=lower,ymax=upper),color="red",fill="red",alpha=0.3)+
         theme_bw()+ylab("Estimated age - GICC05 (years)")+
         xlab("NGRIP depth (m)")
+
+      if(!is.null(x$simulation$summary)){
+        gg2 = gg2 +
+          geom_line(aes(y=.data$medians))+
+          geom_ribbon(aes(ymin=.data$lower,ymax=.data$upper),color="red",fill="red",alpha=0.3)
+      }
+
+
 
       if(!is.null(nsims) && nsims>0){
         for(i in 1:min(nsims,50)){
           gg2 = gg2 + geom_line(data=data.frame(depth=x$data$z,
                                                 sim = x$simulation$age[,i]-x$data$y),
-                                aes(depth,sim),color="gray",alpha=0.5)
+                                aes(.data$depth,.data$sim),color="gray",alpha=0.5)
         }
       }
-      print(gg2)
+      if((!is.null(nsims) && nsims>0) || !is.null(x$simulation$summary) ){
+        print(gg2)
+      }
 
       if(postscript || pdf){
         if (names(dev.cur()) != "null device") {
           dev.off()
         }
       }
-    }
+
 
   }
 
@@ -250,36 +285,52 @@ plot.bremla = function(x,
       tie_indexes = x$tie_points$tie_indexes
       gicc_free = x$data$y[free_indexes]
       gicc_tie = x$data$y[tie_indexes]
-      fullpd = data.frame(depth = x$data$z[free_indexes], medians=x$simulation$summary_sync$median[free_indexes]-gicc_free,
-                          lower=x$simulation$summary_sync$lower[free_indexes]-gicc_free,
-                          upper=x$simulation$summary_sync$upper[free_indexes]-gicc_free)
-      gg2 = ggplot(data=fullpd,aes(x=depth)) +
+
+      if(!is.null(x$simulation$summary_sync)){
+        fullpd = data.frame(depth = x$data$z[free_indexes], medians=x$simulation$summary_sync$median[free_indexes]-gicc_free,
+                            lower=x$simulation$summary_sync$lower[free_indexes]-gicc_free,
+                            upper=x$simulation$summary_sync$upper[free_indexes]-gicc_free)
+      }else{
+        fullpd = data.frame(depth = x$data$z[free_indexes])
+      }
+
+      gg2 = ggplot(data=fullpd,aes(x=.data$depth)) +
         geom_line(aes(y=0),color="blue",linetype="dotted",size=0.2)+
-        geom_line(aes(y=medians))+
-        geom_ribbon(aes(ymin=lower,ymax=upper),color="red",fill="red",alpha=0.3)+
         theme_bw()+ylab("Estimated age - GICC05 (years)")+
         xlab("NGRIP depth (m)")
-      if(x$simulation$summary_sync$lower[1] != x$simulation$summary_sync$upper[1]){
-        gg2 = gg2 + geom_segment(data=data.frame(depth=x$data$z[tie_indexes],
-                                                 median=x$simulation$summary_sync$median[tie_indexes]-gicc_tie,
-                                                 lower=x$simulation$summary_sync$lower[tie_indexes]-gicc_tie,
-                                                 upper=x$simulation$summary_sync$upper[tie_indexes]-gicc_tie),
-                                 aes(x=depth,y=lower,xend=depth,yend=upper),
-                                 col="magenta")
-      }else{
-        gg2 = gg2 + geom_point(data=data.frame(tiedepths = x$data$z[tie_indexes],
-                                               tiemid = x$simulation$summary_sync$median),
-                               aes(x=tiedepths,y=tiemid),
-                               color="magenta")
+
+      if(!is.null(x$simulation$summary_sync)){
+        gg2 = gg2+geom_line(aes(y=.data$medians))+
+          geom_ribbon(aes(ymin=.data$lower,ymax=.data$upper),color="red",fill="red",alpha=0.3)
       }
+
+      if(!is.null(x$simulation$summary_sync)){
+        if(x$simulation$summary_sync$lower[tie_indexes[1]] != x$simulation$summary_sync$upper[tie_indexes[1]]){
+          gg2 = gg2 + geom_segment(data=data.frame(depth=x$data$z[tie_indexes],
+                                                   median=x$simulation$summary_sync$median[tie_indexes]-gicc_tie,
+                                                   lower=x$simulation$summary_sync$lower[tie_indexes]-gicc_tie,
+                                                   upper=x$simulation$summary_sync$upper[tie_indexes]-gicc_tie),
+                                   aes(x=.data$depth,y=.data$lower,xend=.data$depth,yend=.data$upper),
+                                   col="magenta")
+        }else{
+          gg2 = gg2 + geom_point(data=data.frame(tiedepths = x$data$z[tie_indexes],
+                                                 tiemid = x$simulation$summary_sync$median),
+                                 aes(x=.data$tiedepths,y=.data$tiemid),
+                                 color="magenta")
+        }
+      }
+
       if(!is.null(nsims) && nsims>0){
         for(i in 1:min(nsims,50)){
           gg2 = gg2 + geom_line(data=data.frame(depth=x$data$z,
                                                 sim = x$simulation$age_sync[,i]-x$data$y),
-                                aes(depth,sim),color="gray",alpha=0.5)
+                                aes(.data$depth,.data$sim),color="gray",alpha=0.5)
         }
       }
-      print(gg2)
+      if((!is.null(nsims) && nsims>0) || !is.null(x$simulation$summary_sync) ){
+        print(gg2)
+      }
+
 
       if(postscript || pdf){
         if (names(dev.cur()) != "null device") {
@@ -329,7 +380,7 @@ plot.bremla = function(x,
            breaks=plot.tiepoints$breaks.hist,xlab=plot.tiepoints$label.x,
            main=labs[i],xlim=xlim)
       if(!is.null(x$tie_points$x.ref[i])){
-        abline(v=x$tie_points$x.ref[i],col="blue",lwd=2,lty=3)
+        abline(v=x$tie_points$x.ref[i],col="blue",lwd=3,lty=3)
       }
     }
 
@@ -403,7 +454,7 @@ plot.bremla = function(x,
     lines(xval,x$linramp$linrampfit$q0.975,col="red",lwd=2)
     lines(xval,x$linramp$linrampfit$mean,col="black",lwd=2)
 
-    if(plot.linramp$show.t0){
+    if(plot.linramp$show.t0 && !is.null(x$linramp$param)){
       ybottom = min(x$linramp$data$y)
       ytop = min(x$linramp$linrampfit$q0.025)
       margt0=x$linramp$param$t0$marg.t0
@@ -418,8 +469,8 @@ plot.bremla = function(x,
       lines(x=margt1[,1],y=normt1.y,col="blue",lwd=2,lty=3)
     }
 
-    if(!is.null(plot.DO_depth$depth.reference)){
-      abline(v=plot.DO_age$age.reference,lwd=2,lty=3)
+    if(!is.null(plot.event_depth$depth.reference)){
+      abline(v=plot.event_age$age.reference,lwd=2,lty=3)
     }else{
       if(!is.null(x$linramp$.args$depth.reference)){
         abline(v= x$linramp$.args$depth.reference,lwd=2,lty=3)
@@ -427,29 +478,29 @@ plot.bremla = function(x,
     }
   }
 
-  if(!is.null(plot.DO_depth) && !is.null(plot.linramp)){
+  if(!is.null(plot.event_depth) && !is.null(plot.linramp) && !is.null(x$event_dating)){
     figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
     par(mfrow=c(1,1),mar=(c(5,4,4,2)+0.1))
-    if(is.null(plot.DO_depth$label)){
+    if(is.null(plot.event_depth$label)){
       plot.label = x$linramp$.args$label
     }else{
-      plot.label = plot.DO_depth$label
+      plot.label = plot.event_depth$label
     }
     xlim = range(x$linramp$param$t0$marg.t0[,1])
-    if(!is.null(plot.DO_depth$depth.reference)){
-      xlim=range(xlim,plot.DO_depth$depth.reference)
+    if(!is.null(plot.event_depth$depth.reference)){
+      xlim=range(xlim,plot.event_depth$depth.reference)
     }else{
       if(!is.null(x$linramp$.args$depth.reference)){
         xlim=range(xlim,x$linramp$.args$depth.reference)
       }
     }
-    if(plot.DO_age$xrev) xlim=rev(xlim)
+    if(plot.event_age$xrev) xlim=rev(xlim)
     plot(x$linramp$param$t0$marg.t0,type="l",lwd=2,xlab="Onset depth (m)",ylab="Density",main=plot.label,xlim=xlim)
     abline(v=x$linramp$param$t0$mean,lwd=2)
     abline(v=c(x$linramp$param$t0$q0.025,x$linramp$param$t0$q0.975),lwd=2,col="gray")
 
-    if(!is.null(plot.DO_depth$depth.reference)){
-      abline(v=plot.DO_age$age.reference,lwd=2,lty=3)
+    if(!is.null(plot.event_depth$depth.reference)){
+      abline(v=plot.event_age$age.reference,lwd=2,lty=3)
     }else{
       if(!is.null(x$linramp$.args$depth.reference)){
         abline(v= x$linramp$.args$depth.reference,lwd=2,lty=3)
@@ -457,17 +508,17 @@ plot.bremla = function(x,
     }
   }
 
-  if(!is.null(plot.DO_age) && !is.null(x$DO_dating)){
-    xlim = range(x$DO_dating$samples)
-    if(plot.DO_age$xrev) xlim=rev(xlim)
-    hist(x$DO_dating$samples,xlab="Onset age (y b2k)",freq=FALSE,col="orange",breaks=30,main=x$DO_dating$.args$label,xlim=xlim)
-    abline(v=x$DO_dating$mean,lwd=2)
-    abline(v=c(x$DO_dating$q0.025,x$DO_dating$q0.975),col="gray",lwd=2)
-    if(!is.null(plot.DO_age$age.reference)){
-      abline(v=plot.DO_age$age.reference,lwd=2,lty=3)
+  if(!is.null(plot.event_age) && !is.null(x$event_dating)){
+    xlim = range(x$event_dating$samples)
+    if(plot.event_age$xrev) xlim=rev(xlim)
+    hist(x$event_dating$samples,xlab="Onset age (y b2k)",freq=FALSE,col="orange",breaks=30,main=x$event_dating$.args$label,xlim=xlim)
+    abline(v=x$event_dating$mean,lwd=2)
+    abline(v=c(x$event_dating$q0.025,x$event_dating$q0.975),col="gray",lwd=2)
+    if(!is.null(plot.event_age$age.reference)){
+      abline(v=plot.event_age$age.reference,lwd=2,lty=3)
     }else{
-      if(!is.null(x$DO_dating$.args$age.reference)){
-        abline(v=x$DO_dating$.args$age.reference,lwd=2,lty=3)
+      if(!is.null(x$event_dating$.args$age.reference)){
+        abline(v=x$event_dating$.args$age.reference,lwd=2,lty=3)
       }
     }
   }

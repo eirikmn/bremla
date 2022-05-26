@@ -8,15 +8,44 @@
 #' @param tiepointsims data.frame which gives the tiepoint-samples to which the models should be synchronized.
 #' \code{nrow} should correspond to \code{nsims} and \code{ncol} should correspond to the number of tie-points.
 #' For fixed tie-points you can just repeat each tie-point \code{nsims} times.
+#' @param ncores The number of cores to use in simulating from inla.posterior.sample
 #'
 #' @return Returns the \code{object} list from the input and appends a list which includes all synchronized simulations
+#'
+#' @examples
+#' \donttest{
+#' data("event_intervals")
+#' data("events_rasmussen")
+#' data("NGRIP_5cm")
+#'
+#' age = NGRIP_5cm$age
+#' depth = NGRIP_5cm$depth
+#' d18O = NGRIP_5cm$d18O
+#' proxy=d18O
+#'
+#' eventdepths = events_rasmussen$depth
+#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#'
+#' nsims = 5000
+#' object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=nsims)
+#' object = bremla_modelfitter(object)
+#' object = bremla_chronology_simulation(object,nsims=nsims)
+#' object = tiepointsimmer(object,nsims=nsims,method="adolphi")
+#' object = bremla_synchronized_simulation(object,nsims=nsims)
+#' object = bremla_simulationsummarizer(object,CI.type="hpd",sync=TRUE)
+#' plot(object)
+#' }
+#'
+#'
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @seealso \code{\link{bremla_chronology_simulation}} \code{\link{bremla}}
 #' @keywords simulation synchronization tiepoint
 #'
 #' @export
 bremla_synchronized_simulation = function(object,nsims=10000, tie_locations=NULL,
-                                          tie_locations_type="depth",tiepointsims=NULL){
+                                          tie_locations_type="depth",tiepointsims=NULL,
+                                          ncores=2){
 
   if(!is.null(object$tie_points)){
     tie_locations=object$tie_points$locations
@@ -61,7 +90,11 @@ bremla_synchronized_simulation = function(object,nsims=10000, tie_locations=NULL
     if(reg.model$psi0) latentselection[[paste0("a",i-1)]] = 1
     if(reg.model$psi1)latentselection[[paste0("c",i-1)]] = 1
   }
-  latentsamples = inla.posterior.sample(nsims,object$fitting$fit,selection=latentselection,verbose=FALSE,add.names=FALSE)
+  ncores_postsamp = max(1,ncores)
+  latentsamples = inla.posterior.sample(nsims,object$fitting$fit,
+                                        selection=latentselection,verbose=FALSE,
+                                        add.names=FALSE,num.threads = ncores_postsamp)
+
   samples = matrix(NA,nrow=n,ncol=nsims)
 
 

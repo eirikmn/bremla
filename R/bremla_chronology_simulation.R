@@ -7,6 +7,7 @@
 #' @param method Character specifying which method of inference to be used. Currently only \code{inla} is supported
 #' @param store.means Boolean. If \code{TRUE} then simulated mean vectors will be stored. Default is \code{FALSE} to save memory.
 #' @param print.progress Boolean. If \code{TRUE} progress will be printed to screen
+#' @param ncores The number of cores to use in simulating from inla.posterior.sample
 #'
 #' @return Returns the same \code{object} list from the input, but appends simulated chronologies, and mean vectors (if \code{store.means=TRUE})
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
@@ -14,14 +15,35 @@
 #' @keywords bremla simulation
 #'
 #' @examples
+#' \donttest{
+#' data("event_intervals")
+#' data("events_rasmussen")
+#' data("NGRIP_5cm")
+#'
+#' age = NGRIP_5cm$age
+#' depth = NGRIP_5cm$depth
+#' d18O = NGRIP_5cm$d18O
+#' proxy=d18O
+#'
+#' eventdepths = events_rasmussen$depth
+#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#'
+#' nsims = 5000
+#' object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=nsims)
+#' object = bremla_modelfitter(object)
+#' object = bremla_chronology_simulation(object,nsims=nsims)
+#' plot(object,plot.inlasims = list(nsims=30,legend=NULL,xrev=FALSE,label=NULL))
+#' }
+#'
 #'
 #' @export
 #' @import INLA
 #' @importFrom INLA inla.hyperpar.sample inla.tmarginal inla.zmarginal inla.ar.pacf2phi
 #' @importFrom stats acf arima arima.sim as.formula rnorm
-#'
-bremla_chronology_simulation = function(object, nsims=10000, method="inla",store.means=FALSE,print.progress=FALSE){
-  time.start=Sys.time()
+#' @importFrom parallel detectCores
+bremla_chronology_simulation = function(object, nsims=10000, method="inla",store.means=FALSE,print.progress=FALSE,ncores=2){
+
   ## sample hyperparameters
 
   time.start = Sys.time()
@@ -71,7 +93,11 @@ bremla_chronology_simulation = function(object, nsims=10000, method="inla",store
       if(reg.model$psi0) latentselection[[paste0("a",i-1)]] = 1
       if(reg.model$psi1)latentselection[[paste0("c",i-1)]] = 1
     }
-    latentsamples = inla.posterior.sample(nsims,object$fitting$fit,selection=latentselection,verbose=FALSE,add.names=FALSE)
+    #latentsamples = inla.posterior.sample(nsims,object$fitting$fit,selection=latentselection,verbose=FALSE,add.names=FALSE)
+    ncores_postsamp = max(1,ncores)
+    latentsamples = inla.posterior.sample(nsims,object$fitting$fit,
+                                          selection=latentselection,verbose=FALSE,
+                                          add.names=FALSE,num.threads = ncores_postsamp)
 
     n=dim(object$data)[1]
     if(store.means) object$simulation$dmean = matrix(NA,nrow=n,ncol=nsims)

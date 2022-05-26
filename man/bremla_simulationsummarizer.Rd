@@ -26,6 +26,28 @@ Returns the \code{object} list from the input and appends additional summary sta
 \description{
 Computes posterior marginal mean and uncertainty intervals from simulations.
 }
+\examples{
+\donttest{
+data("event_intervals")
+data("events_rasmussen")
+data("NGRIP_5cm")
+
+age = NGRIP_5cm$age
+depth = NGRIP_5cm$depth
+d18O = NGRIP_5cm$d18O
+proxy=d18O
+
+eventdepths = events_rasmussen$depth
+eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+eventindexes = unique(eventindexes[!is.na(eventindexes)])
+
+object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=0)
+object = bremla_modelfitter(object)
+object = bremla_chronology_simulation(object,nsims=1000)
+object = bremla_simulationsummarizer(object,CI.type="quant",sync=FALSE)
+plot(object)
+}
+}
 \seealso{
 \code{\link{bremla_chronology_simulation}}
 }

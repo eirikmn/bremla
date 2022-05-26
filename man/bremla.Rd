@@ -70,6 +70,45 @@ Returns an S3 object of class "bremla". This includes output from all functions 
 Fits a regression model to the data and produces chronology simulations.
 }
 \examples{
+\donttest{
+data("event_intervals")
+data("events_rasmussen")
+data("NGRIP_5cm")
+
+age = NGRIP_5cm$age
+depth = NGRIP_5cm$depth
+d18O = NGRIP_5cm$d18O
+proxy=d18O
+
+eventdepths = events_rasmussen$depth
+eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+eventindexes = unique(eventindexes[!is.na(eventindexes)])
+
+
+lowerints = which.index(event_intervals$depth_int_lower.m, depth[2:length(depth)])
+upperints = which.index(event_intervals$depth_int_upper.m, depth[2:length(depth)])
+
+eventnumber=13 #number between 1 and 29. specifies which transition to consider
+depth.reference = event_intervals$NGRIP_depth_m[eventnumber]
+age.reference = event_intervals$GICC_age.yb2k[eventnumber]
+interval = lowerints[eventnumber]:upperints[eventnumber]
+
+object = bremla(age,depth,proxy,events=eventdepths,nsims=10000,
+  synchronization = list(locations=c(11050,12050,13050,22050,42050),
+                          locations.type="age",method="adolphi",
+                          samples=NULL),
+  event.estimation = list(interval=interval,t1.sims=50000,rampsims=50000,label="GI-11",
+                          depth.reference=event_intervals$NGRIP_depth_m[eventnumber],
+                          age.reference=event_intervals$NGRIP_agee_m[eventnumber]),
+  bias = list(bias.model="uniform",biasparams=cbind( c(1,1),c(0.98,1.02),c(0.96,1.04) ),
+              store.samples=FALSE),
+  print.progress=TRUE
+  )
+  summary(object)
+  plot(object)
+}
+
+
 
 }
 \seealso{

@@ -17,6 +17,25 @@
 Summarizes results from bremla S3 class.
 }
 \examples{
+\donttest{
+data("event_intervals")
+data("events_rasmussen")
+data("NGRIP_5cm")
+
+age = NGRIP_5cm$age
+depth = NGRIP_5cm$depth
+d18O = NGRIP_5cm$d18O
+proxy=d18O
+
+eventdepths = events_rasmussen$depth
+object = bremla(age,depth,proxy,events=eventdepths,nsims=10000,
+  synchronization = list(locations=c(11050,12050,13050,22050,42050),
+                          locations.type="age",method="adolphi",
+                          samples=NULL),
+  print.progress=TRUE
+  )
+  summary(object)
+}
 
 }
 \seealso{

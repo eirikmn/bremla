@@ -52,6 +52,20 @@ Returns a list containing data in internal formatting (\code{data}), linear regr
 Prepares input and formats data for bremla and functions therein.
 }
 \examples{
+data("event_intervals")
+data("events_rasmussen")
+data("NGRIP_5cm")
+
+age = NGRIP_5cm$age
+depth = NGRIP_5cm$depth
+d18O = NGRIP_5cm$d18O
+proxy=d18O
+
+eventdepths = events_rasmussen$depth
+eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
+eventindexes = unique(eventindexes[!is.na(eventindexes)])
+
+object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=0)
 
 }
 \seealso{
