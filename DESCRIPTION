@@ -1,7 +1,7 @@
 Package: bremla
 Type: Package
 Title: Bayesian Regression Modeling of Layered Archives
-Version: 0.2.1
+Version: 0.2.2
 Author: Eirik Myrvoll-Nilsen
 Maintainer: Eirik Myrvoll-Nilsen <eirikmn91@gmail.com>
 Description: Performs efficient Bayesian regression modeling of layer-counted climate records. Default method of inference is integrated nested Laplace approximations (INLAs).

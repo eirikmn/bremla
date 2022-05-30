@@ -71,6 +71,32 @@ Fits a regression model to the data and produces chronology simulations.
 }
 \examples{
 \donttest{
+
+### Simulation example ###
+
+require(stats)
+n <- 1000
+phi <- 0.8
+sigma <- 1.2
+a_lintrend <- 0.3; a_proxy = 0.8
+dy_noise <- arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2))
+lintrend <- seq(from=10,to=15,length.out=n)
+
+proxy <- arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2))
+dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
+
+y0 = 11700
+age = y0+cumsum(dy)
+depth = 1200 + 1:n*0.05
+
+object = bremla(age,depth,proxy,nsims=3000)
+summary(object)
+plot(object)
+
+
+
+### Real data example ###
+
 data("event_intervals")
 data("events_rasmussen")
 data("NGRIP_5cm")

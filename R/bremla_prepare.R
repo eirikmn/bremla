@@ -85,31 +85,40 @@ bremla_prepare = function(age,depth,proxy, events=NULL,nsims=10000,
     eventindexes = unique(c(1,eventindexes[!is.na(eventindexes)]))
     nevents = length(eventindexes)
   }
-  if(reg.model$psi0) {
-    if(is.null(events)){
-      stop("'events' are missing. Shutting down...")
-    }
 
-
-    for(i in 2:nevents){ #express covariates for psi-functions (for each climate period)
-      ev = numeric(n-1)
-      ev[ eventindexes[i-1]:(eventindexes[i]-1) ] = data$z[eventindexes[i-1]:(eventindexes[i]-1)]
-      data[[paste0("a",i-1)]] = ev
-      konst = numeric(n-1)
-      konst[eventindexes[i-1]:(eventindexes[i]-1)] = 1
-      data[[paste0("c",i-1)]] = konst
-      formulastring = paste0(formulastring, " + a",i-1," + c",i-1)
-    }
+  if(reg.model$psi0 && !is.null(events)) {
+      for(i in 2:nevents){ #express covariates for psi-functions (for each climate period)
+        ev = numeric(n-1)
+        ev[ eventindexes[i-1]:(eventindexes[i]-1) ] = data$z[eventindexes[i-1]:(eventindexes[i]-1)]
+        data[[paste0("a",i-1)]] = ev
+        konst = numeric(n-1)
+        konst[eventindexes[i-1]:(eventindexes[i]-1)] = 1
+        data[[paste0("c",i-1)]] = konst
+        formulastring = paste0(formulastring, " + a",i-1," + c",i-1)
+      }
   }
+
   if(tolower(method)=="inla") data$idy=data$z
 
   ## create main object which will include all input and output from function
   object = list(data=data)
-  object$.args = list(reg.model = reg.model, noise=noise,method=method, eventmeasure=eventmeasure)
+  object$.args = list(reg.model = reg.model, noise=noise,method=method)
   object$.args$ls.formulastring = formulastring
-  object$.args$eventindexes = eventindexes
+
+  if(!is.null(events)){
+    object$.args$eventindexes=eventindexes
+    object$.args$events=events
+    object$.args$eventmeasure=eventmeasure
+    object$.args$nevents=nevents
+  }else{
+    object$.args$eventindexes=NULL
+    object$.args$events=NULL
+    object$.args$eventmeasure="missing"
+    object$.args$nevents=0
+  }
+
   object$ls.formula = as.formula(formulastring)
-  object$.args$nevents=nevents
+
   object$preceeding = list(y0 = age[1],z0=depth[1],x0=proxy[1])
 
 

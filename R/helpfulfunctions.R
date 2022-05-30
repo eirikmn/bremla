@@ -235,16 +235,61 @@ bremla_simulationsummarizer = function(object,CI.type="hpd",sync=TRUE,print.prog
 }
 
 
+# formulasplitter <- function(formulastring){
+#   formulastring=cleanstring(formulastring)
+#   reg.model=list()
+#
+#   tildepos = str_locate(formulastring,"~")[1]
+#   response = str_sub(formulastring,start=1L,end=tildepos-1)
+#
+#
+#
+#   pluspos = str_locate_all(formulastring,'\\+')[[1]]
+#   if(nrow(pluspos)>1){
+#     pluspos = c(tildepos,pluspos[,1])
+#   }else{
+#     pluspos = c(tildepos,pluspos[1])
+#   }
+#   if(str_detect(covarstring,"-1+")){
+#     intercept = FALSE
+#     startpoint = pluspos[2]
+#   }else if(str_detect(covarstring,"1+")){
+#     intercept = TRUE
+#     reg.model=list(`(Intercept)`=1)
+#     startpoint = pluspos[2]
+#   }else{
+#     intercept = TRUE
+#     reg.model=list(`(Intercept)`=1)
+#     startpoint = pluspos[1]
+#   }
+#   covarstring = str_sub(formulastring,startpoint+1)
+#
+#   currentpos = startpoint+1
+#   for(i in 2:length(pluspos)){
+#     reg.model[[substr(formulastring,currentpos,pluspos[i]-1)]]
+#   }
+#
+#
+#   covarstring = str_sub(formulastring,start=str_locate(formulastring,'\\+')[1]+1)
+#
+#
+#
+# }
+#
+# cleanstring <- function(string){
+#   str=str_replace_all(string," ","")
+#   return(str)
+# }
 
 control.fixed.priors = function(reg.model, fit, nevents){
 
   my.control.fixed = list(mean=list(  ))
 
-  if(reg.model$depth1) my.control.fixed$mean[["z1"]] = fit$coefficients[["z1"]]
+  if(reg.model$depth1) my.control.fixed$mean[["z"]] = fit$coefficients[["z"]]
   if(reg.model$depth2) my.control.fixed$mean[["z2"]] = fit$coefficients[["z2"]]
   if(reg.model$proxy) my.control.fixed$mean[["x"]] = fit$coefficients[["x"]]
 
-  if(reg.model$psi0 || reg.model$psi1){
+  if((reg.model$psi0 || reg.model$psi1) && nevents>0){
     for(i in 1:(nevents-1)){
       if(reg.model$psi0){
         my.control.fixed$mean[[paste0("a",i)]] = fit$coefficients[[paste0("a",i)]]
