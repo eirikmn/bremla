@@ -2,38 +2,26 @@
 % Please edit documentation in R/bremla_synchronized_simulation.R
 \name{bremla_synchronized_simulation}
 \alias{bremla_synchronized_simulation}
-\title{Simulate synchronized chronologies
-Produces simulations from the synchronized time scale given tie-point samples.}
+\title{Simulate synchronized chronologies}
 \usage{
-bremla_synchronized_simulation(
-  object,
-  nsims = 10000,
-  tie_locations = NULL,
-  tie_locations_type = "depth",
-  tiepointsims = NULL,
-  ncores = 2
-)
+bremla_synchronized_simulation(object, control.sim, print.progress = FALSE)
 }
 \arguments{
-\item{object}{List object which is the output of function \code{\link{bremla_chronology_simulation}}}
+\item{object}{Output of function \code{\link{tiepointsimmer}}.}
 
-\item{nsims}{Integer denoting how many simulations should be produced.}
+\item{control.sim}{List containing specifications for the simulation procedure,
+including the number of samples to be generated and whether or not the chronologies
+should be synchronized (for this function this should be set to \code{TRUE}).
+See \code{\link{control.sim.default}} for details.}
 
-\item{tie_locations}{Numeric that provides the fixed locations for which the tie-points are located.}
-
-\item{tie_locations_type}{string denoting which type of locations. Can be "depth", "age" or "index".}
-
-\item{tiepointsims}{data.frame which gives the tiepoint-samples to which the models should be synchronized.
-\code{nrow} should correspond to \code{nsims} and \code{ncol} should correspond to the number of tie-points.
-For fixed tie-points you can just repeat each tie-point \code{nsims} times.}
-
-\item{ncores}{The number of cores to use in simulating from inla.posterior.sample}
+\item{print.progress}{Boolean. If \code{TRUE} progress will be printed to screen.}
 }
 \value{
-Returns the \code{object} list from the input and appends a list which includes all synchronized simulations
+Returns the \code{object} list from the input and appends a list which
+includes all synchronized simulations, summary statistics and other information
+computed or related to the simulation procedure in \code{object\$simulation}.
 }
 \description{
-Simulate synchronized chronologies
 Produces simulations from the synchronized time scale given tie-point samples.
 }
 \examples{

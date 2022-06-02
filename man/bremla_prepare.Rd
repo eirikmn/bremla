@@ -5,45 +5,58 @@
 \title{Bremla preparation function}
 \usage{
 bremla_prepare(
-  age,
-  depth,
-  proxy,
-  events = NULL,
-  nsims = 10000,
-  eventmeasure = "depth",
-  reg.model = list(const = FALSE, depth1 = FALSE, depth2 = TRUE, proxy = TRUE, psi0 =
-    TRUE, psi1 = TRUE),
-  noise = "ar1",
-  method = "inla",
+  formula,
+  data,
   reference.label = NULL,
-  transform = "identity",
-  proxy.type = "d18O"
+  nsims = NULL,
+  events = NULL,
+  synchronization = NULL,
+  control.fit = NULL,
+  control.sim = NULL,
+  control.linramp = NULL,
+  control.transition_dating = NULL,
+  control.bias = NULL
 )
 }
 \arguments{
-\item{age}{Vector of observed ages y_0,...,y_n}
+\item{formula}{Formula describing the response and covariates (partial
+covariates (phi) can be filled out using \code{events$fill_formula})}
 
-\item{depth}{Vector of depths z_0,...,z_n corresponding to \code{age}}
+\item{data}{data.frame including response, all covariates included in
+\code{formula}, as well as 'depth' and 'age' describing both axes of reference chronology.
+First row is used to extract initial values 'y0' and 'z0', the remaining variables
+in the first row is typically not used and can be left as \code{NA}. Partial
+covariates (phi) can be filled out using 'events$fill_data'}
 
-\item{proxy}{Vector of observed proxy (e.g. del-18O) at depths \code{depth}}
+\item{reference.label}{Character label of reference timescale. Used in \code{\link{plot},\link{summary}}.}
 
-\item{events}{Vector describing locations (in dimension specified by \code{eventmeasure}) of climate transitions for use in linear regression model}
+\item{nsims}{Number of chronologies to be simulated.}
 
-\item{nsims}{Number of chronologies to be simulated}
+\item{events}{List object describing the specifics of the climate transitions
+used in 'formula'. Must include an item called \code{locations}. See \code{?events.default} for details.}
 
-\item{eventmeasure}{Character describing in which dimension the climate events are located ("age", "depth", "index")}
+\item{synchronization}{List object describing specifics related to tie-points
+and their distribution. If \code{synchronization$method="adolphi"} a specific
+set of instructions are employed. If not, this list must include \code{locations}
+argument and preferably \code{locations_unit} to determine which axis (default \code{unit="depth"}).
+See \code{\link{synchronization.default}} for details.}
 
-\item{reg.model}{List of booleans specifies which effects to be included in the linear regression model: intercept (\code{const}), linear response to depth (\code{depth1}), quadratic response to depth (\code{depth2}), linear response to proxy (\code{proxy}), individual intercepts for each climate period (\code{psi0}), individual linear responses to depth for each climate period (\code{psi1})}
+\item{control.fit}{List object describing specifics related to the fitting procedure.
+See \code{\link{control.fit.default}} for details.}
 
-\item{noise}{Character specifying the noise model: independent identically distributed (\code{iid}), first order autoregressive (\code{ar1}) or second order autoregressive (\code{ar2})}
+\item{control.sim}{List object describing specifics related to simulating chronologies.
+See \code{\link{control.sim.default}} for details.}
 
-\item{method}{Character specifying how the model is fitted. Currently only least squares (\code{ls}) and INLA (\code{inla}) are supported, and least squares is always run.}
+\item{control.linramp}{List containing specifications for fitting a linear ramp model to given data.
+If used, must include \code{control.linramp\$proxy} and \code{control.linramp\$interval}. See
+\code{\link{control.linramp.default}} for details.}
 
-\item{reference.label}{String denoting the label used for age data/reference}
+\item{control.transition_dating}{List object describing specifics related to
+the estimation of a given transition. Must include \code{interval} and \code{proxy}
+used in linear ramp estimation. See \code{\link{control.transition_dating.default}} for details.}
 
-\item{transform}{String denoting which transformation should be applied to the residuals. Default "identity", "log" is also supported, but experimental.}
-
-\item{proxy.type}{String denoting which proxy is used (for use in plot-labels).}
+\item{control.bias}{List object describing specifics related to the simulation of
+unknown stochastic bias. See \code{\link{control.bias.default}} for details.}
 }
 \value{
 Returns a list containing data in internal formatting (\code{data}), linear regression formula (\code{ls.formula}), inla formula (\code{formula}), input settings and indices corresponding to climate transitions (\code{.args}) and z_0, y_0 and x_0 (\code{preceeding})

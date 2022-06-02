@@ -4,30 +4,20 @@
 \alias{bremla_chronology_simulation}
 \title{Bremla chronology simulation}
 \usage{
-bremla_chronology_simulation(
-  object,
-  nsims = 10000,
-  method = "inla",
-  store.means = FALSE,
-  print.progress = FALSE,
-  ncores = 2
-)
+bremla_chronology_simulation(object, control.sim, print.progress = FALSE)
 }
 \arguments{
 \item{object}{List object which is the output of function \code{\link{bremla_modelfitter}}}
 
-\item{nsims}{Integer denoting the number of chronologies to be sampled}
-
-\item{method}{Character specifying which method of inference to be used. Currently only \code{inla} is supported}
-
-\item{store.means}{Boolean. If \code{TRUE} then simulated mean vectors will be stored. Default is \code{FALSE} to save memory.}
+\item{control.sim}{List object containing specifications for simulation procedure and
+what is to be computed. See \code{\link{control.sim.default}} for details.}
 
 \item{print.progress}{Boolean. If \code{TRUE} progress will be printed to screen}
-
-\item{ncores}{The number of cores to use in simulating from inla.posterior.sample}
 }
 \value{
-Returns the same \code{object} list from the input, but appends simulated chronologies, and mean vectors (if \code{store.means=TRUE})
+Returns the same \code{object} list from the input, but appends simulated
+chronologies, mean vectors (if \code{store.means=TRUE}) and further information, summary and statistics in
+\code{object\$simulation}.
 }
 \description{
 Simulates chronologies based on the fitted regression model.

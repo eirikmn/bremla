@@ -4,17 +4,10 @@
 \alias{bremla_simulationsummarizer}
 \title{Simulation-summarizer}
 \usage{
-bremla_simulationsummarizer(
-  object,
-  CI.type = "hpd",
-  sync = TRUE,
-  print.progress = FALSE
-)
+bremla_simulationsummarizer(object, sync = TRUE, print.progress = FALSE)
 }
 \arguments{
 \item{object}{List object which is the output of function \code{\link{bremla_chronology_simulation}}}
-
-\item{CI.type}{character describing which uncertainty intervals should be used (\code{"quantiles" or "hpd"}). Highest posterior density is used by default}
 
 \item{sync}{boolean. Set \code{TRUE} if summary statistics should be computed for syncrhonized samples (if any). \code{FALSE} for unsynchronized.}
 

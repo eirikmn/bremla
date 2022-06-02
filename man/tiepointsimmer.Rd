@@ -2,42 +2,29 @@
 % Please edit documentation in R/helpfulfunctions.R
 \name{tiepointsimmer}
 \alias{tiepointsimmer}
-\title{Tie-point simulation
-Wrapper function which calls specified functions to produce samples from tie-point distributions and places them in \code{bremla} object.}
+\title{Tie-point simulation}
 \usage{
-tiepointsimmer(
-  object,
-  nsims = 10000,
-  locations = NULL,
-  locations.type = "depth",
-  method = "adolphi",
-  x.ref = NULL,
-  samples = NULL,
-  ...
-)
+tiepointsimmer(object, synchronization, print.progress = FALSE, ...)
 }
 \arguments{
 \item{object}{Bremla list object to store samples in}
 
-\item{nsims}{Integer. The number of samples to be produced.}
+\item{synchronization}{List containing specifications for generating tie-points.
+Must include \code{synchronization\$locations}. Includes different methods for
+producing tie-points specified by \code{synchronization\$method}, and can also
+import pre-computed samples in \code{synchronization\$samples}. See
+\code{\link{synchronization.default}} for more details.}
 
-\item{locations}{numeric describing location of each tie-point}
+\item{print.progress}{Boolean. If \code{TRUE} progress will be printed to screen.}
 
-\item{locations.type}{string. what unit is the location given in? Can be "depth", "age" and "index".}
-
-\item{method}{string. Set \code{method="adolphi"} to use adolphi tie-points. Other options will be made available soon}
-
-\item{x.ref}{numeric of length \code{length(locations)}, adds reference locations (x-axis) to which the tie-points can be compared to later.}
-
-\item{samples}{data.frame including premade tie-point samples. \code{ncol} must correspond to the number of tie-points.}
-
-\item{...}{Further arguments to be passed down to the selected tie-point simulation function.}
+\item{...}{Further arguments to be passed down to the selected tie-point simulation
+function.}
 }
 \value{
-returns the same \code{object} from input but appends tie-point samples and information.
+returns the same \code{object} from input but appends tie-point samples
+and information in \code{object\$tie_points}.
 }
 \description{
-Tie-point simulation
 Wrapper function which calls specified functions to produce samples from tie-point distributions and places them in \code{bremla} object.
 }
 \examples{

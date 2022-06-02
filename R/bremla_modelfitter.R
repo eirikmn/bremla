@@ -3,11 +3,13 @@
 #' Fits the bremla linear regression model to observations.
 #'
 #' @param object List object which is the output of function \code{\link{bremla_prepare}}
-#' @param method Character specifying which method of inference to be used. Currently only \code{ls} and \code{inla} are supported, and if \code{inla} is chosen then both methods are performed. \code{age}
+#' @param control.fit List containing specifications for fitting procedure. See
+#' \code{\link{control.fit.default}} for details.
 #' @param print.progress Boolean. If \code{TRUE} progress will be printed to screen
-#' @param verbose Boolean. If \code{TRUE} details of the inla optimization procedure will be printed to the screen.
 #'
-#' @return Returns the same \code{object} list from the input, but appends information from the fitting procedure. Including fitted values, residuals and summary statistics for the least squares method. If \code{method="inla"} then the \code{inla} type object from the INLA package are included, as well as posterior marginal distributions and summary statistics for the hyperparameters.
+#' @return Returns the same \code{object} list from the input, but appends information
+#' from the fitting procedure in \code{object\$fitting}. Including fitted values, residuals, posterior distributions
+#' and summary statistics for both fixed and random effects.
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @seealso \code{\link{bremla_prepare},\link{bremla_chronology_simulation}}
 #' @keywords bremla fitting
@@ -37,86 +39,116 @@
 #' @importFrom INLA inla inla.tmarginal inla.zmarginal inla.ar.pacf2phi
 #' @importFrom stats acf arima density lm sd
 
-bremla_modelfitter = function(object, method="inla",
-                              print.progress=FALSE,verbose=FALSE){
+bremla_modelfitter = function(object, control.fit,
+                              print.progress=FALSE){
 
+  if(missing(control.fit)){
+    if(!is.null(object$.args$control.fit)){
+      if(print.progress){
+        cat("'control.fit' missing. Importing information from 'object'.",sep="")
+      }
+      control.fit = object$.args$control.fit
+    }else{
+        stop("Could not find 'control.fit'. Stopping.")
+    }
+  }
+  #if(!is.null(control.fit))
+  control.fit = set.options(control.fit,control.fit.default())
+  object$.args$control.fit = control.fit
+
+  method = control.fit$method
+  noise = control.fit$noise
 
   time.start = Sys.time()
 
   formula = object$formula
   if(print.progress) cat("Performing least squares fit...",sep="")
 
-  fit = lm(object$ls.formula,object$data) #fits model using least squares
+  fit = lm(object$.internal$formula.ls,object$data) #fits model using least squares
+
+  if(sum(is.na(fit$coefficients))){
+    stop(paste0("least squares yields NA estimates for ",sum(is.na(fit$coefficients)),
+                " coefficients. Make sure 'formula' does not include linearly dependent variables.
+                If control.fit$degree==2, try omitting intercept (add -1 to 'formula'),
+                depth and depth from 'formula'."))
+  }
 
   dmean = fit$fitted.value
   resi = fit$residuals
 
   ## extract parameter estimates
-  object$LS.fitting = list(fit=fit, params=list(meanvector=as.numeric(dmean)))
+  object$fitting = list(LS = list(fit=fit, params=list(meanvector=as.numeric(dmean))))
 
-  if(tolower(object$.args$noise) %in% c("iid","independent","ar(0)")){
+  if(tolower(object$.args$control.fit$noise) %in% c("iid","independent","ar(0)")){
     sigma = sd(resi)
-    object$LS.fitting$params[["sigma"]] = sigma
-  }else if(tolower(object$.args$noise) %in% c("ar1",1,"ar(1)")){
+    object$fitting$LS$params[["sigma"]] = sigma
+  }else if(tolower(object$.args$control.fit$noise) %in% c("ar1",1,"ar(1)")){
     noisefit = arima(resi,order = c(1,0,0))
     phi = noisefit$coef[1]
     sigma = sd(resi)
-    object$LS.fitting$params[["sigma"]] = sigma
-    object$LS.fitting$params[["phi"]] = phi
-    object$LS.fitting$noisefit=noisefit
-  }else if(tolower(object$.args$noise) %in% c("ar2",2,"ar(2)")){
+    object$fitting$LS$params[["sigma"]] = sigma
+    object$fitting$LS$params[["phi"]] = phi
+    object$fitting$LS$noisefit=noisefit
+  }else if(tolower(object$.args$control.fit$noise) %in% c("ar2",2,"ar(2)")){
     noisefit = arima(resi,order = c(2,0,0))
     phi1 = noisefit$coef[1]
     phi2 = noisefit$coef[2]
     sigma = sd(resi)
-    object$LS.fitting$params[["sigma"]] = sigma
-    object$LS.fitting$params[["phi1"]] = phi1
-    object$LS.fitting$params[["phi2"]] = phi2
-    object$LS.fitting$noisefit=noisefit
+    object$fitting$LS$params[["sigma"]] = sigma
+    object$fitting$LS$params[["phi1"]] = phi1
+    object$fitting$LS$params[["phi2"]] = phi2
+    object$fitting$LS$noisefit=noisefit
+  }else{
+    stop(paste0("Noise model is set to ",noise,". Only iid, ar1 and ar2 are currently supported!"))
   }
   time.ls=Sys.time()
   if(print.progress) cat(" completed!\n",sep="")
   #}
 
-  ### move to separate function
 
-  if(tolower(method) == "inla"){
+
+  if(tolower(control.fit$method) == "inla"){
 
     ## will use results from least squares fit as starting point in INLA optimization. Requires proper parametrization
     if(print.progress) cat("Performing INLA fit...\n",sep="")
 
     #set initial values for fixed parameters based on least squares 'fit'
-    my.control.fixed = control.fixed.priors(object$.args$reg.model, fit, object$.args$nevents)
+    my.control.fixed = control.fixed.priors(object$.internal$lat.selection, fit,
+                                            object$.args$events$nevents)
+    object$.internal$initial_fixed = my.control.fixed
+    resi = object$fitting$LS$fit$residuals
 
-    resi = object$LS.fitting$fit$residuals
+    initialmodes = log(1/object$fitting$LS$params$sigma^2)
 
-    initialmodes = log(1/object$LS.fitting$params$sigma^2)
-
-    if(tolower(object$.args$noise) %in% c(1,"ar1","ar(1)")){
-      phi.ls = object$LS.fitting$params$phi
+    if(tolower(object$.args$control.fit$noise) %in% c(1,"ar1","ar(1)")){
+      phi.ls = object$fitting$LS$params$phi
       initialmodes = c(initialmodes, log( (1+phi)/(1-phi) ))
 
     }else if(tolower(object$.args$noise) %in% c(2,"ar2","ar(2)")){
-      phi1.ls = object$LS.fitting$params$phi1
-      phi2.ls = object$LS.fitting$params$phi2
+      phi1.ls = object$fitting$LS$params$phi1
+      phi2.ls = object$fitting$LS$params$phi2
 
       initialmodes=c(initialmodes, log( (1+phi1/(1-phi2))/(1-phi1/(1-phi2)) ), log( (1+phi2)/(1-phi2) ) )
     }
+    object$.internal$initial_hyper=initialmodes
 
-    num.threads=1 #rgeneric can sometimes be more stable if more than one core is used
+    num.threads=object$.args$control.fit$ncores #rgeneric can sometimes be more stable ifonly one core is used
 
     object$data$idy=1:nrow(object$data) #create covariate for random effect in INLA
 
     ## fit using INLA
     inlafit = inla(object$formula, family="gaussian",data=object$data,
                    control.family=list(hyper=list(prec=list(initial=12, fixed=TRUE))) ,
-                   control.fixed=my.control.fixed,num.threads = num.threads,
-                   control.compute=list(config=TRUE),verbose=FALSE,
+                   #control.fixed=my.control.fixed,
+                   num.threads = object$.args$control.fit$ncores,
+                   control.compute=list(config=TRUE),
+                   verbose=object$.args$control.fit$verbose,
                    control.inla=list(restart=TRUE,h=0.1),
-                   control.mode=list(theta=initialmodes,restart=TRUE)  )
+                   #control.mode=list(theta=initialmodes,restart=TRUE)
+                   )
 
 
-    object$fitting = list(fit=inlafit)
+    object$fitting$inla = list(fit=inlafit)
 
 
     if(print.progress){
@@ -125,14 +157,14 @@ bremla_modelfitter = function(object, method="inla",
 
     ## extract posteriors for hyperparameters
     posterior_sigma = inla.tmarginal(function(x)1/sqrt(x),inlafit$marginals.hyperpar$`Precision for idy`); zmarg_sigma=inla.zmarginal(posterior_sigma,silent=TRUE)
-    object$fitting$hyperparameters = list(posteriors=list(sigma_epsilon=posterior_sigma))
-    object$fitting$hyperparameters$results$sigma_epsilon = zmarg_sigma
-    if(tolower(object$.args$noise)%in% c(1,"ar1","ar(1)") ){
+    object$fitting$inla$hyperparameters = list(posteriors=list(sigma_epsilon=posterior_sigma))
+    object$fitting$inla$hyperparameters$results$sigma_epsilon = zmarg_sigma
+    if(tolower(object$.args$control.fit$noise)%in% c(1,"ar1","ar(1)") ){
       posterior_phi = inlafit$marginals.hyperpar$`Rho for idy`; zmarg_phi = inla.zmarginal(posterior_phi,silent=TRUE)
-      object$fitting$hyperparameters$posteriors$phi = posterior_phi
-      object$fitting$hyperparameters$results$phi = zmarg_phi
+      object$fitting$inla$hyperparameters$posteriors$phi = posterior_phi
+      object$fitting$inla$hyperparameters$results$phi = zmarg_phi
 
-    }else if(object$.args$noise %in% c(2,"ar2","ar(2)") ){
+    }else if(object$.args$control.fit$noise %in% c(2,"ar2","ar(2)") ){
       hypersamples = inla.hyperpar.sample(50000,inlafit)
 
       p=2
@@ -140,10 +172,10 @@ bremla_modelfitter = function(object, method="inla",
       phis = apply(phii, 1L, inla.ar.pacf2phi)
       posterior_phi1 = cbind(density(phis[1,])$x,density(phis[1,])$y);colnames(posterior_phi1)=c("x","y"); zmarg_phi1 = inla.zmarginal(posterior_phi1,silent=TRUE)
       posterior_phi2 = cbind(density(phis[2,])$x,density(phis[2,])$y);colnames(posterior_phi2)=c("x","y"); zmarg_phi2=inla.zmarginal(posterior_phi2,silent=TRUE)
-      object$fitting$hyperparameters$posteriors$phi1 = posterior_phi1
-      object$fitting$hyperparameters$results$phi1 = zmarg_phi1
-      object$fitting$hyperparameters$posteriors$phi2 = posterior_phi2
-      object$fitting$hyperparameters$results$phi2 = zmarg_phi2
+      object$fitting$inla$hyperparameters$posteriors$phi1 = posterior_phi1
+      object$fitting$inla$hyperparameters$results$phi1 = zmarg_phi1
+      object$fitting$inla$hyperparameters$posteriors$phi2 = posterior_phi2
+      object$fitting$inla$hyperparameters$results$phi2 = zmarg_phi2
     }
 
 
@@ -158,3 +190,4 @@ bremla_modelfitter = function(object, method="inla",
 
   return(object)
 }
+

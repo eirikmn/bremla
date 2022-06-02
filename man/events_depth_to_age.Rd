@@ -4,30 +4,22 @@
 \alias{events_depth_to_age}
 \title{Complete dating uncertainty of abrupt warming transitions}
 \usage{
-events_depth_to_age(
-  object,
-  nsims = 10000,
-  print.progress = FALSE,
-  label = NULL,
-  age.reference = NULL
-)
+events_depth_to_age(object, control.transition_dating, print.progress = FALSE)
 }
 \arguments{
 \item{object}{List object which is the output of function \code{\link{linrampfitter}}}
 
-\item{nsims}{Integer denoting the number of simulations of transition onset age. Cannot exceed the number of simulated age chronologies from \code{\link{bremla_chronology_simulation}}.}
+\item{control.transition_dating}{List containing speci}
 
 \item{print.progress}{Boolean. If \code{TRUE} progress will be printed to screen}
-
-\item{label}{character string describing the label designed the transition, e.g. \code{label="GI-11"}.}
-
-\item{age.reference}{numeric denoting a reference value such as the transition onset age obtained by other means. This appears when using \code{plot}. If \code{depth.reference=NULL} then this is not used.}
 }
 \value{
 Returns the same \code{object} list from the input, but appends the simulated transition onset ages along with summary statistics.
 }
 \description{
-Combines linear ramp model fit and Bayesian regression modeling to estimate complete dating uncertainty of the onset of Dansgaard-Oeschger events using Monte Carlo simulation.
+Combines linear onset posterior from ramp model fit and simulated chronologies from
+the Bayesian regression modeling to estimate complete dating uncertainty of the onset
+of abrupt warming transitions events using Monte Carlo simulation.
 }
 \examples{
 \donttest{

@@ -1,16 +1,17 @@
 #' Simulate synchronized chronologies
+#'
 #' Produces simulations from the synchronized time scale given tie-point samples.
 #'
-#' @param object List object which is the output of function \code{\link{bremla_chronology_simulation}}
-#' @param nsims Integer denoting how many simulations should be produced.
-#' @param tie_locations Numeric that provides the fixed locations for which the tie-points are located.
-#' @param tie_locations_type string denoting which type of locations. Can be "depth", "age" or "index".
-#' @param tiepointsims data.frame which gives the tiepoint-samples to which the models should be synchronized.
-#' \code{nrow} should correspond to \code{nsims} and \code{ncol} should correspond to the number of tie-points.
-#' For fixed tie-points you can just repeat each tie-point \code{nsims} times.
-#' @param ncores The number of cores to use in simulating from inla.posterior.sample
+#' @param object Output of function \code{\link{tiepointsimmer}}.
+#' @param control.sim List containing specifications for the simulation procedure,
+#' including the number of samples to be generated and whether or not the chronologies
+#' should be synchronized (for this function this should be set to \code{TRUE}).
+#' See \code{\link{control.sim.default}} for details.
+#' @param print.progress Boolean. If \code{TRUE} progress will be printed to screen.
 #'
-#' @return Returns the \code{object} list from the input and appends a list which includes all synchronized simulations
+#' @return Returns the \code{object} list from the input and appends a list which
+#' includes all synchronized simulations, summary statistics and other information
+#' computed or related to the simulation procedure in \code{object\$simulation}.
 #'
 #' @examples
 #' \donttest{
@@ -43,34 +44,54 @@
 #' @keywords simulation synchronization tiepoint
 #'
 #' @export
-bremla_synchronized_simulation = function(object,nsims=10000, tie_locations=NULL,
-                                          tie_locations_type="depth",tiepointsims=NULL,
-                                          ncores=2){
+bremla_synchronized_simulation = function(object,control.sim,print.progress=FALSE){
 
+
+  if(missing(control.sim)){
+
+    if(!is.null(object$.args$control.sim)){
+      if(print.progress){
+        cat("'control.sim' missing. Importing information from 'object'.",sep="")
+      }
+      control.sim = object$.args$control.sim
+    }else{
+      stop("Could not find 'control.sim'. Stopping.")
+    }
+  }
+  #if(!is.null(control.sim))
+  control.sim = set.options(control.sim,control.sim.default())
+
+  object$.args$control.sim = control.sim
+
+  ## sample hyperparameters
+  if(is.null(object$fitting)) stop("Fitting results not found. Run 'bremla_modelfitter' first.")
+  if(is.null(object$tie_points)) stop("Tie-points samples not found. Run 'tiepointsimmer' first.")
+
+  nsims = control.sim$nsims
   if(!is.null(object$tie_points)){
     tie_locations=object$tie_points$locations
-    tie_locations_type=object$tie_points$locations.type
+    tie_locations_unit=object$tie_points$locations_unit
     tiepointsims = object$tie_points$samples
     if(object$tie_points$nsims != nsims) stop("Number of samples given does not correspond to 'nsims'...")
   }else{
     object$tie_points = list(samples=tiepointsims,locations=tie_locations,
-                             locations.type=tie_locations_type,method="precomputed",nsims=nsims)
+                             locations.type=tie_locations_unit,method="precomputed",nsims=nsims)
   }
 
   if(is.null(tiepointsims)&& is.null(object$tie_points)) stop("No tie-points specified")
 
 
 
-  n = length(object$data$y)
+  n = nrow(object$data)
 
-  if(tie_locations_type == "age"){
-    tie_indexes = which.index(tie_locations,object$data$y)
-  }else if(tie_locations_type == "depth"){
-    tie_indexes = which.index(tie_locations,object$data$z)
-  }else if(tie_locations_type == "index"){
+  if(tie_locations_unit == "age"){
+    tie_indexes = which.index(tie_locations,object$data$age)
+  }else if(tie_locations_unit == "depth"){
+    tie_indexes = which.index(tie_locations,object$data$depth)
+  }else if(tie_locations_unit == "index"){
     tie_indexes = tie_locations
   }else{
-    stop("Improper 'tie_locations_type' specified")
+    stop("Improper 'tie_locations_unit' specified")
   }
   tiepointsims = tiepointsims[,!is.na(tie_indexes)]
   tie_indexes = unique(tie_indexes[!is.na(tie_indexes)])
@@ -79,19 +100,20 @@ bremla_synchronized_simulation = function(object,nsims=10000, tie_locations=NULL
   free_n = n-m
   free_indexes = (1:n)[-tie_indexes]
 
-  latentselection = list()
-  reg.model = object$.args$reg.model
-  if(reg.model$const) latentselection$`(Intercept)`=1
-  if(reg.model$depth1) latentselection$z=1
-  if(reg.model$depth2) latentselection$z2=1
-  if(reg.model$proxy) latentselection$x = 1
-
-  for(i in 2:object$.args$nevents){
-    if(reg.model$psi0) latentselection[[paste0("a",i-1)]] = 1
-    if(reg.model$psi1)latentselection[[paste0("c",i-1)]] = 1
-  }
-  ncores_postsamp = max(1,ncores)
-  latentsamples = inla.posterior.sample(nsims,object$fitting$fit,
+  latentselection = object$.internal$lat.selection
+  # latentselection = list()
+  # reg.model = object$.args$reg.model
+  # if(reg.model$const) latentselection$`(Intercept)`=1
+  # if(reg.model$depth1) latentselection$z=1
+  # if(reg.model$depth2) latentselection$z2=1
+  # if(reg.model$proxy) latentselection$x = 1
+  #
+  # for(i in 2:object$.args$nevents){
+  #   if(reg.model$psi0) latentselection[[paste0("a",i-1)]] = 1
+  #   if(reg.model$psi1)latentselection[[paste0("c",i-1)]] = 1
+  # }
+  ncores_postsamp = max(1,object$.args$control.sim$ncores)
+  latentsamples = inla.posterior.sample(nsims,object$fitting$inla$fit,
                                         selection=latentselection,verbose=FALSE,
                                         add.names=FALSE,num.threads = ncores_postsamp)
 
@@ -103,7 +125,7 @@ bremla_synchronized_simulation = function(object,nsims=10000, tie_locations=NULL
     sigma_sample = object$simulation$sigma[r]
     phi_sample = object$simulation$phi[r]
 
-    if(object$.args$noise=="ar1"){
+    if(object$.args$control.fit$noise=="ar1"){
       Qfull = Qmaker_ar1cum(n,sigma_sample,phi_sample)
     }else{
       # 'noise' is the precision matrix of the layer differences Q_x
@@ -118,9 +140,9 @@ bremla_synchronized_simulation = function(object,nsims=10000, tie_locations=NULL
 
 
     coefs = latentsamples[[r]]$latent
-    dmeansim = meanmaker( coefs, reg.model, nevents=object$.args$nevents,data = object$data )
+    dmeansim = meanmaker( coefs, latentselection,data = object$data )
 
-    y_mu = cumsum(c(object$preceeding$y0,dmeansim))[2:(n+1)]
+    y_mu = cumsum(c(object$initials$age,dmeansim))[2:(n+1)]
     free_mu = y_mu[free_indexes]
     tie_mu = y_mu[tie_indexes]
 
@@ -151,6 +173,8 @@ bremla_synchronized_simulation = function(object,nsims=10000, tie_locations=NULL
   object$tie_points$tie_n=length(tie_indexes)
 
   object$time$tiepoints = time.end
-
+  if(object$.args$control.sim$summary$compute){
+    object = bremla_simulationsummarizer(object,sync=TRUE,print.progress=print.progress)
+  }
   return(object)
 }

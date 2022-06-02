@@ -3,13 +3,13 @@
 #' Simulates chronologies based on the fitted regression model.
 #'
 #' @param object List object which is the output of function \code{\link{bremla_modelfitter}}
-#' @param nsims Integer denoting the number of chronologies to be sampled
-#' @param method Character specifying which method of inference to be used. Currently only \code{inla} is supported
-#' @param store.means Boolean. If \code{TRUE} then simulated mean vectors will be stored. Default is \code{FALSE} to save memory.
+#' @param control.sim List object containing specifications for simulation procedure and
+#' what is to be computed. See \code{\link{control.sim.default}} for details.
 #' @param print.progress Boolean. If \code{TRUE} progress will be printed to screen
-#' @param ncores The number of cores to use in simulating from inla.posterior.sample
 #'
-#' @return Returns the same \code{object} list from the input, but appends simulated chronologies, and mean vectors (if \code{store.means=TRUE})
+#' @return Returns the same \code{object} list from the input, but appends simulated
+#' chronologies, mean vectors (if \code{store.means=TRUE}) and further information, summary and statistics in
+#' \code{object\$simulation}.
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @seealso \code{\link{bremla_prepare},\link{bremla_modelfitter}}
 #' @keywords bremla simulation
@@ -42,30 +42,50 @@
 #' @importFrom INLA inla.hyperpar.sample inla.tmarginal inla.zmarginal inla.ar.pacf2phi
 #' @importFrom stats acf arima arima.sim as.formula rnorm
 #' @importFrom parallel detectCores
-bremla_chronology_simulation = function(object, nsims=10000, method="inla",store.means=FALSE,print.progress=FALSE,ncores=2){
+bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE){
+
+  if(missing(control.sim)){
+
+    if(!is.null(object$.args$control.sim)){
+      if(print.progress){
+        cat("'control.sim' missing. Importing information from 'object'.",sep="")
+      }
+      control.sim = object$.args$control.sim
+    }else{
+      stop("Could not find 'control.sim'. Stopping.")
+    }
+  }
+  #if(!is.null(control.sim))
+   control.sim = set.options(control.sim,control.sim.default())
+
+  object$.args$control.sim = control.sim
 
   ## sample hyperparameters
+  if(is.null(object$fitting)) stop("Fitting results not found. Run 'bremla_modelfitter' first.")
+
+  nsims = object$.args$control.sim$nsims
+  method = object$.args$control.fit$method
+  noise = object$.args$control.fit$noise
 
   time.start = Sys.time()
 
   if(tolower(method) == "inla"){ #if INLA is used
-    noise= object$.args$noise
-    reg.model = object$.args$reg.model
+    reg.model = object$.internal$lat.selection
 
     if(print.progress) cat("Simulating ",nsims, " hyperparameters from INLA posterior...",sep="")
 
 
     if(tolower(noise) %in% c(0,"ar(0)","ar0","iid","independent")){
-      hypersamples = inla.hyperpar.sample(nsims,object$fitting$fit)
+      hypersamples = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
       object$simulation = list(sigma = 1/sqrt(hypersamples[,1]))
     }else if (tolower(noise) %in% c(1,"ar1","ar(1)")){
-      hypersamples = inla.hyperpar.sample(nsims,object$fitting$fit)
+      hypersamples = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
       object$simulation = list(sigma = 1/sqrt(hypersamples[,1]), phi=hypersamples[,2])
 
     }else if (tolower(noise) %in% c(2,"ar2","ar(2)")){
-      hypersamples = inla.hyperpar.sample(nsims,object$fitting$fit)
+      hypersamples = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
       p=2
-      hypersamplesar2 = inla.hyperpar.sample(nsims,object$fitting$fit)
+      hypersamplesar2 = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
       phii = hypersamplesar2[, 2L:(2L+(p-1L))]
       phis = apply(phii, 1L, inla.ar.pacf2phi)
       object$simulation = list(sigma = 1/sqrt(hypersamples[,1]),phi1=phis[1,],phi2=phis[2,])
@@ -83,24 +103,25 @@ bremla_chronology_simulation = function(object, nsims=10000, method="inla",store
     time.startmean = Sys.time()
 
     ##sample fixed parameters first
-    latentselection = list()
-    if(reg.model$const) latentselection$`(Intercept)`=1
-    if(reg.model$depth1) latentselection$z=1
-    if(reg.model$depth2) latentselection$z2=1
-    if(reg.model$proxy) latentselection$x = 1
+    latentselection = object$.internal$lat.selection
+    # latentselection = list()
+    # if(reg.model$const) latentselection$`(Intercept)`=1
+    # if(reg.model$depth1) latentselection$z=1
+    # if(reg.model$depth2) latentselection$z2=1
+    # if(reg.model$proxy) latentselection$x = 1
 
-    for(i in 2:object$.args$nevents){
-      if(reg.model$psi0) latentselection[[paste0("a",i-1)]] = 1
-      if(reg.model$psi1)latentselection[[paste0("c",i-1)]] = 1
-    }
+    # for(i in 2:object$.args$nevents){
+    #   if(reg.model$psi0) latentselection[[paste0("a",i-1)]] = 1
+    #   if(reg.model$psi1)latentselection[[paste0("c",i-1)]] = 1
+    # }
     #latentsamples = inla.posterior.sample(nsims,object$fitting$fit,selection=latentselection,verbose=FALSE,add.names=FALSE)
-    ncores_postsamp = max(1,ncores)
-    latentsamples = inla.posterior.sample(nsims,object$fitting$fit,
+    ncores_postsamp = max(1,object$.args$control.sim$ncores)
+    latentsamples = inla.posterior.sample(nsims,object$fitting$inla$fit,
                                           selection=latentselection,verbose=FALSE,
                                           add.names=FALSE,num.threads = ncores_postsamp)
 
-    n=dim(object$data)[1]
-    if(store.means) object$simulation$dmean = matrix(NA,nrow=n,ncol=nsims)
+    n=nrow(object$data)
+    if(object$.args$control.sim$store.everything) object$simulation$dmean = matrix(NA,nrow=n,ncol=nsims)
     time.endmean = Sys.time()
     if(print.progress) cat(" completed in ",difftime(time.endmean,time.startmean,units="secs")[[1]]," seconds!\n",sep="")
 
@@ -110,18 +131,19 @@ bremla_chronology_simulation = function(object, nsims=10000, method="inla",store
     time.startage=Sys.time()
 
 
-    is.biascorrected = TRUE
+
     for(i in 1:nsims){
       if(i %% 1000 == 0 && print.progress){
         cat("Age simulation ",i,"/",nsims,". Elapsed time: ",difftime(Sys.time(),time.startage,units="secs")[[1]]," seconds...","\n",sep="")
       }
       ## from fixed parameters compute fixed model component using 'meanmaker' function
       coefs = latentsamples[[i]]$latent
-      dmeansim = meanmaker( coefs, reg.model, nevents=object$.args$nevents,data = object$data )
+
+      dmeansim = meanmaker( coefs, reg.model, data = object$data )
 
 
 
-      if(store.means) object$simulation$dmean[,i] = dmeansim #store mean if we want
+      if(control.sim$store.everything) object$simulation$dmean[,i] = dmeansim #store mean if we want
 
       ##sample noise component
       if(tolower(noise) %in% c(0,"iid","independent","ar0","ar(0)")){
@@ -140,10 +162,10 @@ bremla_chronology_simulation = function(object, nsims=10000, method="inla",store
 
 
       ## Take cumulatives. If log transformation is used, transform back first
-      if(object$.args$transform == "log"){
-        object$simulation$age[,i] = object$preceeding$y0+ cumsum(exp(dmeansim+noisesim))
+      if(object$.args$control.fit$transform == "log"){
+        object$simulation$age[,i] = object$initials$age + cumsum(exp(dmeansim+noisesim))
       }else{
-        object$simulation$age[,i] = object$preceeding$y0+ cumsum(dmeansim+noisesim)
+        object$simulation$age[,i] = object$initials$age + cumsum(dmeansim+noisesim)
       }
 
 
@@ -156,6 +178,9 @@ bremla_chronology_simulation = function(object, nsims=10000, method="inla",store
   object$time$simulation$age = difftime(time.endage,time.startage,"secs")[[1]]
   object$time$simulation$total = difftime(time.endage,time.start,units="secs")[[1]]
 
+  if(object$.args$control.sim$summary$compute){
+    object = bremla_simulationsummarizer(object,sync=FALSE,print.progress=print.progress)
+  }
 
   return(object)
 }

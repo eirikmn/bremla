@@ -2,23 +2,28 @@
 #'
 #' Fits a regression model to the data and produces chronology simulations.
 #'
-#' @param age Vector of observed ages y_0,...,y_n
-#' @param depth Vector of depths z_0,...,z_n corresponding to \code{age}
-#' @param proxy Vector of observed proxy (e.g. del-18O) at depths \code{depth}
-#' @param events Vector describing locations (in dimension specified by \code{eventmeasure}) of climate transitions for use in linear regression model
-#' @param nsims Number of chronologies to be simulated
-#' @param eventmeasure Character describing in which dimension the climate events are located ("age", "depth", "index")
-#' @param reference.label String denoting the label used for age data/reference
-#' @param reg.model List of booleans specifies which effects to be included in the linear regression model: intercept (\code{const}), linear response to depth (\code{depth1}), quadratic response to depth (\code{depth2}), linear response to proxy (\code{proxy}), individual intercepts for each climate period (\code{psi0}), individual linear responses to depth for each climate period (\code{psi1})
-#' @param proxy.type String denoting which proxy is used (for plot-labels).
-#' @param transform String denoting which transformation should be applied to the residuals. Default "identity", "log" is also supported, but experimental.
-#' @param noise Character specifying the noise model: independent identically distributed (\code{iid}), first order autoregressive (\code{ar1}) or second order autoregressive (\code{ar2})
-#' @param method Character specifying how the model is fitted. Currently only least squares (\code{ls}) and INLA (\code{inla}) are supported, and least squares is always run.
-#' @param event.estimation List specifying the settings for the linear ramp fit and subsequent age simulation of a specified transition. See example.
-#' @param bias List specifying the settings for the simulation of chronologies subjected to unknown counting bias. See example for implementation.
-#' @param store.everything Boolean describing whether optional information (e.g. simulation of age vectors) should be stored.
-#' @param CI.type Character describing which type of uncertainty intervals to be used. \code{CI.type="quantiles"} is computed from the quantiles, \code{CI.type="hpd"} computes highest posterior density intervals (takes a little longer to compute). If distribution is unimodal and symmetric these are equivalent.
-#' @param synchronization List containing information used for simulating tie-points and synchronizing age-depth model to them.
+#' @param formula formula describing the predictor used in fitting the data. Partial covariates (psi)
+#' can be filled in by specifying the degree and events in \code{events} argument.
+#' @param data data.frame containing response and covariates. Must include 'age' and 'depth'.
+#' The first row is used for initializing 'age' and 'depth', hence the rest can be set to NA.
+#' Covariates related to the events (psi) can be filled in automatically by specifying the degree and events in \code{events} argument.
+#' @param reference.label Character label of reference timescale. Used in \code{\link{plot},\link{summary}}.
+#' @param nsims Number of chronologies to be simulated.
+#' @param events List object describing locations, degree and other informations about
+#' the specific climatic periods used in the predictor. If used must include at least
+#' \code{events\$locations}. See \code{\link{events.default}} for more details.
+#' @param synchronization List containing locations and details for sampling tie-points used to synchronize our time scale.
+#' @param control.fit List containing specifications for the fitting procedure.
+#' See \code{\link{control.fit.default}} for more details.
+#' @param control.sim List containing specifications for sampling chronologies (synchronous or otherwise).
+#' See \code{\link{control.sim.default}} for more details.
+#' @param control.linramp List containing specifications for fitting a linear ramp model to given data.
+#' If used, must include \code{control.linramp\$proxy} and \code{control.linramp\$interval}. See
+#' \code{\link{control.linramp.default}} for details.
+#' @param control.transition_dating List containing specifications for
+#' estimating a given transition. See \code{\link{control.transition_dating.default}} for more details.
+#' @param control.bias List containing specifications for adding a potential unknown stochastic counting bias.
+#' See \code{\link{control.bias.default}} for more details.
 #' @param print.progress Boolean. If \code{TRUE} progress will be printed to screen
 #'
 #' @return Returns an S3 object of class "bremla". This includes output from all functions nested within the bremla function. Including fitted marginals and summary statistics, simulated chronologies, time spent on each step.
@@ -26,27 +31,54 @@
 #' @seealso \code{\link{bremla_modelfitter},\link{bremla_chronology_simulation}}
 #' @keywords bremla
 #'
+#'
 #' @examples
 #' \donttest{
 #'
-#' ### Simulation example ###
-#'
+#' ## Simulation example
 #' require(stats)
 #' n <- 1000
 #' phi <- 0.8
 #' sigma <- 1.2
 #' a_lintrend <- 0.3; a_proxy = 0.8
-#' dy_noise <- arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2))
+#' dy_noise <- as.numeric(arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2)))
 #' lintrend <- seq(from=10,to=15,length.out=n)
 #'
-#' proxy <- arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2))
+#' proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))
 #' dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
 #'
-#' y0 = 11700
+#' y0 = 11700;z0=1200
 #' age = y0+cumsum(dy)
 #' depth = 1200 + 1:n*0.05
 #'
-#' object = bremla(age,depth,proxy,nsims=3000)
+#'
+#' formula = dy~-1+depth2 + proxy
+#' data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+#' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
+#'
+#' events=list(locations=c(1210,1220,1240))
+#' control.fit = list(ncores=2,noise="ar1")
+#' synchronization=list(method="gauss")
+#' control.sim=list(synchronized=2,
+#'                  summary=list(compute=TRUE))
+#'
+#' #simulate transition:
+#' prox = rnorm(n,mean=c(rep(0,400),seq(0,4,length.out=20),rep(4,580)),sd=1)
+#' window = 330:500
+#' control.transition_dating=list(label="Simulated transition",
+#'                                linramp=list(proxy=prox,
+#'                                             interval=window,
+#'                                             interval.unit="index",
+#'                                             depth.ref=depth[401]), #True onset is located on index 401
+#'                                dating=list(age.ref=age[401]))
+#'
+#'
+#' object = bremla(formula,data,nsims=5000,events=events,
+#'                          synchronization=synchronization,
+#'                          control.fit=control.fit,
+#'                          control.sim=control.sim,
+#'                          control.transition_dating=control.transition_dating,
+#'                          print.progress=TRUE)
 #' summary(object)
 #' plot(object)
 #'
@@ -62,10 +94,8 @@
 #' depth = NGRIP_5cm$depth
 #' d18O = NGRIP_5cm$d18O
 #' proxy=d18O
-#'
-#' eventdepths = events_rasmussen$depth
-#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
-#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#' data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
+#' formula = y~depth2
 #'
 #'
 #' lowerints = which.index(event_intervals$depth_int_lower.m, depth[2:length(depth)])
@@ -76,9 +106,12 @@
 #' age.reference = event_intervals$GICC_age.yb2k[eventnumber]
 #' interval = lowerints[eventnumber]:upperints[eventnumber]
 #'
-#' object = bremla(age,depth,proxy,events=eventdepths,nsims=10000,
+#' events=list(loations = events_rasmussen$depth,degree=1)
+#'
+#'
+#' object = bremla(formula,data,events=events,nsims=10000,
 #'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
-#'                           locations.type="age",method="adolphi",
+#'                           locations.unit="age",method="adolphi",
 #'                           samples=NULL),
 #'   event.estimation = list(interval=interval,t1.sims=50000,rampsims=50000,label="GI-11",
 #'                           depth.reference=event_intervals$NGRIP_depth_m[eventnumber],
@@ -91,79 +124,96 @@
 #'   plot(object)
 #' }
 #'
+#'}
 #'
 #'
 #' @export
 #' @import matrixStats
-bremla = function(age,depth,proxy, events=NULL,nsims=10000, eventmeasure = "depth",
-                  reference.label=NULL, proxy.type="d18O",transform="identity",
-                  reg.model = list(
-                    const=FALSE,depth1=FALSE,depth2=TRUE,proxy=TRUE,psi0=TRUE,psi1=TRUE),
-  noise="ar1", method="inla", CI.type="quantiles",
-  synchronization = NULL,#list(locations=c(11050,12050,13050,22050,42050),locations.type="age",method="adolphi",samples=NULL),
-  event.estimation = NULL, bias = NULL,store.everything=FALSE,print.progress=FALSE){
+bremla <- function(formula,data,reference.label=NULL,
+                            nsims=10000,
+                            events=NULL,
+                            synchronization=NULL,
+                            control.fit=NULL,
+                            control.sim=NULL,
+                            control.linramp=NULL,
+                            control.transition_dating=NULL,
+                            control.bias=NULL,
+                            print.progress=FALSE
+){
 
   time.start = Sys.time()
   bremla.call = sys.call(which=1)
   if(print.progress) cat("Initiating data formatting...",sep="")
 
+
   #prepare bremla object by formatting dataset, writing formulastrings etc
-  object = bremla_prepare(age,depth,proxy, events=events,nsims=nsims, eventmeasure = eventmeasure,
-                          reg.model = reg.model,noise=noise, method=method,
-                          reference.label=reference.label, transform=transform,
-                          proxy.type=proxy.type)
+  object = bremla_prepare(formula, data, ##data must include 'depth' and 'age' in data or input
+                          reference.label=reference.label,
+                          nsims=nsims,
+                          events=events,
+                          synchronization=synchronization,
+                          control.fit=control.fit,
+                          control.sim=control.sim,
+                          control.linramp=control.linramp,
+                          control.transition_dating=control.transition_dating,
+                          control.bias=control.bias)
   if(print.progress) cat(" completed!\n",sep="")
 
-  #fit the data, first by least squares, then by INLA (if specified)
-  object = bremla_modelfitter(object, method=method,print.progress=print.progress)
+  if(!is.null(control.fit)){
+    #fit the data, first by least squares, then by INLA (if specified)
+    object = bremla_modelfitter(object, control.fit, #set controls to NULL and use via object
+                                print.progress=print.progress)
 
-  if(nsims>0){
+  }
+
+
+  if(nsims>0 && control.sim$synchronized %in% c(FALSE,2)){
+    control.sim$nsims=nsims
     #produce samples from the chronologies
-    object = bremla_chronology_simulation(object, nsims=nsims, method=method,store.means=store.everything,print.progress=print.progress)
+    object = bremla_chronology_simulation(object, control.sim=control.sim,
+                                          print.progress=print.progress)
 
     #compute posterior marginal mean, quantiles and other summary statistics
-    object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=FALSE,print.progress=print.progress)
+    #object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=FALSE,print.progress=print.progress)
 
   }
-
   if(!is.null(synchronization)){
-    if(tolower(noise) %in% c("iid","ar2","2","ar(2)") ){
-      warning("Synchronization is currently only supported for AR(1) processes. Skipping this part...")
-    }else{
-      ##format and or simulate tie-points
-      object = tiepointsimmer(object, nsims=nsims, locations=synchronization$locations,
-                              locations.type=synchronization$locations.type,
-                              method=synchronization$method,samples=synchronization$samples)
-      ##simulate synchronized chronologies
-      object = bremla_synchronized_simulation(object,nsims=nsims) #rest of input arguments are collected from 'object'
-      #compute posterior marginal mean, quantiles and other summary statistics for synchronous time scale
-      object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=TRUE,print.progress=print.progress)
+    synchronization$nsims=nsims
+    ##format and or simulate tie-points
+    object = tiepointsimmer(object, synchronization,
+                            print.progress=print.progress)
 
-    }
   }
 
 
+  if(nsims>0 && control.sim$synchronized %in% c(FALSE,2)){
+    #produce samples from the chronologies
+    object = bremla_synchronized_simulation(object, control.sim=control.sim,
+                                            print.progress=print.progress)
 
-  #if event.estimation list object (containing specifications) is included, perform dating estimation
-  if(!is.null(event.estimation)){
+    #compute posterior marginal mean, quantiles and other summary statistics
+    #object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=TRUE,print.progress=print.progress)
+  }
+
+
+  #if control.transition_dating list object (containing specifications) is included, perform dating estimation
+  if(!is.null(control.linramp)){
     #find onset depth posterior by fitting linear ramp model with INLA
-    object = linrampfitter(object,interval=event.estimation$interval,
-                           h=event.estimation$h,t1.sims=event.estimation$t1.sims,
-                           rampsims=event.estimation$rampsims,
-                           label=event.estimation$label,
-                           depth.reference = event.estimation$depth.reference,
+    object = linrampfitter(object,control.linramp,
                            print.progress=print.progress)
 
-    #perform Monte Carlo simulations to produce samples for onset age of warming transition
-    object = events_depth_to_age(object, nsims = nsims, print.progress=print.progress,
-                                label=event.estimation$label,
-                                age.reference = event.estimation$age.reference)
+    if(!is.null(control.transition_dating)){
+      control.transition_dating$dating$nsims = nsims
+      #perform Monte Carlo simulations to produce samples for onset age of warming transition
+      object = events_depth_to_age(object, control.transition_dating$dating,
+                                   print.progress=print.progress)
+    }
+
   }
   #if bias list object is included, perform this analysis
-  if(!is.null(bias)){
-    object = bremla_biased_chronologies(object,bias.model=bias$bias.model,
-                                        biasparams = bias$biasparams,nsims=nsims,
-                                        store.samples=store.everything)
+  if(!is.null(control.bias)){
+    object = bremla_biased_chronologies(object,control.bias,
+                                        print.progress=print.progress)
   }
   time.total = difftime(Sys.time(), time.start,units="secs")[[1]]
   object$.args$call = bremla.call

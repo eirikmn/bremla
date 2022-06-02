@@ -5,61 +5,53 @@
 \title{Bayesian regression modeling of layered archives}
 \usage{
 bremla(
-  age,
-  depth,
-  proxy,
-  events = NULL,
-  nsims = 10000,
-  eventmeasure = "depth",
+  formula,
+  data,
   reference.label = NULL,
-  proxy.type = "d18O",
-  transform = "identity",
-  reg.model = list(const = FALSE, depth1 = FALSE, depth2 = TRUE, proxy = TRUE, psi0 =
-    TRUE, psi1 = TRUE),
-  noise = "ar1",
-  method = "inla",
-  CI.type = "quantiles",
+  nsims = 10000,
+  events = NULL,
   synchronization = NULL,
-  event.estimation = NULL,
-  bias = NULL,
-  store.everything = FALSE,
+  control.fit = NULL,
+  control.sim = NULL,
+  control.linramp = NULL,
+  control.transition_dating = NULL,
+  control.bias = NULL,
   print.progress = FALSE
 )
 }
 \arguments{
-\item{age}{Vector of observed ages y_0,...,y_n}
+\item{formula}{formula describing the predictor used in fitting the data. Partial covariates (psi)
+can be filled in by specifying the degree and events in \code{events} argument.}
 
-\item{depth}{Vector of depths z_0,...,z_n corresponding to \code{age}}
+\item{data}{data.frame containing response and covariates. Must include 'age' and 'depth'.
+The first row is used for initializing 'age' and 'depth', hence the rest can be set to NA.
+Covariates related to the events (psi) can be filled in automatically by specifying the degree and events in \code{events} argument.}
 
-\item{proxy}{Vector of observed proxy (e.g. del-18O) at depths \code{depth}}
+\item{reference.label}{Character label of reference timescale. Used in \code{\link{plot},\link{summary}}.}
 
-\item{events}{Vector describing locations (in dimension specified by \code{eventmeasure}) of climate transitions for use in linear regression model}
+\item{nsims}{Number of chronologies to be simulated.}
 
-\item{nsims}{Number of chronologies to be simulated}
+\item{events}{List object describing locations, degree and other informations about
+the specific climatic periods used in the predictor. If used must include at least
+\code{events\$locations}. See \code{\link{events.default}} for more details.}
 
-\item{eventmeasure}{Character describing in which dimension the climate events are located ("age", "depth", "index")}
+\item{synchronization}{List containing locations and details for sampling tie-points used to synchronize our time scale.}
 
-\item{reference.label}{String denoting the label used for age data/reference}
+\item{control.fit}{List containing specifications for the fitting procedure.
+See \code{\link{control.fit.default}} for more details.}
 
-\item{proxy.type}{String denoting which proxy is used (for plot-labels).}
+\item{control.sim}{List containing specifications for sampling chronologies (synchronous or otherwise).
+See \code{\link{control.sim.default}} for more details.}
 
-\item{transform}{String denoting which transformation should be applied to the residuals. Default "identity", "log" is also supported, but experimental.}
+\item{control.linramp}{List containing specifications for fitting a linear ramp model to given data.
+If used, must include \code{control.linramp\$proxy} and \code{control.linramp\$interval}. See
+\code{\link{control.linramp.default}} for details.}
 
-\item{reg.model}{List of booleans specifies which effects to be included in the linear regression model: intercept (\code{const}), linear response to depth (\code{depth1}), quadratic response to depth (\code{depth2}), linear response to proxy (\code{proxy}), individual intercepts for each climate period (\code{psi0}), individual linear responses to depth for each climate period (\code{psi1})}
+\item{control.transition_dating}{List containing specifications for
+estimating a given transition. See \code{\link{control.transition_dating.default}} for more details.}
 
-\item{noise}{Character specifying the noise model: independent identically distributed (\code{iid}), first order autoregressive (\code{ar1}) or second order autoregressive (\code{ar2})}
-
-\item{method}{Character specifying how the model is fitted. Currently only least squares (\code{ls}) and INLA (\code{inla}) are supported, and least squares is always run.}
-
-\item{CI.type}{Character describing which type of uncertainty intervals to be used. \code{CI.type="quantiles"} is computed from the quantiles, \code{CI.type="hpd"} computes highest posterior density intervals (takes a little longer to compute). If distribution is unimodal and symmetric these are equivalent.}
-
-\item{synchronization}{List containing information used for simulating tie-points and synchronizing age-depth model to them.}
-
-\item{event.estimation}{List specifying the settings for the linear ramp fit and subsequent age simulation of a specified transition. See example.}
-
-\item{bias}{List specifying the settings for the simulation of chronologies subjected to unknown counting bias. See example for implementation.}
-
-\item{store.everything}{Boolean describing whether optional information (e.g. simulation of age vectors) should be stored.}
+\item{control.bias}{List containing specifications for adding a potential unknown stochastic counting bias.
+See \code{\link{control.bias.default}} for more details.}
 
 \item{print.progress}{Boolean. If \code{TRUE} progress will be printed to screen}
 }
@@ -68,74 +60,6 @@ Returns an S3 object of class "bremla". This includes output from all functions 
 }
 \description{
 Fits a regression model to the data and produces chronology simulations.
-}
-\examples{
-\donttest{
-
-### Simulation example ###
-
-require(stats)
-n <- 1000
-phi <- 0.8
-sigma <- 1.2
-a_lintrend <- 0.3; a_proxy = 0.8
-dy_noise <- arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2))
-lintrend <- seq(from=10,to=15,length.out=n)
-
-proxy <- arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2))
-dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
-
-y0 = 11700
-age = y0+cumsum(dy)
-depth = 1200 + 1:n*0.05
-
-object = bremla(age,depth,proxy,nsims=3000)
-summary(object)
-plot(object)
-
-
-
-### Real data example ###
-
-data("event_intervals")
-data("events_rasmussen")
-data("NGRIP_5cm")
-
-age = NGRIP_5cm$age
-depth = NGRIP_5cm$depth
-d18O = NGRIP_5cm$d18O
-proxy=d18O
-
-eventdepths = events_rasmussen$depth
-eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
-eventindexes = unique(eventindexes[!is.na(eventindexes)])
-
-
-lowerints = which.index(event_intervals$depth_int_lower.m, depth[2:length(depth)])
-upperints = which.index(event_intervals$depth_int_upper.m, depth[2:length(depth)])
-
-eventnumber=13 #number between 1 and 29. specifies which transition to consider
-depth.reference = event_intervals$NGRIP_depth_m[eventnumber]
-age.reference = event_intervals$GICC_age.yb2k[eventnumber]
-interval = lowerints[eventnumber]:upperints[eventnumber]
-
-object = bremla(age,depth,proxy,events=eventdepths,nsims=10000,
-  synchronization = list(locations=c(11050,12050,13050,22050,42050),
-                          locations.type="age",method="adolphi",
-                          samples=NULL),
-  event.estimation = list(interval=interval,t1.sims=50000,rampsims=50000,label="GI-11",
-                          depth.reference=event_intervals$NGRIP_depth_m[eventnumber],
-                          age.reference=event_intervals$NGRIP_agee_m[eventnumber]),
-  bias = list(bias.model="uniform",biasparams=cbind( c(1,1),c(0.98,1.02),c(0.96,1.04) ),
-              store.samples=FALSE),
-  print.progress=TRUE
-  )
-  summary(object)
-  plot(object)
-}
-
-
-
 }
 \seealso{
 \code{\link{bremla_modelfitter},\link{bremla_chronology_simulation}}

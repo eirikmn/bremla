@@ -4,24 +4,20 @@
 \alias{bremla_modelfitter}
 \title{Bremla model fitting}
 \usage{
-bremla_modelfitter(
-  object,
-  method = "inla",
-  print.progress = FALSE,
-  verbose = FALSE
-)
+bremla_modelfitter(object, control.fit, print.progress = FALSE)
 }
 \arguments{
 \item{object}{List object which is the output of function \code{\link{bremla_prepare}}}
 
-\item{method}{Character specifying which method of inference to be used. Currently only \code{ls} and \code{inla} are supported, and if \code{inla} is chosen then both methods are performed. \code{age}}
+\item{control.fit}{List containing specifications for fitting procedure. See
+\code{\link{control.fit.default}} for details.}
 
 \item{print.progress}{Boolean. If \code{TRUE} progress will be printed to screen}
-
-\item{verbose}{Boolean. If \code{TRUE} details of the inla optimization procedure will be printed to the screen.}
 }
 \value{
-Returns the same \code{object} list from the input, but appends information from the fitting procedure. Including fitted values, residuals and summary statistics for the least squares method. If \code{method="inla"} then the \code{inla} type object from the INLA package are included, as well as posterior marginal distributions and summary statistics for the hyperparameters.
+Returns the same \code{object} list from the input, but appends information
+from the fitting procedure in \code{object\$fitting}. Including fitted values, residuals, posterior distributions
+and summary statistics for both fixed and random effects.
 }
 \description{
 Fits the bremla linear regression model to observations.

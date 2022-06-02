@@ -3,13 +3,12 @@
 #' Plots results from bremla S3 class.
 #'
 #' @param x \code{bremla} S3 class. Output of \code{\link{bremla}} function
-#' @param plot.proxydata List specifying how the proxies should be plotted. Either as a function of age or depth. Also includes title (\code{label}) and a boolean describing whether the x-axis should be reversed to give a chronological representation (\code{xrev})
 #' @param plot.ls List specifying how the least square fit should be illustrated. \code{fitted=TRUE} plots the fitted values with label \code{label.fit}, \code{legend} specifies the legend, \code{residuals=TRUE} means the residuals are plotted with title \code{label.res}.
 #' if \code{histogram=TRUE} the residuals are represented in a histogram with label \code{label.hist}, if \code{qqplot=TRUE} a quantile-quantile plot of the residuals are plotted with title \code{label.qq} and if
 #' \code{acf=TRUE} the empirical autocorrelations are plotted with title \code{label.acf}.
 #' @param plot.inla.posterior list specifying how the results from the inla regression fit should be plotted. If \code{posteriors=TRUE} then the posterior marginal distributions of the hyperparameters are plotted with title \code{label}.
-#' @param plot.inlasims list specifying how the simulated chronologies from the INLA posterior should be plotted. \code{nsims} gives how many simulated chronologies should be included in the plot (with title \code{label}), \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.
-#' @param plot.syncsims list specifying how the simulated synchronized chronologies from the INLA posterior should be plotted. \code{nsims} gives how many simulated chronologies should be included in the plot (with title \code{label}), \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.
+#' @param plot.inlasims list specifying how the simulated chronologies from the INLA posterior should be plotted. \code{plotsims} gives how many simulated chronologies should be included in the plot (with title \code{label}), \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.
+#' @param plot.syncsims list specifying how the simulated synchronized chronologies from the INLA posterior should be plotted. \code{plotsims} gives how many simulated chronologies should be included in the plot (with title \code{label}), \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.
 #' @param plot.tiepoints list containing specifications for plotting histogram of sampled tie-points.
 #' @param plot.bias list specifying how the simulations under the assumptions of unknown counting bias should be represented. If \code{MCE} is given as a numeric vector it will be included in the plot (with title \code{label}). \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.
 #' @param plot.linramp list specifying how the linear ramp fit should be plotted. If \code{depth.reference} is given, it will be represented by a vertical dotted line. If \code{show.t0=TRUE} the posterior marginal distribution of the onset is included (non-normalized). If \code{show.t1=TRUE} the posterior marginal distribution of the end point of the transition is included (non-normalized). If \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering. \code{label} gives the title of the plot.
@@ -36,7 +35,7 @@
 #' proxy=d18O
 #'
 #' eventdepths = events_rasmussen$depth
-#' object = bremla(age,depth,proxy,events=eventdepths,nsims=10000,
+#' object = bremla(age,depth,proxy,events=eventdepths,plotsims=10000,
 #'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
 #'                           locations.type="age",method="adolphi",
 #'                           samples=NULL),
@@ -53,12 +52,11 @@
 #' @importFrom rlang .data
 #' @importFrom ggplot2 ggplot aes geom_line geom_ribbon theme_bw xlab ylab geom_segment geom_point
 plot.bremla = function(x,
-                       plot.proxydata=list(age=TRUE,depth=FALSE,xrev=FALSE,label=NULL),
                        plot.ls = list(fitted=TRUE,legend=NULL,residuals=TRUE,histogram=TRUE,qqplot=TRUE,acf=TRUE,xrev=FALSE,
                                       label.fit=NULL,label.res=NULL,label.hist=NULL,label.qq=NULL,label.acf=NULL),
                        plot.inla.posterior = list(posteriors=TRUE,label=NULL),
-                       plot.inlasims = list(nsims=0,legend=NULL,xrev=FALSE,label=NULL),
-                       plot.syncsims = list(nsims=0,legend=NULL,xrev=FALSE,label=NULL),
+                       plot.inlasims = list(plotsims=0,legend=NULL,xrev=FALSE,label=NULL),
+                       plot.syncsims = list(plotsims=0,legend=NULL,xrev=FALSE,label=NULL),
                        plot.tiepoints = list(col.hist="orange",breaks.hist=50,label.x="Age (yb2k)",
                                              label.main=NULL),
                        plot.bias = list(MCE=NULL,legend=NULL,xrev=FALSE,label=NULL),
@@ -84,39 +82,21 @@ plot.bremla = function(x,
   }
 
   figure.count = 1L
-  ageref = x$data$y; z = x$data$z; xx = x$data$x; n=length(ageref)
-  dy=x$data$dy
-  reference.label = x$.args$reference.label
-  if(is.null(reference.label)){
-    reference.label = "reference"
-  }
-  eventindexes = x$.args$eventindexes; nevents = length(eventindexes)
+  ageref = x$data$age; z = x$data$depth; n=length(ageref)
+  response = x$fitting$LS$fit$model[,1]
+  #dy=x$data$dy
+  # reference.label = x$.args$reference.label
+  # if(is.null(reference.label)){
+  #   reference.label = "reference"
+  # }
+  eventindexes = x$.args$events$eventindexes
+  nevents = length(eventindexes)
   oldpar = par()
 
 
 
-  if(!is.null(plot.proxydata)){
-    figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
-    par(mfrow=c(1,1),mar=(c(5,4.5,4,2)+0.1))
-    if(plot.proxydata$age){
-      xdata = ageref; xlab=paste0(reference.label," (yr b2k)")
-    }else if(plot.proxydata$depth){
-      xdata = z; xlab = "Depth (m)"
-    }
-    xlim = c(xdata[1],xdata[n])
-    if(plot.proxydata$xrev) xlim=rev(xlim)
-    plot(xdata,xx,type="l",xlab=xlab,ylab=expression(paste(delta^18,"O (permil)")),main=plot.proxydata$label,xlim=xlim)
-    if(nevents>0) abline(v=xdata[eventindexes],lwd=0.6,col="gray")#rgb(red=0.5,green=0.5,blue=0.5,alpha=1),lwd=0.8)
 
-    if(postscript || pdf){
-      if (names(dev.cur()) != "null device") {
-        dev.off()
-      }
-    }
-  }
-
-
-  if(!is.null(plot.ls) && !is.null(x$LS.fitting$fit)){
+  if(!is.null(plot.ls) && !is.null(x$fitting$LS$fit)){
     figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
     par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
     if(plot.ls$fitted){
@@ -127,8 +107,10 @@ plot.bremla = function(x,
       }else{
         plot.label=plot.ls$label.fit
       }
-      plot(z,dy,type="l",xlab=paste0("Depth (m)"),xlim=xlim,ylab=("Layers per 5 cm"),main=plot.label)
-      lines(z,x$LS.fitting$fit$fitted.values,col="red")
+      responsename = x$.args$responsename
+      response = x$data[[responsename]]
+      plot(z,response,type="l",xlab=paste0("Depth (m)"),xlim=xlim,ylab=("Layers per 5 cm"),main=plot.label)
+      lines(z,x$fitting$LS$fit$fitted.values,col="red")
       abline(v=z[eventindexes],col="gray",lwd=0.8)
     }
     if(!is.null(plot.ls$legend)) legend(x=leg$x,y=leg$y,legend=leg$legend,col=leg$col,lty=leg$lty,cex=leg$cex,pch=leg$pch,lwd=leg$lwd,pt.cex=leg$pt.cex,bty=leg$bty)
@@ -139,15 +121,15 @@ plot.bremla = function(x,
       }else{
         plot.label=plot.ls$label.res
       }
-      plot(z,x$LS.fitting$fit$residuals,type="l",xlab="Depth (m)",ylab="Residual errors per 5 cm",main=plot.label,xlim=xlim); abline(h=0,lty=3,col="gray")
+      plot(z,x$fitting$LS$fit$residuals,type="l",xlab="Depth (m)",ylab="Residual errors per 5 cm",main=plot.label,xlim=xlim); abline(h=0,lty=3,col="gray")
     }
     if(plot.ls$histogram){
       if(is.null(plot.ls$label.hist)){
-        plot.label="Histogram"
+        plot.label="Histogram: Residuals"
       }else{
         plot.label=plot.ls$label.hist
       }
-      hist(x$LS.fitting$fit$residuals,freq=0,col="orange",breaks=20,xlab="Residual errors per 5 cm", main=plot.label)
+      hist(x$fitting$LS$fit$residuals,freq=0,col="orange",breaks=20,xlab="Residual errors per 5 cm", main=plot.label)
     }
     if(plot.ls$qqplot){
       if(is.null(plot.ls$label.qq)){
@@ -155,7 +137,7 @@ plot.bremla = function(x,
       }else{
         plot.label=plot.ls$label.qq
       }
-      qqnorm(x$LS.fitting$fit$residuals,main=plot.label); qqline(x$LS.fitting$fit$residuals)
+      qqnorm(x$fitting$LS$fit$residuals,main=plot.label); qqline(x$fitting$LS$fit$residuals)
     }
     if(plot.ls$acf){
       if(is.null(plot.ls$label.acf)){
@@ -163,7 +145,7 @@ plot.bremla = function(x,
       }else{
         plot.label=plot.ls$label.acf
       }
-      acf(x$LS.fitting$fit$residuals,lag.max = 30,main=plot.label,lwd=2)
+      acf(x$fitting$LS$fit$residuals,lag.max = 30,main=plot.label,lwd=2)
     }
     if(postscript || pdf){
       if (names(dev.cur()) != "null device") {
@@ -182,29 +164,29 @@ plot.bremla = function(x,
       }else{
         plot.label1 = plot.inla.posterior$label[1]
       }
-      plot(x$fitting$hyperparameters$posteriors$sigma_epsilon,type="l",xlab=expression(paste(sigma[epsilon])),ylab="Density",lwd=2,main=plot.label1)
-      abline(v=x$fitting$hyperparameters$results$sigma_epsilon$mean)
-      abline(v=c(x$fitting$hyperparameters$results$sigma_epsilon$quant0.025,x$fitting$hyperparameters$results$sigma_epsilon$quant0.975),col="gray")
+      plot(x$fitting$inla$hyperparameters$posteriors$sigma_epsilon,type="l",xlab=expression(paste(sigma[epsilon])),ylab="Density",lwd=2,main=plot.label1)
+      abline(v=x$fitting$inla$hyperparameters$results$sigma_epsilon$mean)
+      abline(v=c(x$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.025,x$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.975),col="gray")
 
-      if(tolower(x$.args$noise) %in% c(1,"ar1","ar(1)")){
+      if(tolower(x$.args$control.fit$noise) %in% c(1,"ar1","ar(1)")){
         if(length(plot.inla.posterior$label)>=2){
           plot.label2 = plot.inla.posterior$label[2]
         }
-        plot(x$fitting$hyperparameters$posteriors$phi,xlab=expression(paste(phi)),ylab="Density",lwd=2,type="l",main=plot.label2)
-        abline(v=x$fitting$hyperparameters$results$phi$mean)
-        abline(v=c(x$fitting$hyperparameters$results$phi$quant0.025,x$fitting$hyperparameters$results$phi$quant0.975),col="gray")
-      }else if(tolower(x$.args$noise) %in% c(2,"ar2","ar(2)")){
+        plot(x$fitting$inla$hyperparameters$posteriors$phi,xlab=expression(paste(phi)),ylab="Density",lwd=2,type="l",main=plot.label2)
+        abline(v=x$fitting$inla$hyperparameters$results$phi$mean)
+        abline(v=c(x$fitting$inla$hyperparameters$results$phi$quant0.025,x$fitting$inla$hyperparameters$results$phi$quant0.975),col="gray")
+      }else if(tolower(x$.args$control.fit$noise) %in% c(2,"ar2","ar(2)")){
         if(length(plot.inla.posterior$label)>=3){
           plot.label2 = plot.inla.posterior$label[2]
           plot.label3 = plot.inla.posterior$label[3]
         }
-        plot(x$fitting$hyperparameters$posteriors$phi1,xlab=expression(paste(phi[1])),ylab="Density",lwd=2,type="l",main=plot.label2)
-        abline(v=x$fitting$hyperparameters$results$phi1$mean)
-        abline(v=c(x$fitting$hyperparameters$results$phi1$quant0.025,x$fitting$hyperparameters$results$phi1$quant0.975),col="gray")
+        plot(x$fitting$inla$hyperparameters$posteriors$phi1,xlab=expression(paste(phi[1])),ylab="Density",lwd=2,type="l",main=plot.label2)
+        abline(v=x$fitting$inla$hyperparameters$results$phi1$mean)
+        abline(v=c(x$fitting$inla$hyperparameters$results$phi1$quant0.025,x$fitting$inla$hyperparameters$results$phi1$quant0.975),col="gray")
 
-        plot(x$fitting$hyperparameters$posteriors$phi2,xlab=expression(paste(phi[2])),ylab="Density",lwd=2,type="l",main=plot.label3)
-        abline(v=x$fitting$hyperparameters$results$phi2$mean)
-        abline(v=c(x$fitting$hyperparameters$results$phi2$quant0.025,x$fitting$hyperparameters$results$phi2$quant0.975),col="gray")
+        plot(x$fitting$inla$hyperparameters$posteriors$phi2,xlab=expression(paste(phi[2])),ylab="Density",lwd=2,type="l",main=plot.label3)
+        abline(v=x$fitting$inla$hyperparameters$results$phi2$mean)
+        abline(v=c(x$fitting$inla$hyperparameters$results$phi2$quant0.025,x$fitting$inla$hyperparameters$results$phi2$quant0.975),col="gray")
       }
     }
     if(postscript || pdf){
@@ -223,22 +205,23 @@ plot.bremla = function(x,
       figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
 
 
-      nsims = plot.inlasims$nsims
+      plotsims = plot.inlasims$plotsims
 
-      gicc = x$data$y
+      ageref = x$data$age
 
       if(!is.null(x$simulation$summary)){
 
-        fullpd = data.frame(depth = x$data$z, medians=x$simulation$summary$median-gicc,
-                            lower=x$simulation$summary$lower-gicc,
-                            upper=x$simulation$summary$upper-gicc)
+        fullpd = data.frame(depth = x$data$depth,
+                            medians=x$simulation$summary$median-ageref,
+                            lower=x$simulation$summary$lower-ageref,
+                            upper=x$simulation$summary$upper-ageref)
       }else{
-        fullpd = data.frame(depth = x$data$z)
+        fullpd = data.frame(depth = x$data$depth)
       }
 
       gg2 = ggplot(data=fullpd,aes(x=.data$depth)) +
         geom_line(aes(y=0),color="blue",linetype="dotted",size=0.2)+
-        theme_bw()+ylab("Estimated age - GICC05 (years)")+
+        theme_bw()+ylab("Estimated age - reference (years)")+
         xlab("NGRIP depth (m)")
 
       if(!is.null(x$simulation$summary)){
@@ -249,14 +232,14 @@ plot.bremla = function(x,
 
 
 
-      if(!is.null(nsims) && nsims>0){
-        for(i in 1:min(nsims,50)){
-          gg2 = gg2 + geom_line(data=data.frame(depth=x$data$z,
-                                                sim = x$simulation$age[,i]-x$data$y),
+      if(!is.null(plotsims) && plotsims>0){
+        for(i in 1:min(plotsims,50)){
+          gg2 = gg2 + geom_line(data=data.frame(depth=x$data$depth,
+                                                sim = x$simulation$age[,i]-ageref),
                                 aes(.data$depth,.data$sim),color="gray",alpha=0.5)
         }
       }
-      if((!is.null(nsims) && nsims>0) || !is.null(x$simulation$summary) ){
+      if((!is.null(plotsims) && plotsims>0) || !is.null(x$simulation$summary) ){
         print(gg2)
       }
 
@@ -279,24 +262,25 @@ plot.bremla = function(x,
       figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
 
 
-      nsims = plot.syncsims$nsims
+      plotsims = plot.syncsims$plotsims
 
       free_indexes = x$tie_points$free_indexes
       tie_indexes = x$tie_points$tie_indexes
-      gicc_free = x$data$y[free_indexes]
-      gicc_tie = x$data$y[tie_indexes]
+      ageref_free = x$data$age[free_indexes]
+      ageref_tie = x$data$age[tie_indexes]
 
       if(!is.null(x$simulation$summary_sync)){
-        fullpd = data.frame(depth = x$data$z[free_indexes], medians=x$simulation$summary_sync$median[free_indexes]-gicc_free,
-                            lower=x$simulation$summary_sync$lower[free_indexes]-gicc_free,
-                            upper=x$simulation$summary_sync$upper[free_indexes]-gicc_free)
+        fullpd = data.frame(depth = x$data$depth[free_indexes],
+                            medians=x$simulation$summary_sync$median[free_indexes]-ageref_free,
+                            lower=x$simulation$summary_sync$lower[free_indexes]-ageref_free,
+                            upper=x$simulation$summary_sync$upper[free_indexes]-ageref_free)
       }else{
-        fullpd = data.frame(depth = x$data$z[free_indexes])
+        fullpd = data.frame(depth = x$data$depth[free_indexes])
       }
 
       gg2 = ggplot(data=fullpd,aes(x=.data$depth)) +
         geom_line(aes(y=0),color="blue",linetype="dotted",size=0.2)+
-        theme_bw()+ylab("Estimated age - GICC05 (years)")+
+        theme_bw()+ylab("Estimated age - reference (years)")+
         xlab("NGRIP depth (m)")
 
       if(!is.null(x$simulation$summary_sync)){
@@ -306,28 +290,28 @@ plot.bremla = function(x,
 
       if(!is.null(x$simulation$summary_sync)){
         if(x$simulation$summary_sync$lower[tie_indexes[1]] != x$simulation$summary_sync$upper[tie_indexes[1]]){
-          gg2 = gg2 + geom_segment(data=data.frame(depth=x$data$z[tie_indexes],
-                                                   median=x$simulation$summary_sync$median[tie_indexes]-gicc_tie,
-                                                   lower=x$simulation$summary_sync$lower[tie_indexes]-gicc_tie,
-                                                   upper=x$simulation$summary_sync$upper[tie_indexes]-gicc_tie),
+          gg2 = gg2 + geom_segment(data=data.frame(depth=x$data$depth[tie_indexes],
+                                                   median=x$simulation$summary_sync$median[tie_indexes]-ageref_tie,
+                                                   lower=x$simulation$summary_sync$lower[tie_indexes]-ageref_tie,
+                                                   upper=x$simulation$summary_sync$upper[tie_indexes]-ageref_tie),
                                    aes(x=.data$depth,y=.data$lower,xend=.data$depth,yend=.data$upper),
                                    col="magenta")
         }else{
-          gg2 = gg2 + geom_point(data=data.frame(tiedepths = x$data$z[tie_indexes],
+          gg2 = gg2 + geom_point(data=data.frame(tiedepths = x$data$depth[tie_indexes],
                                                  tiemid = x$simulation$summary_sync$median),
                                  aes(x=.data$tiedepths,y=.data$tiemid),
                                  color="magenta")
         }
       }
 
-      if(!is.null(nsims) && nsims>0){
-        for(i in 1:min(nsims,50)){
-          gg2 = gg2 + geom_line(data=data.frame(depth=x$data$z,
-                                                sim = x$simulation$age_sync[,i]-x$data$y),
+      if(!is.null(plotsims) && plotsims>0){
+        for(i in 1:min(plotsims,50)){
+          gg2 = gg2 + geom_line(data=data.frame(depth=x$data$depth,
+                                                sim = x$simulation$age_sync[,i]-ageref),
                                 aes(.data$depth,.data$sim),color="gray",alpha=0.5)
         }
       }
-      if((!is.null(nsims) && nsims>0) || !is.null(x$simulation$summary_sync) ){
+      if((!is.null(plotsims) && plotsims>0) || !is.null(x$simulation$summary_sync) ){
         print(gg2)
       }
 
@@ -415,7 +399,12 @@ plot.bremla = function(x,
     }
 
     if(plot.bias$xrev) xlim=rev(xlim)
-    plot(NA, xlim=xlim,xlab="Depth (m)", ylab=paste0("Simulated timescale - ",reference.label," (years)"),type="l",col="blue",ylim=yrange,main=plot.bias$label)
+    if(is.null(x$.args$reference.label)){
+      plot(NA, xlim=xlim,xlab="Depth (m)", ylab=paste0("Simulated timescale - reference timescale (years)"),type="l",col="blue",ylim=yrange,main=plot.bias$label)
+    }else{
+      plot(NA, xlim=xlim,xlab="Depth (m)", ylab=paste0("Simulated timescale - ",x$.args$reference.label," (years)"),type="l",col="blue",ylim=yrange,main=plot.bias$label)
+    }
+
     abline(h=0,lty=3,lwd=1,col="gray")
     for(iter in 1:nbiases){
       lines(z,x$biases[[paste0("bias",iter)]]$quant0.975-ageref,col="blue",lty=iter)

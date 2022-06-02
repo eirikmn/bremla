@@ -4,27 +4,20 @@
 \alias{bremla_biased_chronologies}
 \title{Linear ramp fit}
 \usage{
-bremla_biased_chronologies(
-  object,
-  bias.model = "uniform",
-  biasparams = c(0.99, 1.01),
-  nsims = 10000,
-  store.samples = FALSE
-)
+bremla_biased_chronologies(object, control.bias, print.progress = FALSE)
 }
 \arguments{
 \item{object}{List object which is the output of function \code{\link{bremla_chronology_simulation}}}
 
-\item{bias.model}{character string describing from which latent distribution the unknown (stochastic) bias factors are drawn. Currently, only \code{bias.model="uniform"} is supported.}
+\item{control.bias}{List containing specifications for how the unknown random bias
+should be implemented. See \code{\link{control.bias.default}} for details.}
 
-\item{biasparams}{matrix describing the parameters of the latent distribution. For the uniform distribution only 2 parameters must be specified, hence the number of rows are 2. If the number of columns are larger than 1 then repeated analyses are performed with different sets of parameters.}
-
-\item{nsims}{the number of samples to be generated. Cannot exceed the number of simulated chronologies from \code{\link{bremla_chronology_simulation}}.}
-
-\item{store.samples}{Boolean. If \code{store.samples=TRUE} then samples are stored. If \code{FALSE} they are not.}
+\item{print.progress}{Boolean. If \code{TRUE} progress will be printed to the screen.}
 }
 \value{
-Returns the same \code{object} list from the input, but appends another list of the summary statistics for each analysis (and samples if \code{store.samples=TRUE}), and inputs (\code{settings})
+Returns the same \code{object} list from the input, but appends another
+list of the summary statistics for each analysis (and samples if \code{store.samples=TRUE}),
+and inputs (\code{settings}). These are stored in \code{object\$biases.}
 }
 \description{
 Fits the linear ramp described by Erhardt et al. (2019) to proxy values using INLA.

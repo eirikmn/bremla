@@ -57,9 +57,9 @@ summary.bremla = function(object,
     cpu=as.numeric(c(cpu,round(object$time$simulation$total,digits=digits)))
     cpu.navn=c(cpu.navn,"Chronology sampling")
   }
-  if(!is.null(object$linramp) && !is.null(object$DO_dating)){
-    cpu=as.numeric(c(cpu,round(object$time$t1_and_ramp + object$time$DO_age$total,digits=digits)))
-    cpu.navn=c(cpu.navn,"DO dating")
+  if(!is.null(object$linramp) && !is.null(object$event_dating)){
+    cpu=as.numeric(c(cpu,round(object$time$t1_and_ramp + object$time$event_age$total,digits=digits)))
+    cpu.navn=c(cpu.navn,"event dating")
   }
   if(!is.null(object$biases)){
     cpu=as.numeric(c(cpu,round(object$time$biases,digits=digits)))
@@ -76,42 +76,44 @@ summary.bremla = function(object,
   }
 
 
-  if(tolower(object$.args$noise) %in% c(0,"iid","independent")){
+  if(tolower(object$.args$control.fit$noise) %in% c(0,"iid","independent")){
     noise = "iid"
-  }else if(tolower(object$.args$noise) %in% c(1,"ar1","ar(1)")){
+  }else if(tolower(object$.args$control.fit$noise) %in% c(1,"ar1","ar(1)")){
     noise = "ar1"
-  }else if(tolower(object$.args$noise) %in% c(2,"ar2","ar(2)")){
+  }else if(tolower(object$.args$control.fit$noise) %in% c(2,"ar2","ar(2)")){
     noise = "ar2"
   }
 
   if(!is.null(object$fitting)){
     if(noise == "iid"){
 
-      hypers = matrix(round(as.numeric(object$fitting$hyperparameters$results$sigma_epsilon),digits=digits),nrow=1)
+      hypers = matrix(round(as.numeric(object$fitting$inla$hyperparameters$results$sigma_epsilon),digits=digits),nrow=1)
       #hypers = matrix( round(as.numeric(object$fitting$hyperparameters$results$sigma_epsilon),digits=digits),ncol=mm )
       hypers = as.data.frame(hypers)
       colnames(hypers) = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
       rownames(hypers) = c("sigma_epsilon")
     }else if(noise == "ar1"){
-      hypers = rbind(round(as.numeric(object$fitting$hyperparameters$results$sigma_epsilon),digits=digits),
-                     round(as.numeric(object$fitting$hyperparameters$results$phi),digits=digits))
+      hypers = rbind(round(as.numeric(object$fitting$inla$hyperparameters$results$sigma_epsilon),digits=digits),
+                     round(as.numeric(object$fitting$inla$hyperparameters$results$phi),digits=digits))
       hypers = as.data.frame(hypers)
       colnames(hypers) = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
       rownames(hypers) = c("sigma_epsilon","phi")
     }else if(noise == "ar2"){
-      hypers = rbind(round(as.numeric(object$fitting$hyperparameters$results$sigma_epsilon),digits=digits),
-                     round(as.numeric(object$fitting$hyperparameters$results$phi1),digits=digits),
-                     round(as.numeric(object$fitting$hyperparameters$results$phi2),digits=digits))
+      hypers = rbind(round(as.numeric(object$fitting$inla$hyperparameters$results$sigma_epsilon),digits=digits),
+                     round(as.numeric(object$fitting$inla$hyperparameters$results$phi1),digits=digits),
+                     round(as.numeric(object$fitting$inla$hyperparameters$results$phi2),digits=digits))
       hypers = as.data.frame(hypers)
       colnames(hypers) = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
       rownames(hypers) = c("sigma_epsilon","phi1","phi2")
     }
     maxlength=2048L
-    formulastring = object$.args$ls.formulastring
+    formulastring = format(object$.args$formula.ls)
     if(sum(nchar(formulastring)) > maxlength){
-      formulastring = paste0( substr(deparse(object$.args$formulastring),1L,maxlength),"...")
+      formulastring = paste0( substr(deparse(object$.args$formula.ls),1L,maxlength),"...")
     }
-    fit.arg = list(formula = formulastring,noise=object$.args$noise, nevents=object$.args$nevents, method = object$.args$method)
+    fit.arg = list(formula = formulastring,noise=object$.args$control.fit$noise,
+                   nevents=object$.args$events$nevents,
+                   method = object$.args$control.fit$method)
 
     ut=c(ut, list(hyperpar=hypers,fit.arg=fit.arg))
   }
@@ -119,44 +121,83 @@ summary.bremla = function(object,
 
 
   if(!is.null(object$simulation)){
-    sim = list(nsims = dim(object$simulation$age)[2],n = dim(object$simulation$age)[1], store.means = !is.null(object$simulation$dmean) )
+    sim = list(nsims = object$.args$control.sim$nsims,
+               n = nrow(object$data),
+               syncstatus = object$.args$control.sim$synchronized,
+               store.means = !is.null(object$simulation$dmean) )
     ut = c(ut,sim)
   }
 
 
   if(!is.null(object$tie_points)){
-    tiepoints = list(tie_n=object$tie_points$tie_n,free_n=object$tie_points$free_n,
-                     method=object$tie_points$method,nsims=object$tie_points$nsims,
+    tiepoints = list(tie_n=object$tie_points$tie_n,
+                     free_n=object$tie_points$free_n,
+                     method=object$tie_points$method,
+                     nsims=object$tie_points$nsims,
                      locations=object$tie_points$locations,
-                     locations.type=object$tie_points$locations.type)
+                     locations.type=object$tie_points$unit)
     ut = c(ut,list(tiepoints=tiepoints))
   }
 
   if(!is.null(object$linramp)){
-    hyperramp = rbind(round(c(object$linramp$param$t0$mean,object$linramp$param$t0$sd,object$linramp$param$t0$q0.025,object$linramp$param$t0$q0.5,object$linramp$param$t0$q0.975),digits=digits),
-                      round(c(object$linramp$param$dtpos$mean,object$linramp$param$dtpos$sd,object$linramp$param$dtpos$q0.025,object$linramp$param$dtpos$q0.5,object$linramp$param$dtpos$q0.975),digits=digits),
-                      round(c(object$linramp$param$y0$mean,object$linramp$param$y0$sd,object$linramp$param$y0$q0.025,object$linramp$param$y0$q0.5,object$linramp$param$y0$q0.975),digits=digits),
-                      round(c(object$linramp$param$dy$mean,object$linramp$param$dy$sd,object$linramp$param$dy$q0.025,object$linramp$param$dy$q0.5,object$linramp$param$dy$q0.975),digits=digits)
+    hyperramp = rbind(round(c(object$linramp$param$t0$mean,
+                              object$linramp$param$t0$sd,
+                              object$linramp$param$t0$q0.025,
+                              object$linramp$param$t0$q0.5,
+                              object$linramp$param$t0$q0.975),
+                            digits=digits),
+                      round(c(object$linramp$param$dtpos$mean,
+                              object$linramp$param$dtpos$sd,
+                              object$linramp$param$dtpos$q0.025,
+                              object$linramp$param$dtpos$q0.5,
+                              object$linramp$param$dtpos$q0.975),
+                            digits=digits),
+                      round(c(object$linramp$param$y0$mean,
+                              object$linramp$param$y0$sd,
+                              object$linramp$param$y0$q0.025,
+                              object$linramp$param$y0$q0.5,
+                              object$linramp$param$y0$q0.975),
+                            digits=digits),
+                      round(c(object$linramp$param$dy$mean,
+                              object$linramp$param$dy$sd,
+                              object$linramp$param$dy$q0.025,
+                              object$linramp$param$dy$q0.5,
+                              object$linramp$param$dy$q0.975),
+                            digits=digits)
                       )
     colnames(hyperramp) = c("mean","sd","quant0.025","quant0.5","quant0.975")
-    if(object$linramp$.args$t1.sims>0){
-      hyperramp = rbind(hyperramp, c(object$linramp$param$t1$mean,object$linramp$param$t1$sd,object$linramp$param$t1$q0.025,object$linramp$param$t1$q0.5,object$linramp$param$t1$q0.975))
+    if(object$linramp$.args$nsims>0){
+      hyperramp = rbind(hyperramp,
+                        c(object$linramp$param$t1$mean,
+                          object$linramp$param$t1$sd,
+                          object$linramp$param$t1$q0.025,
+                          object$linramp$param$t1$q0.5,
+                          object$linramp$param$t1$q0.975))
       rownames(hyperramp) = c("t0", "dt", "y0","dy","t1")
     }else{
       rownames(hyperramp) = c("t0", "dt", "y0","dy")
     }
     hyperramp = as.data.frame(round(hyperramp,digits=digits))
-    linramplist = list(hyperramp = hyperramp,t1sims=object$linramp$.args$t1.sims,rampsims = object$linramp$.args$rampsims,label=object$linramp$.args$label,depth.reference=object$linramp$.args$depth.reference)
+    linramplist = list(hyperramp = hyperramp,t1sims=object$linramp$.args$nsims,
+                       rampsims = object$linramp$.args$nsims,
+                       label=object$linramp$.args$label,
+                       depth.reference=object$linramp$.args$depth.reference)
     ut = c(ut,linramplist)
   }
 
-  if(!is.null(object$DO_dating)){
-    DO_age = matrix(round(c(object$DO_dating$mean,object$DO_dating$sd,object$DO_dating$q0.025,object$DO_dating$q0.5,object$DO_dating$q0.975),digits=digits),nrow=1)
-    colnames(DO_age) = c("mean","sd","quant0.025","quant0.5","quant0.975")
-    rownames(DO_age) = "Onset age"
-    DO_age = as.data.frame(round(DO_age,digits=digits))
-    DOlist = list(DO_age=DO_age,datingsims = object$DO_dating$.args$nsims,label=object$DO_dating$.args$label,age.reference=object$DO_dating$.args$age.reference)
-    ut = c(ut,DOlist)
+  if(!is.null(object$event_dating)){
+    event_age = matrix(round(c(object$event_dating$mean,
+                            object$event_dating$sd,
+                            object$event_dating$q0.025,
+                            object$event_dating$q0.5,
+                            object$event_dating$q0.975),
+                          digits=digits),
+                    nrow=1)
+    colnames(event_age) = c("mean","sd","quant0.025","quant0.5","quant0.975")
+    rownames(event_age) = "Onset age"
+    event_age = as.data.frame(round(event_age,digits=digits))
+    eventlist = list(event_age=event_age,datingsims = object$event_dating$.args$nsims,label=object$event_dating$.args$label,age.reference=object$event_dating$.args$age.reference)
+    ut = c(ut,eventlist)
   }
 
   if(!is.null(object$biases)){
@@ -280,7 +321,7 @@ print.summary.bremla = function(x,
     print(x$hyperramp)
 
     if(!is.null(x$tiepoints)){
-      cat("\n",x$tiepoints$nsims, " samples generated from ", x$tiepoints$tie_n ,
+      cat("\n",x$tiepoints$nsims, " chronologies sampled using ", x$tiepoints$tie_n ,
           " tie-point distributions",sep="")
       if(tolower(x$tiepoints$method) %in% c("adolphi")){
         cat(" (Adolphi).",sep="")
@@ -316,12 +357,12 @@ print.summary.bremla = function(x,
     if(x$rampsims>0) cat("\n",x$rampsims, " samples of linear ramp function produced.\n",sep="")
 
     if(!is.null(x$age.reference)){
-      if(!is.null(x$DO_age)) cat("\nGenerated ",x$datingsims, " samples of onset ages (reference onset age is ",x$age.reference,").\n",sep="")
+      if(!is.null(x$event_age)) cat("\nGenerated ",x$datingsims, " samples of onset ages (reference onset age is ",x$age.reference,").\n",sep="")
     }else{
-      if(!is.null(x$DO_age)) cat("\nGenerated ",x$datingsims, " samples of onset ages.\n",sep="")
+      if(!is.null(x$event_age)) cat("\nGenerated ",x$datingsims, " samples of onset ages.\n",sep="")
     }
 
-    if(!is.null(x$DO_age)) print(x$DO_age)
+    if(!is.null(x$event_age)) print(x$event_age)
     #if(!is.null(x$age.reference)) cat("The reference onset age is ",x$age.reference,"\n",sep="")
   }
 

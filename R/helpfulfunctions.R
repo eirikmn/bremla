@@ -4,7 +4,6 @@
 #'
 #' @param coefs Fixed effects
 #' @param reg.model list specifying the structure of the linear regression model.
-#' @param nevents The number of climate transitions
 #' @param data data.frame obtained from \code{\link{bremla_prepare}}.
 #'
 #' @return Returns a vector representing the mean number of layer difference per depth interval.
@@ -13,41 +12,57 @@
 #' @keywords bremla mean
 #'
 #' @export
-meanmaker = function(coefs,reg.model,nevents=69,data){
+meanmaker = function(coefs,reg.model,data){
   ## Computes mean vector from given fixed effects 'coefs'.
   ## Requires specification of which effects to include ('reg.model'), the number of climate transitions ('nevents') and a data.frame with covariates ('data')
-  coefcounter=1
-  fitted=numeric(dim(data)[1])
-  if(reg.model$const){
-    fitted=coefs[1]
-    coefcounter=coefcounter+1
-  }
-  if(reg.model$depth1){
-    fitted = fitted + coefs[coefcounter]*data$z
-    coefcounter=coefcounter+1
-  }
-  if(reg.model$depth2){
-    fitted = fitted + coefs[coefcounter]*data$z2
-    coefcounter=coefcounter+1
-  }
-  if(reg.model$proxy){
-    fitted=fitted + coefs[coefcounter]*data$x
-    coefcounter=coefcounter+1
-  }
-  if(nevents>0){
-    for(i in 2:nevents){
-      if(reg.model$psi0){
-        #aa = coefs[coefcounter]
-        fitted = fitted + coefs[coefcounter]*data[[paste0("a",i-1)]]
-        coefcounter=coefcounter+1
-      }
-      if(reg.model$psi1){
-        #cc = coefs[coefcounter]
-        fitted = fitted + coefs[coefcounter]*data[[paste0("c",i-1)]]
-        coefcounter=coefcounter+1
-      }
+
+  n=nrow(data)
+  fitted = numeric(n)
+  for (i in 1:length(coefs)){
+    name = names(reg.model)[i]
+    if(name == "`(Intercept)`"){
+      fitted = fitted + coefs[i]
+    }else{
+      fitted = fitted + coefs[i]*data[[name]]
     }
   }
+
+  # coefcounter = 1
+  # if(`(Intercept)` %in% names(reg.model)){
+  #   fitted = fitted + coefs[1]
+  # }
+  # coefcounter=1
+  # fitted=numeric(dim(data)[1])
+  # if(reg.model$const){
+  #   fitted=coefs[1]
+  #   coefcounter=coefcounter+1
+  # }
+  # if(reg.model$depth1){
+  #   fitted = fitted + coefs[coefcounter]*data$z
+  #   coefcounter=coefcounter+1
+  # }
+  # if(reg.model$depth2){
+  #   fitted = fitted + coefs[coefcounter]*data$z2
+  #   coefcounter=coefcounter+1
+  # }
+  # if(reg.model$proxy){
+  #   fitted=fitted + coefs[coefcounter]*data$x
+  #   coefcounter=coefcounter+1
+  # }
+  # if(nevents>0){
+  #   for(i in 2:nevents){
+  #     if(reg.model$psi0){
+  #       #aa = coefs[coefcounter]
+  #       fitted = fitted + coefs[coefcounter]*data[[paste0("a",i-1)]]
+  #       coefcounter=coefcounter+1
+  #     }
+  #     if(reg.model$psi1){
+  #       #cc = coefs[coefcounter]
+  #       fitted = fitted + coefs[coefcounter]*data[[paste0("c",i-1)]]
+  #       coefcounter=coefcounter+1
+  #     }
+  #   }
+  # }
   return(fitted)
 }
 #' Linear ramp function
@@ -134,7 +149,6 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
 #' Computes posterior marginal mean and uncertainty intervals from simulations.
 #'
 #' @param object List object which is the output of function \code{\link{bremla_chronology_simulation}}
-#' @param CI.type character describing which uncertainty intervals should be used (\code{"quantiles" or "hpd"}). Highest posterior density is used by default
 #' @param sync boolean. Set \code{TRUE} if summary statistics should be computed for syncrhonized samples (if any). \code{FALSE} for unsynchronized.
 #' @param print.progress Boolean describing whether or not progress should be printed on screen.
 #'
@@ -168,7 +182,12 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
 #' @importFrom matrixStats rowMeans2 rowSds rowMedians
 #' @importFrom INLA inla.hpdmarginal
 #' @importFrom stats median
-bremla_simulationsummarizer = function(object,CI.type="hpd",sync=TRUE,print.progress=FALSE){
+bremla_simulationsummarizer = function(object,sync=TRUE,print.progress=FALSE){
+
+  CI.type=object$.args$control.sim$summary$CI.type
+
+
+  #sync=object$.args$control.sim$synchronized
   if(print.progress) cat("Computing posterior marginal mean and 95% credible intervals from chronology samples...\n",sep="")
   time.start = Sys.time()
   if(sync && !is.null(object$simulation$age_sync)){
@@ -234,6 +253,49 @@ bremla_simulationsummarizer = function(object,CI.type="hpd",sync=TRUE,print.prog
   return(object)
 }
 
+#' @importFrom stringr str_replace_all
+cleanstring <- function(string){
+  str=str_replace_all(string," ","")
+  return(str)
+}
+
+#' @importFrom stringr str_locate str_detect str_locate_all str_sub
+lat.selector <- function(formulastring){
+  formulastring=cleanstring(formulastring)
+  lat.selection=list()
+  tildepos = str_locate(formulastring,"~")[1]
+  if(str_detect(formulastring,"-1+")){
+    explicit_int= TRUE
+  }else{
+    lat.selection$`(Intercept)`=1
+    if(str_detect(formulastring,"~1+")){
+      explicit_int= TRUE
+    }else{
+      explicit_int= FALSE
+    }
+  }
+  pluspos = (str_locate_all(formulastring,"\\+")[[1]])[,1]
+
+
+  if(explicit_int){ ##omit first position (intercept) if stated explicitly in formula
+    separators = pluspos
+  }else{
+    separators = c(tildepos,pluspos)
+  }
+  if(length(separators)>1){
+    for(i in 1:(length(separators)-1) ){
+      cov.name = str_sub(formulastring,start=separators[i]+1,end=separators[i+1]-1)
+      lat.selection[[cov.name]]=1
+    }
+  }
+  if(length(separators)>=1){
+    cov.name = str_sub(formulastring,start=tail(separators,1)+1,end=-1)
+    lat.selection[[cov.name]]=1
+  }
+
+  return(lat.selection)
+}
+
 
 # formulasplitter <- function(formulastring){
 #   formulastring=cleanstring(formulastring)
@@ -276,29 +338,23 @@ bremla_simulationsummarizer = function(object,CI.type="hpd",sync=TRUE,print.prog
 #
 # }
 #
-# cleanstring <- function(string){
-#   str=str_replace_all(string," ","")
-#   return(str)
-# }
+
 
 control.fixed.priors = function(reg.model, fit, nevents){
 
+  #see '?control.fixed' to see what I am doing
   my.control.fixed = list(mean=list(  ))
 
-  if(reg.model$depth1) my.control.fixed$mean[["z"]] = fit$coefficients[["z"]]
-  if(reg.model$depth2) my.control.fixed$mean[["z2"]] = fit$coefficients[["z2"]]
-  if(reg.model$proxy) my.control.fixed$mean[["x"]] = fit$coefficients[["x"]]
-
-  if((reg.model$psi0 || reg.model$psi1) && nevents>0){
-    for(i in 1:(nevents-1)){
-      if(reg.model$psi0){
-        my.control.fixed$mean[[paste0("a",i)]] = fit$coefficients[[paste0("a",i)]]
-      }
-      if(reg.model$psi0){
-        my.control.fixed$mean[[paste0("c",i)]] = fit$coefficients[[paste0("c",i)]]
-      }
-    }
+  startindex=1
+  if(!is.null(reg.model$`(Intercept)`) && reg.model$`(Intercept)` == 1){
+    my.control.fixed$mean.intercept = fit$coefficients[["(Intercept)"]]
+    startindex=startindex+1
   }
+  for (i in startindex:length(reg.model)){
+    varname = names(reg.model)[i]
+    my.control.fixed$mean[[ varname ]] = fit$coefficients[[varname]]
+  }
+
 
   return(my.control.fixed)
 }
@@ -445,17 +501,21 @@ adolphi_tiepoint_simmer = function(nsims=10000,tieshifts = numeric(5), plotdens=
 
 
 #' Tie-point simulation
-#' Wrapper function which calls specified functions to produce samples from tie-point distributions and places them in \code{bremla} object.
-#' @param object Bremla list object to store samples in
-#' @param nsims Integer. The number of samples to be produced.
-#' @param locations numeric describing location of each tie-point
-#' @param locations.type string. what unit is the location given in? Can be "depth", "age" and "index".
-#' @param method string. Set \code{method="adolphi"} to use adolphi tie-points. Other options will be made available soon
-#' @param x.ref numeric of length \code{length(locations)}, adds reference locations (x-axis) to which the tie-points can be compared to later.
-#' @param samples data.frame including premade tie-point samples. \code{ncol} must correspond to the number of tie-points.
-#' @param ... Further arguments to be passed down to the selected tie-point simulation function.
 #'
-#' @return returns the same \code{object} from input but appends tie-point samples and information.
+#' Wrapper function which calls specified functions to produce samples from tie-point distributions and places them in \code{bremla} object.
+#'
+#' @param object Bremla list object to store samples in
+#' @param synchronization List containing specifications for generating tie-points.
+#' Must include \code{synchronization\$locations}. Includes different methods for
+#' producing tie-points specified by \code{synchronization\$method}, and can also
+#' import pre-computed samples in \code{synchronization\$samples}. See
+#' \code{\link{synchronization.default}} for more details.
+#' @param print.progress Boolean. If \code{TRUE} progress will be printed to screen.
+#' @param ... Further arguments to be passed down to the selected tie-point simulation
+#' function.
+#'
+#' @return returns the same \code{object} from input but appends tie-point samples
+#' and information in \code{object\$tie_points}.
 #'
 #' @examples
 #' \donttest{
@@ -482,31 +542,67 @@ adolphi_tiepoint_simmer = function(nsims=10000,tieshifts = numeric(5), plotdens=
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @keywords tiepoint sample
 #' @export
-tiepointsimmer = function(object, nsims=10000, locations=NULL, locations.type="depth",
-                          method="adolphi", x.ref=NULL, samples=NULL,...){
+tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
 
   time.start = Sys.time()
+  if(missing(synchronization)){
 
-  if(!is.null(samples)){
-    nsims = ncol(samples)
-    if(ncol(samples) != length(locations)) warning("number of columns in 'samples' must correspond to length of 'locations'!")
+    if(!is.null(object$.args$synchronization)){
+      if(print.progress){
+        cat("'synchronization' missing. Importing information from 'object'.",sep="")
+      }
+      synchronization = object$.args$synchronization
+    }else{
+      stop("Could not find 'synchronization'. Stopping.")
+    }
+  }
+  #if(!is.null(synchronization))
+  synchronization = set.options(synchronization,synchronization.default())
 
-    object$tie_points = list(samples=samples,locations=locations,locations.type=locations.type,
-                             method=method,nsims=nsims)
+  object$.args$synchronization = synchronization
+
+
+  if(!is.null(synchronization$samples)){
+    nsims = ncol(synchronization$samples)
+    if(ncol(synchronization$samples) != length(synchronization$locations))
+      warning("number of columns in 'samples' must correspond to length of 'locations'!")
+    samples = synchronization$samples
+  }else{
+    if(synchronization$method=="adolphi"){
+      synchronization$locations = c(11050,12050,13050,22050,42050)
+      synchronization$locations_unit="age"
+      locations_indexes = which.index(synchronization$locations,object$data$age)
+      tieshifts = synchronization$locations
+      synchronization$x.ref=tieshifts
+
+      samples = adolphi_tiepoint_simmer(nsims=synchronization$nsims,
+                                        tieshifts=tieshifts,...)
+    }else if(synchronization$method %in% c("normal","gaussian","gauss")){
+      synchronization$locations = object$data$depth[c(100,400,700)]
+
+      ntie = length(synchronization$locations)
+      ## temporary
+      samples = matrix(NA,nrow=synchronization$nsims,ncol=ntie)
+      loc.ind = which.index(synchronization$locations,object$data$depth)
+      meanvek = object$data$age[loc.ind]+c(1,-100,300)
+      sdvek = object$data$age[loc.ind]/meanvek[1]*(1:3)*50
+      for(i in 1:ntie){
+        samples[,i] = rnorm(synchronization$nsims,mean=meanvek[i],sd=sdvek[i])
+      }
+      locations_indexes=loc.ind
+    }
+
+
+
   }
 
-  if(method=="adolphi"){
-    locations = c(11050,12050,13050,22050,42050)
-    locations.type="age"
-    tieshifts = locations
-    x.ref=tieshifts
-
-    samples = adolphi_tiepoint_simmer(nsims=nsims,tieshifts=tieshifts,...)
-  }
-
-
-  object$tie_points = list(samples=samples, locations=locations,locations.type=locations.type,
-                           method=method,nsims=nsims,x.ref=x.ref)
+  object$tie_points = list(samples=samples,
+                           locations=synchronization$locations,
+                           locations_unit=synchronization$locations_unit,
+                           method=synchronization$method,
+                           nsims=synchronization$nsims,
+                           x.ref=synchronization$x.ref,
+                           locations_indexes=locations_indexes)
 
   time.total = difftime(Sys.time(), time.start,units="secs")[[1]]
 

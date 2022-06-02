@@ -4,14 +4,12 @@
 \alias{meanmaker}
 \title{Mean vector from fixed effects}
 \usage{
-meanmaker(coefs, reg.model, nevents = 69, data)
+meanmaker(coefs, reg.model, data)
 }
 \arguments{
 \item{coefs}{Fixed effects}
 
 \item{reg.model}{list specifying the structure of the linear regression model.}
-
-\item{nevents}{The number of climate transitions}
 
 \item{data}{data.frame obtained from \code{\link{bremla_prepare}}.}
 }

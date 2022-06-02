@@ -3,17 +3,11 @@
 #' Fits the linear ramp described by Erhardt et al. (2019) to proxy values using INLA.
 #'
 #' @param object List object which is the output of function \code{\link{bremla_chronology_simulation}}
-#' @param interval Vector denoting the data window of which proxy values should be included in the linear ramp fit.
-#' @param interval.what Character string denoting what \code{interval} is. \code{interval.what="index"} means the window is given in terms of steps and \code{interval.what="depth"} means the window is given in terms of depth.
-#' @param optparams vector of numeric values which gives the initial conditions of the optimalization procedure used to generate initial conditions for INLA.
-#' @param h numeric that specify the step size of the INLA optimization procedure. Default \code{h=0.1}.
-#' @param verbose Boolean. If \code{TRUE} details of the INLA optimization procedure will be printed to the screen.
-#' @param print.progress Boolean. If \code{TRUE} progress will be printed to screen
-#' @param t1.sims Integer denoting how many samples should be used to simulate the transition end point t1=t0+dt. If \code{t1.sims=0} then this is skipped.
-#' @param rampsims Integer denoting how many samples should be used to simulate the linear ramp function. If \code{rampsims=0} then this is skipped.
-#' @param label character string describing the label designed the transition, e.g. \code{label="GI-11"}.
-#' @param depth.reference numeric denoting a reference value such as transition onset obtained by other means. This appears when using \code{plot}. If \code{depth.reference=NULL} then this is not used.
-#' @param print.progress Boolean. If \code{TRUE} progress will be printed to screen
+#' @param control.linramp Includes the data and specifications for the linear ramp
+#' model fitting procedure. Must include \code{control.linramp\$proxy} and \code{control.linramp\$interval}
+#' (preferably also \code{control.linramp\$interval.unit}),
+#' the rest can be set to default values. See \code{\link{control.linramp.default}} for details.
+#' @param print.progress Boolean. If \code{TRUE} progress will be printed to screen.
 #'
 #' @return Returns the same \code{object} list from the input, but appends another list of results from the linear ramp fit, including posterior marginal distributions of the hyperparameters, summary statistics, and simulations of linear ramp and transition end point (if any).
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
@@ -65,27 +59,52 @@
 #' @importFrom stats optim
 #' @importFrom numDeriv grad
 #'
-linrampfitter = function(object,interval,interval.what="index",
-                         optparams=NULL,
-                         h=0.01,verbose=FALSE,t1.sims=50000,rampsims=50000,
-                         label="",depth.reference=NULL,print.progress=FALSE){
+linrampfitter = function(object,control.linramp,print.progress=FALSE){
   time.start = Sys.time()
 
-  if(interval.what == "depth"){
-    intervalrange = which.index(range(interval),object$data$z)
+
+  if(missing(control.linramp)){
+
+    if(!is.null(object$.args$control.linramp)){
+      if(print.progress){
+        cat("'control.linramp' missing. Importing information from 'object'.",sep="")
+      }
+      control.linramp = object$.args$control.linramp
+    }else{
+      stop("Could not find 'control.linramp'. Stopping.")
+    }
+  }
+  #if(!is.null(control.linramp))
+  control.linramp = set.options(control.linramp,control.linramp.default())
+
+  object$.args$control.linramp = control.linramp
+
+  ## sample hyperparameters
+  if(is.null(object$simulation$age) && is.null(object$simulation$age_sync))
+    stop("Chronologies not found. Run 'bremla_synchronized_simulation' or 'bremla_chronology_simulation' first!")
+  interval = control.linramp$interval
+
+
+
+  if(control.linramp$interval.what == "depth"){
+    intervalrange = which.index(range(interval),object$data$depth)
     interval = intervalrange[1]:intervalrange[2]
-  }else if(interval.what == "age"){
-    intervalrange = which.index(range(interval),object$data$y)
+  }else if(control.linramp$interval.what == "age"){
+    intervalrange = which.index(range(interval),object$data$age)
     interval = intervalrange[1]:intervalrange[2]
+  }else if(control.linramp$interval.what == "index"){
+    interval = range(interval)[1]:range(interval)[2]
   }
 
   if(print.progress) cat("Initializing linear ramp fit using INLA.\n",sep="")
-  df_event = data.frame(xx=rev(object$data$z[interval]),
-                        yy=rev(object$data$x[interval])) #reverse: Want depth axis representing old->new
+  df_event = data.frame(xx=rev(object$data$depth[interval]),
+                        yy=rev(control.linramp$proxy[interval])) #reverse: Want depth axis representing old->new
 
   ## default initial values for optim function
-  if(is.null(optparams)){
+  if(is.null(control.linramp$opt.params)){
     optparams = c(round(length(interval)/2),round(length(interval)/10),df_event$yy[1],df_event$yy[length(interval)]-df_event$yy[1])
+  }else{
+    optparams = control.linramp$opt.params
   }
 
   n=length(interval)
@@ -141,8 +160,10 @@ linrampfitter = function(object,interval,interval.what="index",
 
   r = inla(formula,family="gaussian", data=data.frame(y=df0$y,idx=as.integer(df0$time)),
            control.mode=list(theta=init,
-                             restart=TRUE),num.threads = 1,
-           verbose=verbose,control.inla=list(h=h),
+                             restart=TRUE),
+           num.threads = control.linramp$ncores,
+           verbose=control.linramp$verbose,
+           control.inla=list(h=control.linramp$h),
            control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))) )#, num.threads = 1)
   time.endinla = Sys.time()
   elapsedinla = difftime(time.endinla,time.startinla,units="secs")[[1]]
@@ -185,14 +206,15 @@ linrampfitter = function(object,interval,interval.what="index",
   object$linramp$param$sigma = list(marg.sigma=margsigma,mean=z.sigma$mean,sd=z.sigma$sd,q0.025=z.sigma$quant0.025,q0.5=z.sigma$quant0.5,q0.975=z.sigma$quant0.975)
   object$linramp$param$tau = list(marg.sigma=margtau,mean=z.tau$mean,sd=z.tau$sd,q0.025=z.tau$quant0.025,q0.5=z.tau$quant0.5,q0.975=z.tau$quant0.975)
 
-  if(t1.sims>0 || rampsims>0) time.startbonussample = Sys.time()
 
-  if(t1.sims>0 && print.progress && rampsims==0) cat("Simulating ensemble of ", t1.sims, " samples for t1 = t0 + dt...","\n",sep="")
-  if(t1.sims==0 && print.progress && rampsims>0) cat("Simulating ensemble of ",rampsims," samples for linear ramp...","\n",sep="")
-  if(t1.sims>0 && print.progress && rampsims>0) cat("Simulating ensembles of ",t1.sims," samples for t1 = t0 + dt and ",rampsims," samples for linear ramp...","\n",sep="")
+  if(control.linramp$nsims>0 || control.linramp$nsims>0) time.startbonussample = Sys.time()
 
-  if(t1.sims>0 || rampsims>0){
-    nsims = max(t1.sims,rampsims)
+  if(control.linramp$nsims>0 && print.progress && control.linramp$nsims==0) cat("Simulating ensemble of ", control.linramp$nsims, " samples for t1 = t0 + dt...","\n",sep="")
+  if(control.linramp$nsims==0 && print.progress && control.linramp$nsims>0) cat("Simulating ensemble of ",control.linramp$nsims," samples for linear ramp...","\n",sep="")
+  if(control.linramp$nsims>0 && print.progress && control.linramp$nsims>0) cat("Simulating ensembles of ",control.linramp$nsims," samples for t1 = t0 + dt and ",control.linramp$nsims," samples for linear ramp...","\n",sep="")
+
+  if(control.linramp$nsims>0 || control.linramp$nsims>0){
+    nsims = max(control.linramp$nsims,control.linramp$nsims)
     samps=inla.hyperpar.sample(nsims,object$linramp$inlafit)
 
     hpars = matrix(NA,nrow = nsims,ncol=5)
@@ -203,10 +225,10 @@ linrampfitter = function(object,interval,interval.what="index",
     hpars[,4] = exp(samps[,2])/(n-1)*(df0$x[n]-df0$x[1]) #Dt
   }
 
-  if(t1.sims>0){
+  if(control.linramp$nsims>0){
     t1sims=numeric(nsims)
     t1mean = mean(t1sims)
-    for(i in 1:t1.sims){
+    for(i in 1:control.linramp$nsims){
       t01 = hpars[i,3]
       dt1 = hpars[i,4]
       t1sims[i] = t01+dt1
@@ -218,9 +240,9 @@ linrampfitter = function(object,interval,interval.what="index",
     z.t1 = inla.zmarginal(margt1,silent=TRUE)
     object$linramp$param$t1 = list(marginal=margt1,samples = t1sims,mean=z.t1$mean,sd=z.t1$sd,q0.025=z.t1$quant0.025,q0.5=z.t1$quant0.5,q0.975=z.t1$quant0.975)
   }
-  if(rampsims>0){
-    vekmat = matrix(NA,nrow=n,ncol=rampsims)
-    for(i in 1:rampsims){
+  if(control.linramp$nsims>0){
+    vekmat = matrix(NA,nrow=n,ncol=control.linramp$nsims)
+    for(i in 1:control.linramp$nsims){
       t01 = hpars[i,3]
       dt1 = hpars[i,4]
       vekmat[,i] = bremla::linramprev(object$linramp$data$x,t0=t01,dt=dt1,y0=hpars[i,1],dy=hpars[i,2])
@@ -240,12 +262,14 @@ linrampfitter = function(object,interval,interval.what="index",
     object$linramp$linrampfit = list(mean = vek.mean,q0.025=vek.quant0.025,q0.5=vek.quant0.5,q0.975=vek.quant0.975)
   }
   object$time$linramp = list(inla=elapsedinla)
-  if(t1.sims>0 || rampsims>0) object$time$t1_and_ramp = difftime(Sys.time(),time.startbonussample,units="secs")[[1]]
-  if((t1.sims>0 || rampsims>0) && print.progress) cat(" completed in ",object$time$t1_and_ramp," seconds!\n",sep="")
+  if(control.linramp$nsims>0 || control.linramp$nsims>0) object$time$t1_and_ramp = difftime(Sys.time(),time.startbonussample,units="secs")[[1]]
+  if((control.linramp$nsims>0 || control.linramp$nsims>0) && print.progress) cat(" completed in ",object$time$t1_and_ramp," seconds!\n",sep="")
 
   time.total = difftime(Sys.time(),time.start,units="secs")[[1]]
 
-  object$linramp$.args = list(t1.sims=t1.sims,rampsims=rampsims,depth.reference=depth.reference,label=label)
+  object$linramp$.args = list(nsims=control.linramp$nsims,
+                              depth.reference=control.linramp$depth.ref,
+                              label=control.linramp$depth.label)
   object$time$linramp=time.total
 
   return(object)

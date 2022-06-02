@@ -3,12 +3,13 @@
 #' Fits the linear ramp described by Erhardt et al. (2019) to proxy values using INLA.
 #'
 #' @param object List object which is the output of function \code{\link{bremla_chronology_simulation}}
-#' @param bias.model character string describing from which latent distribution the unknown (stochastic) bias factors are drawn. Currently, only \code{bias.model="uniform"} is supported.
-#' @param biasparams matrix describing the parameters of the latent distribution. For the uniform distribution only 2 parameters must be specified, hence the number of rows are 2. If the number of columns are larger than 1 then repeated analyses are performed with different sets of parameters.
-#' @param nsims the number of samples to be generated. Cannot exceed the number of simulated chronologies from \code{\link{bremla_chronology_simulation}}.
-#' @param store.samples Boolean. If \code{store.samples=TRUE} then samples are stored. If \code{FALSE} they are not.
+#' @param control.bias List containing specifications for how the unknown random bias
+#' should be implemented. See \code{\link{control.bias.default}} for details.
+#' @param print.progress Boolean. If \code{TRUE} progress will be printed to the screen.
 #'
-#' @return Returns the same \code{object} list from the input, but appends another list of the summary statistics for each analysis (and samples if \code{store.samples=TRUE}), and inputs (\code{settings})
+#' @return Returns the same \code{object} list from the input, but appends another
+#' list of the summary statistics for each analysis (and samples if \code{store.samples=TRUE}),
+#' and inputs (\code{settings}). These are stored in \code{object\$biases.}
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @seealso \code{\link{bremla_chronology_simulation}}
 #' @keywords bremla bias
@@ -34,23 +35,57 @@
 #' }
 #' @export
 #' @importFrom stats runif
-bremla_biased_chronologies = function(object,bias.model="uniform",biasparams = c(0.99,1.01),nsims=10000,store.samples=FALSE){
-  if(nsims > dim(object$simulation$age)[2]) stop("Number of simulated biases exceeds number of simulated chronologies! Shutting down...")
+bremla_biased_chronologies = function(object,control.bias,print.progress=FALSE){
+#bias.model="uniform",biasparams = c(0.99,1.01),nsims=10000,store.samples=FALSE){
+
+
   time.start = Sys.time()
-  n = dim(object$simulation$age)[1]
-  m = dim(biasparams)[2]
+
+
+
+  if(missing(control.bias)){
+
+    if(!is.null(object$.args$control.bias)){
+      if(print.progress){
+        cat("'control.bias' missing. Importing information from 'object'.",sep="")
+      }
+      control.bias = object$.args$control.bias
+    }else{
+      stop("Could not find 'control.bias'. Stopping.")
+    }
+  }
+  #if(!is.null(control.bias))
+  control.bias = set.options(control.bias,control.bias.default())
+
+  object$.args$control.bias = control.bias
+
+  ## sample hyperparameters
+  if(is.null(object$linramp))
+    stop("Linear ramp fit not found. Run 'linrampfitter' first!")
+
+  nsims = control.bias$nsims
+  if(nsims > ncol(object$simulation$age))
+    stop("Number of simulated biases exceeds number of simulated chronologies! Shutting down...")
+
+  n = nrow(object$simulation$age)
+  biasparams = control.bias$biasparams
+
+  if(class(biasparams) == "numeric"){
+    biasparams = matrix(biasparams,ncol=1)
+  }
+  m = ncol(biasparams)
   for(iter in 1:m){
     biasparam = biasparams[,iter]
     biases = runif(nsims,min=biasparam[1],max=biasparam[2])
 
-    if(store.samples){
+    if(control.bias$store.samples){
       biasedages = matrix(NA,nrow=n,ncol=nsims)
     }
     bias.x1=numeric(n)
     bias.x2=numeric(n)
     for(i in 1:nsims){
       sample = biases[i]*object$simulation$age[,i]
-      if(store.samples){
+      if(control.bias$store.samples){
         biasedages[,i] = sample
       }
       bias.x1 = bias.x1 + sample
@@ -62,13 +97,17 @@ bremla_biased_chronologies = function(object,bias.model="uniform",biasparams = c
     listr = paste0("bias",iter)
     object$biases[[listr]] = list(mean = biasmean, sd = biassd, quant0.025 = biasmean-1.96*biassd,quant0.975=biasmean+1.96*biassd
     )
-    if(store.samples){
+    if(control.bias$store.samples){
       object$biases[[listr]]$simulations = biasedages
     }
 
   }
 
-  object$biases$.args = list(bias.model=bias.model,biasparam=biasparams,nsims=nsims,store.samples=store.samples,nbiases = m)
+  object$biases$.args = list(bias.model=control.bias$bias.model,
+                             biasparam=biasparams,
+                             nsims=nsims,
+                             store.samples=control.bias$store.samples,
+                             nbiases = m)
   time.end = Sys.time()
   time.full = difftime(time.end,time.start,units="secs")[[1]]
   object$biases$time = time.full

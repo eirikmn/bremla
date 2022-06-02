@@ -6,13 +6,12 @@
 \usage{
 \method{plot}{bremla}(
   x,
-  plot.proxydata = list(age = TRUE, depth = FALSE, xrev = FALSE, label = NULL),
   plot.ls = list(fitted = TRUE, legend = NULL, residuals = TRUE, histogram = TRUE,
     qqplot = TRUE, acf = TRUE, xrev = FALSE, label.fit = NULL, label.res = NULL,
     label.hist = NULL, label.qq = NULL, label.acf = NULL),
   plot.inla.posterior = list(posteriors = TRUE, label = NULL),
-  plot.inlasims = list(nsims = 0, legend = NULL, xrev = FALSE, label = NULL),
-  plot.syncsims = list(nsims = 0, legend = NULL, xrev = FALSE, label = NULL),
+  plot.inlasims = list(plotsims = 0, legend = NULL, xrev = FALSE, label = NULL),
+  plot.syncsims = list(plotsims = 0, legend = NULL, xrev = FALSE, label = NULL),
   plot.tiepoints = list(col.hist = "orange", breaks.hist = 50, label.x = "Age (yb2k)",
     label.main = NULL),
   plot.bias = list(MCE = NULL, legend = NULL, xrev = FALSE, label = NULL),
@@ -29,17 +28,15 @@
 \arguments{
 \item{x}{\code{bremla} S3 class. Output of \code{\link{bremla}} function}
 
-\item{plot.proxydata}{List specifying how the proxies should be plotted. Either as a function of age or depth. Also includes title (\code{label}) and a boolean describing whether the x-axis should be reversed to give a chronological representation (\code{xrev})}
-
 \item{plot.ls}{List specifying how the least square fit should be illustrated. \code{fitted=TRUE} plots the fitted values with label \code{label.fit}, \code{legend} specifies the legend, \code{residuals=TRUE} means the residuals are plotted with title \code{label.res}.
 if \code{histogram=TRUE} the residuals are represented in a histogram with label \code{label.hist}, if \code{qqplot=TRUE} a quantile-quantile plot of the residuals are plotted with title \code{label.qq} and if
 \code{acf=TRUE} the empirical autocorrelations are plotted with title \code{label.acf}.}
 
 \item{plot.inla.posterior}{list specifying how the results from the inla regression fit should be plotted. If \code{posteriors=TRUE} then the posterior marginal distributions of the hyperparameters are plotted with title \code{label}.}
 
-\item{plot.inlasims}{list specifying how the simulated chronologies from the INLA posterior should be plotted. \code{nsims} gives how many simulated chronologies should be included in the plot (with title \code{label}), \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.}
+\item{plot.inlasims}{list specifying how the simulated chronologies from the INLA posterior should be plotted. \code{plotsims} gives how many simulated chronologies should be included in the plot (with title \code{label}), \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.}
 
-\item{plot.syncsims}{list specifying how the simulated synchronized chronologies from the INLA posterior should be plotted. \code{nsims} gives how many simulated chronologies should be included in the plot (with title \code{label}), \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.}
+\item{plot.syncsims}{list specifying how the simulated synchronized chronologies from the INLA posterior should be plotted. \code{plotsims} gives how many simulated chronologies should be included in the plot (with title \code{label}), \code{legend} specifies the legend, if \code{xrev=TRUE} the x-axis is reversed to give a chronological ordering.}
 
 \item{plot.tiepoints}{list containing specifications for plotting histogram of sampled tie-points.}
 
@@ -74,7 +71,7 @@ d18O = NGRIP_5cm$d18O
 proxy=d18O
 
 eventdepths = events_rasmussen$depth
-object = bremla(age,depth,proxy,events=eventdepths,nsims=10000,
+object = bremla(age,depth,proxy,events=eventdepths,plotsims=10000,
   synchronization = list(locations=c(11050,12050,13050,22050,42050),
                           locations.type="age",method="adolphi",
                           samples=NULL),

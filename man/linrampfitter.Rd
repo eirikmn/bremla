@@ -4,42 +4,17 @@
 \alias{linrampfitter}
 \title{Linear ramp fit}
 \usage{
-linrampfitter(
-  object,
-  interval,
-  interval.what = "index",
-  optparams = NULL,
-  h = 0.01,
-  verbose = FALSE,
-  t1.sims = 50000,
-  rampsims = 50000,
-  label = "",
-  depth.reference = NULL,
-  print.progress = FALSE
-)
+linrampfitter(object, control.linramp, print.progress = FALSE)
 }
 \arguments{
 \item{object}{List object which is the output of function \code{\link{bremla_chronology_simulation}}}
 
-\item{interval}{Vector denoting the data window of which proxy values should be included in the linear ramp fit.}
+\item{control.linramp}{Includes the data and specifications for the linear ramp
+model fitting procedure. Must include \code{control.linramp\$proxy} and \code{control.linramp\$interval}
+(preferably also \code{control.linramp\$interval.unit}),
+the rest can be set to default values. See \code{\link{control.linramp.default}} for details.}
 
-\item{interval.what}{Character string denoting what \code{interval} is. \code{interval.what="index"} means the window is given in terms of steps and \code{interval.what="depth"} means the window is given in terms of depth.}
-
-\item{optparams}{vector of numeric values which gives the initial conditions of the optimalization procedure used to generate initial conditions for INLA.}
-
-\item{h}{numeric that specify the step size of the INLA optimization procedure. Default \code{h=0.1}.}
-
-\item{verbose}{Boolean. If \code{TRUE} details of the INLA optimization procedure will be printed to the screen.}
-
-\item{t1.sims}{Integer denoting how many samples should be used to simulate the transition end point t1=t0+dt. If \code{t1.sims=0} then this is skipped.}
-
-\item{rampsims}{Integer denoting how many samples should be used to simulate the linear ramp function. If \code{rampsims=0} then this is skipped.}
-
-\item{label}{character string describing the label designed the transition, e.g. \code{label="GI-11"}.}
-
-\item{depth.reference}{numeric denoting a reference value such as transition onset obtained by other means. This appears when using \code{plot}. If \code{depth.reference=NULL} then this is not used.}
-
-\item{print.progress}{Boolean. If \code{TRUE} progress will be printed to screen}
+\item{print.progress}{Boolean. If \code{TRUE} progress will be printed to screen.}
 }
 \value{
 Returns the same \code{object} list from the input, but appends another list of results from the linear ramp fit, including posterior marginal distributions of the hyperparameters, summary statistics, and simulations of linear ramp and transition end point (if any).

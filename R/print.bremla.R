@@ -64,8 +64,11 @@ print.bremla = function(x,
   }
 
   if(!is.null(x$fitting)){
-    cpu=as.numeric(c(cpu,round(x$time$total,digits=digits)))
-    cpu.navn=c(cpu.navn,"Total")
+    if(!is.null(x$time$total)){
+      cpu=as.numeric(c(cpu,round(x$time$total,digits=digits)))
+      cpu.navn=c(cpu.navn,"Total")
+    }
+
     names(cpu)=cpu.navn
 
     print(cpu)
@@ -89,31 +92,32 @@ print.bremla = function(x,
     if(!is.null(x$fitting)){
       if(noise == "iid"){
 
-        hypers = matrix(round(as.numeric(x$fitting$hyperparameters$results$sigma_epsilon),digits=digits),nrow=1)
+        hypers = matrix(round(as.numeric(x$fitting$inla$hyperparameters$results$sigma_epsilon),digits=digits),nrow=1)
         #hypers = matrix( round(as.numeric(x$fitting$hyperparameters$results$sigma_epsilon),digits=digits),ncol=mm )
         hypers = as.data.frame(hypers)
         colnames(hypers) = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
         rownames(hypers) = c("sigma_epsilon")
       }else if(noise == "ar1"){
-        hypers = rbind(round(as.numeric(x$fitting$hyperparameters$results$sigma_epsilon),digits=digits),
-                       round(as.numeric(x$fitting$hyperparameters$results$phi),digits=digits))
+        hypers = rbind(round(as.numeric(x$fitting$inla$hyperparameters$results$sigma_epsilon),digits=digits),
+                       round(as.numeric(x$fitting$inla$hyperparameters$results$phi),digits=digits))
         hypers = as.data.frame(hypers)
         colnames(hypers) = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
         rownames(hypers) = c("sigma_epsilon","phi")
       }else if(noise == "ar2"){
-        hypers = rbind(round(as.numeric(x$fitting$hyperparameters$results$sigma_epsilon),digits=digits),
-                       round(as.numeric(x$fitting$hyperparameters$results$phi1),digits=digits),
-                       round(as.numeric(x$fitting$hyperparameters$results$phi2),digits=digits))
+        hypers = rbind(round(as.numeric(x$fitting$inla$hyperparameters$results$sigma_epsilon),digits=digits),
+                       round(as.numeric(x$fitting$inla$hyperparameters$results$phi1),digits=digits),
+                       round(as.numeric(x$fitting$inla$hyperparameters$results$phi2),digits=digits))
         hypers = as.data.frame(hypers)
         colnames(hypers) = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
         rownames(hypers) = c("sigma_epsilon","phi1","phi2")
       }
       maxlength=2048L
-      formulastring = x$.args$ls.formulastring
+      formulastring = format(x$.args$formula.ls)
       if(sum(nchar(formulastring)) > maxlength){
-        formulastring = paste0( substr(deparse(x$.args$formulastring),1L,maxlength),"...")
+        formulastring = paste0( substr(deparse(x$.args$formula.ls),1L,maxlength),"...")
       }
-      cat("The fixed component is explained by linear predictor: \n",formulastring,"\n\nThe noise component is explained by an ",noise," process.\n\n",sep="")
+      cat("The fixed component is explained by linear predictor: \n",formulastring,
+          "\n\nThe noise component is explained by an ",noise," process.\n\n",sep="")
 
       print(hypers)
     }
