@@ -12,23 +12,39 @@
 #'
 #' @examples
 #' \donttest{
-#' data("event_intervals")
-#' data("events_rasmussen")
-#' data("NGRIP_5cm")
+#' require(stats)
+#' n <- 1000
+#' phi <- 0.8
+#' sigma <- 1.2
+#' a_lintrend <- 0.3; a_proxy = 0.8
+#' dy_noise <- as.numeric(arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2)))
+#' lintrend <- seq(from=10,to=15,length.out=n)
 #'
-#' age = NGRIP_5cm$age
-#' depth = NGRIP_5cm$depth
-#' d18O = NGRIP_5cm$d18O
-#' proxy=d18O
+#' proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))
+#' dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
 #'
-#' eventdepths = events_rasmussen$depth
-#' object = bremla(age,depth,proxy,events=eventdepths,nsims=10000,
-#'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
-#'                           locations.type="age",method="adolphi",
-#'                           samples=NULL),
-#'   print.progress=TRUE
-#'   )
-#'   summary(object)
+#' y0 = 11700;z0=1200
+#' age = y0+cumsum(dy)
+#' depth = 1200 + 1:n*0.05
+#'
+#'
+#' formula = dy~-1+depth2 + proxy
+#' data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+#' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
+#'
+#' events=list(locations=c(1210,1220,1240))
+#' control.fit = list(ncores=2,noise="ar1")
+#' control.sim=list(synchronized=2,
+#'                  summary=list(compute=TRUE))
+#'
+#' object = bremla_prepare(formula,data,nsims=5000,reference.label="simulated timescale",
+#'                         events = events,
+#'                         control.fit=control.fit,
+#'                         control.sim=control.sim)
+#' object = bremla_modelfitter(object)
+#' object = bremla_chronology_simulation(object, print.progress=TRUE)
+#' summary(object)
+#' plot(object)
 #' }
 #'
 #' @export
@@ -48,12 +64,12 @@ summary.bremla = function(object,
 
 
 
-  if(!is.null(object$fitting)){
+  if(!is.null(object$time$fit$total)){
     cpu = as.numeric(round(object$time$fit$total,digits=digits))
     cpu.navn="Model fitting"
   }
 
-  if(!is.null(object$simulation)){
+  if(!is.null(object$time$simulation$total)){
     cpu=as.numeric(c(cpu,round(object$time$simulation$total,digits=digits)))
     cpu.navn=c(cpu.navn,"Chronology sampling")
   }
@@ -75,14 +91,16 @@ summary.bremla = function(object,
     ut=c(ut, list(cpu.used=cpu))
   }
 
-
-  if(tolower(object$.args$control.fit$noise) %in% c(0,"iid","independent")){
-    noise = "iid"
-  }else if(tolower(object$.args$control.fit$noise) %in% c(1,"ar1","ar(1)")){
-    noise = "ar1"
-  }else if(tolower(object$.args$control.fit$noise) %in% c(2,"ar2","ar(2)")){
-    noise = "ar2"
+  if(!is.null(object$.args$control.fit$noise)){
+    if(tolower(object$.args$control.fit$noise) %in% c(0,"iid","independent")){
+      noise = "iid"
+    }else if(tolower(object$.args$control.fit$noise) %in% c(1,"ar1","ar(1)")){
+      noise = "ar1"
+    }else if(tolower(object$.args$control.fit$noise) %in% c(2,"ar2","ar(2)")){
+      noise = "ar2"
+    }
   }
+
 
   if(!is.null(object$fitting)){
     if(noise == "iid"){
@@ -135,7 +153,7 @@ summary.bremla = function(object,
                      method=object$tie_points$method,
                      nsims=object$tie_points$nsims,
                      locations=object$tie_points$locations,
-                     locations.type=object$tie_points$unit)
+                     locations_unit=object$tie_points$unit)
     ut = c(ut,list(tiepoints=tiepoints))
   }
 
@@ -240,25 +258,39 @@ return(ut)
 #'
 #' @examples
 #' \donttest{
-#' data("event_intervals")
-#' data("events_rasmussen")
-#' data("NGRIP_5cm")
+#' require(stats)
+#' n <- 1000
+#' phi <- 0.8
+#' sigma <- 1.2
+#' a_lintrend <- 0.3; a_proxy = 0.8
+#' dy_noise <- as.numeric(arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2)))
+#' lintrend <- seq(from=10,to=15,length.out=n)
 #'
-#' age = NGRIP_5cm$age
-#' depth = NGRIP_5cm$depth
-#' d18O = NGRIP_5cm$d18O
-#' proxy=d18O
+#' proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))
+#' dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
 #'
-#' eventdepths = events_rasmussen$depth
-
-#' object = bremla(age,depth,proxy,events=eventdepths,nsims=100,
-#'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
-#'                           locations.type="age",method="adolphi",
-#'                           samples=NULL),
-#'   print.progress=TRUE
-#'   )
-#' ss = summary(object)
-#' print(ss)
+#' y0 = 11700;z0=1200
+#' age = y0+cumsum(dy)
+#' depth = 1200 + 1:n*0.05
+#'
+#'
+#' formula = dy~-1+depth2 + proxy
+#' data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+#' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
+#'
+#' events=list(locations=c(1210,1220,1240))
+#' control.fit = list(ncores=2,noise="ar1")
+#' control.sim=list(synchronized=2,
+#'                  summary=list(compute=TRUE))
+#'
+#' object = bremla_prepare(formula,data,nsims=5000,reference.label="simulated timescale",
+#'                         events = events,
+#'                         control.fit=control.fit,
+#'                         control.sim=control.sim)
+#' object = bremla_modelfitter(object)
+#' object = bremla_chronology_simulation(object, print.progress=TRUE)
+#' summary_object = summary(object)
+#' print(summary_object)
 #' }
 #'
 #' @export
@@ -320,33 +352,33 @@ print.summary.bremla = function(x,
 
     print(x$hyperramp)
 
-    if(!is.null(x$tiepoints)){
-      cat("\n",x$tiepoints$nsims, " chronologies sampled using ", x$tiepoints$tie_n ,
+    if(!is.null(x$tie_points)){
+      cat("\n",x$tie_points$nsims, " chronologies sampled using ", x$tie_points$tie_n ,
           " tie-point distributions",sep="")
-      if(tolower(x$tiepoints$method) %in% c("adolphi")){
+      if(tolower(x$tie_points$method) %in% c("adolphi")){
         cat(" (Adolphi).",sep="")
-      }else if(tolower(x$tiepoints$method) %in% c("precomputed", "given")){
+      }else if(tolower(x$tie_points$method) %in% c("precomputed", "given")){
         cat(" (precomputed).",sep="")
-      }else if(tolower(x$tiepoints$method) %in% c("normal", "gauss","gaussian")){
+      }else if(tolower(x$tie_points$method) %in% c("normal", "gauss","gaussian")){
         cat(" (Gaussian).",sep="")
-      }else if(tolower(x$tiepoints$method) %in% c("semigauss","semi-gauss","quasigauss","quasi-gauss",
+      }else if(tolower(x$tie_points$method) %in% c("semigauss","semi-gauss","quasigauss","quasi-gauss",
                                                   "skewered","skewered-gauss")){
         cat(" (merged Gaussians).",sep="")
       }else{cat(".")}
 
-      if(x$tiepoints$tie_n <= 6){
+      if(x$tie_points$tie_n <= 6){
         cat("\nTie-points are fixed at ")
-        if(tolower(x$tiepoints$locations.type) %in% c("depth","z")){
+        if(tolower(x$tie_points$locations_unit) %in% c("depth","z")){
           cat("NGRIP depths (m) ",sep="")
-          cat(x$tiepoints$locations, sep=", ")
+          cat(x$tie_points$locations, sep=", ")
           cat(".")
-        }else if(tolower(x$tiepoints$locations.type) %in% c("age","y")){
+        }else if(tolower(x$tie_points$locations_unit) %in% c("age","y")){
           cat(x$reference.label," ages (yb2k) ",sep="")
-          cat(x$tiepoints$locations, sep=", ")
+          cat(x$tie_points$locations, sep=", ")
           cat(".")
-        }else if(tolower(x$tiepoints$locations.type) %in% c("index","ind")){
+        }else if(tolower(x$tie_points$locations_unit) %in% c("index","ind")){
           cat("indices ",sep="")
-          cat(x$tiepoints$locations, sep=", ")
+          cat(x$tie_points$locations, sep=", ")
           cat(".")
         }
         cat("\n",sep="")

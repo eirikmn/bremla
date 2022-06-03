@@ -30,11 +30,8 @@
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @seealso \code{\link{bremla_modelfitter},\link{bremla_chronology_simulation}}
 #' @keywords bremla
-#'
-#'
 #' @examples
 #' \donttest{
-#'
 #' ## Simulation example
 #' require(stats)
 #' n <- 1000
@@ -65,18 +62,17 @@
 #' #simulate transition:
 #' prox = rnorm(n,mean=c(rep(0,400),seq(0,4,length.out=20),rep(4,580)),sd=1)
 #' window = 330:500
-#' control.transition_dating=list(label="Simulated transition",
-#'                                linramp=list(proxy=prox,
-#'                                             interval=window,
-#'                                             interval.unit="index",
-#'                                             depth.ref=depth[401]), #True onset is located on index 401
-#'                                dating=list(age.ref=age[401]))
+#' control.linramp = list(label="Simulated",proxy=prox,interval=window,interval.unit="index",
+#'     depth.ref=depth[401])
+#' control.transition_dating=list(label="Simulated transition",dating=list(age.ref=age[401]))
 #'
 #'
-#' object = bremla(formula,data,nsims=5000,events=events,
+#' object = bremla(formula,data,nsims=5000,reference.label="simulated timescale",
+#'                          events=events,
 #'                          synchronization=synchronization,
 #'                          control.fit=control.fit,
 #'                          control.sim=control.sim,
+#'                          control.linramp=control.linramp,
 #'                          control.transition_dating=control.transition_dating,
 #'                          print.progress=TRUE)
 #' summary(object)
@@ -85,7 +81,7 @@
 #'
 #'
 #' ### Real data example ###
-#'
+#' require(stringr)
 #' data("event_intervals")
 #' data("events_rasmussen")
 #' data("NGRIP_5cm")
@@ -95,38 +91,42 @@
 #' d18O = NGRIP_5cm$d18O
 #' proxy=d18O
 #' data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
-#' formula = y~depth2
+#' formula = dy~-1+depth2
 #'
 #'
 #' lowerints = which.index(event_intervals$depth_int_lower.m, depth[2:length(depth)])
 #' upperints = which.index(event_intervals$depth_int_upper.m, depth[2:length(depth)])
 #'
 #' eventnumber=13 #number between 1 and 29. specifies which transition to consider
+#' transitionlabel = str_sub(event_intervals$onsetlabel[eventnumber],
+#'                       str_locate(event_intervals$onsetlabel[eventnumber],"GI")[1])
 #' depth.reference = event_intervals$NGRIP_depth_m[eventnumber]
 #' age.reference = event_intervals$GICC_age.yb2k[eventnumber]
 #' interval = lowerints[eventnumber]:upperints[eventnumber]
 #'
-#' events=list(loations = events_rasmussen$depth,degree=1)
+#' nsims=5000
+#' events=list(locations = events_rasmussen$depth,
+#'             locations_unit="depth",degree=1)
+#' synchronization = list(method="adolphi")
+#' control.fit=list(method="inla")
+#' control.sim=list(synchronized = 2)
 #'
-#'
-#' object = bremla(formula,data,events=events,nsims=10000,
-#'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
-#'                           locations.unit="age",method="adolphi",
-#'                           samples=NULL),
-#'   event.estimation = list(interval=interval,t1.sims=50000,rampsims=50000,label="GI-11",
-#'                           depth.reference=event_intervals$NGRIP_depth_m[eventnumber],
-#'                           age.reference=event_intervals$NGRIP_agee_m[eventnumber]),
-#'   bias = list(bias.model="uniform",biasparams=cbind( c(1,1),c(0.98,1.02),c(0.96,1.04) ),
-#'               store.samples=FALSE),
-#'   print.progress=TRUE
-#'   )
+#' control.linramp=list(proxy=proxy,interval=interval,interval.unit="index",
+#'                      depth.reference=depth.reference,
+#'                      label=transitionlabel,depth.label="d18O (permil)")
+#' control.transition_dating=list(age.ref=age.reference,age.label="years (yb2k)")
+#' object = bremla(formula,data,reference.label="GICC05",
+#'                    nsims=nsims,
+#'                    events=events,
+#'                    synchronization=synchronization,
+#'                    control.fit=control.fit,
+#'                    control.sim=control.sim,
+#'                    control.linramp=control.linramp,
+#'                    control.transition_dating=control.transition_dating,
+#'                    print.progress=TRUE )
 #'   summary(object)
 #'   plot(object)
 #' }
-#'
-#'}
-#'
-#'
 #' @export
 #' @import matrixStats
 bremla <- function(formula,data,reference.label=NULL,

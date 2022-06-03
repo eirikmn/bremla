@@ -12,23 +12,39 @@
 #'
 #' @examples
 #' \donttest{
-#' data("event_intervals")
-#' data("events_rasmussen")
-#' data("NGRIP_5cm")
+#' require(stats)
+#' n <- 1000
+#' phi <- 0.8
+#' sigma <- 1.2
+#' a_lintrend <- 0.3; a_proxy = 0.8
+#' dy_noise <- as.numeric(arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2)))
+#' lintrend <- seq(from=10,to=15,length.out=n)
 #'
-#' age = NGRIP_5cm$age
-#' depth = NGRIP_5cm$depth
-#' d18O = NGRIP_5cm$d18O
-#' proxy=d18O
+#' proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))
+#' dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
 #'
-#' eventdepths = events_rasmussen$depth
-#' object = bremla(age,depth,proxy,events=eventdepths,nsims=100,
-#'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
-#'                           locations.type="age",method="adolphi",
-#'                           samples=NULL),
-#'   print.progress=TRUE
-#'   )
-#' print(object)
+#' y0 = 11700;z0=1200
+#' age = y0+cumsum(dy)
+#' depth = 1200 + 1:n*0.05
+#'
+#'
+#' formula = dy~-1+depth2 + proxy
+#' data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+#' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
+#'
+#' events=list(locations=c(1210,1220,1240))
+#' control.fit = list(ncores=2,noise="ar1")
+#' control.sim=list(synchronized=2,
+#'                  summary=list(compute=TRUE))
+#'
+#' object = bremla_prepare(formula,data,nsims=5000,reference.label="simulated timescale",
+#'                         events = events,
+#'                         control.fit=control.fit,
+#'                         control.sim=control.sim)
+#' object = bremla_modelfitter(object)
+#' object = bremla_chronology_simulation(object, print.progress=TRUE)
+#' summary(object)
+#' plot(object)
 #' }
 #' @export
 #' @method print bremla

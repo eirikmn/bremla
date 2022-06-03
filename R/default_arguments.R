@@ -271,7 +271,7 @@ control.transition_dating.default <- function(){
 control.bias.default <- function(){
   return(list(
     bias.model="uniform",
-    biasparams = c(0.11,1.01),
+    biasparams = c(0.99,1.01),
     nsims=10000,
     store.samples = FALSE
   )

@@ -12,33 +12,45 @@
 #' @return Returns the \code{object} list from the input and appends a list which
 #' includes all synchronized simulations, summary statistics and other information
 #' computed or related to the simulation procedure in \code{object\$simulation}.
-#'
 #' @examples
 #' \donttest{
-#' data("event_intervals")
-#' data("events_rasmussen")
-#' data("NGRIP_5cm")
+#' require(stats)
+#' n <- 1000
+#' phi <- 0.8
+#' sigma <- 1.2
+#' a_lintrend <- 0.3; a_proxy = 0.8
+#' dy_noise <- as.numeric(arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2)))
+#' lintrend <- seq(from=10,to=15,length.out=n)
 #'
-#' age = NGRIP_5cm$age
-#' depth = NGRIP_5cm$depth
-#' d18O = NGRIP_5cm$d18O
-#' proxy=d18O
+#' proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))
+#' dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
 #'
-#' eventdepths = events_rasmussen$depth
-#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
-#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#' y0 = 11700;z0=1200
+#' age = y0+cumsum(dy)
+#' depth = 1200 + 1:n*0.05
 #'
-#' nsims = 5000
-#' object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=nsims)
+#'
+#' formula = dy~-1+depth2 + proxy
+#' data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+#' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
+#'
+#' events=list(locations=c(1210,1220,1240))
+#' control.fit = list(ncores=2,noise="ar1")
+#' synchronization=list(method="gauss")
+#' control.sim=list(synchronized=TRUE,
+#'                  summary=list(compute=TRUE))
+#'
+#' object = bremla_prepare(formula,data,nsims=5000,reference.label="simulated timescale",
+#'                         events = events,
+#'                         synchronization=synchronization,
+#'                         control.fit=control.fit,
+#'                         control.sim=control.sim)
 #' object = bremla_modelfitter(object)
-#' object = bremla_chronology_simulation(object,nsims=nsims)
-#' object = tiepointsimmer(object,nsims=nsims,method="adolphi")
-#' object = bremla_synchronized_simulation(object,nsims=nsims)
-#' object = bremla_simulationsummarizer(object,CI.type="hpd",sync=TRUE)
+#' object = tiepointsimmer(object)
+#' object = bremla_synchronized_simulation(object, print.progress=TRUE)
+#' summary(object)
 #' plot(object)
 #' }
-#'
-#'
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @seealso \code{\link{bremla_chronology_simulation}} \code{\link{bremla}}
 #' @keywords simulation synchronization tiepoint
@@ -83,6 +95,7 @@ bremla_synchronized_simulation = function(object,control.sim,print.progress=FALS
 
 
   n = nrow(object$data)
+  noise = object$.args$control.fit$noise
 
   if(tie_locations_unit == "age"){
     tie_indexes = which.index(tie_locations,object$data$age)
@@ -99,6 +112,32 @@ bremla_synchronized_simulation = function(object,control.sim,print.progress=FALS
 
   free_n = n-m
   free_indexes = (1:n)[-tie_indexes]
+
+  if(tolower(object$.args$control.fit$method) == "inla" && is.null(object$simulation)){ #if INLA is used
+    reg.model = object$.internal$lat.selection
+
+    if(print.progress) cat("Simulating ",nsims, " hyperparameters from INLA posterior...",sep="")
+
+
+    if(tolower(noise) %in% c(0,"ar(0)","ar0","iid","independent")){
+      hypersamples = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+      object$simulation = list(sigma = 1/sqrt(hypersamples[,1]))
+    }else if (tolower(noise) %in% c(1,"ar1","ar(1)")){
+      hypersamples = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+      object$simulation = list(sigma = 1/sqrt(hypersamples[,1]), phi=hypersamples[,2])
+
+    }else if (tolower(noise) %in% c(2,"ar2","ar(2)")){
+      hypersamples = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+      p=2
+      hypersamplesar2 = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+      phii = hypersamplesar2[, 2L:(2L+(p-1L))]
+      phis = apply(phii, 1L, inla.ar.pacf2phi)
+      object$simulation = list(sigma = 1/sqrt(hypersamples[,1]),phi1=phis[1,],phi2=phis[2,])
+    }
+
+
+    if(print.progress) cat(" completed!\n",sep="")
+  }
 
   latentselection = object$.internal$lat.selection
   # latentselection = list()
@@ -129,7 +168,7 @@ bremla_synchronized_simulation = function(object,control.sim,print.progress=FALS
       Qfull = Qmaker_ar1cum(n,sigma_sample,phi_sample)
     }else{
       # 'noise' is the precision matrix of the layer differences Q_x
-      Qfull = Qymaker(object$.args$noise)
+      Qfull = Qymaker(object$.args$control.fit$noise)
     }
 
     Qa = Qfull[-tie_indexes,-tie_indexes]

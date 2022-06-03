@@ -25,23 +25,40 @@
 #'
 #' @examples
 #' \donttest{
-#' data("event_intervals")
-#' data("events_rasmussen")
-#' data("NGRIP_5cm")
+#' require(stats)
+#' n <- 1000
+#' phi <- 0.8
+#' sigma <- 1.2
+#' a_lintrend <- 0.3; a_proxy = 0.8
+#' dy_noise <- as.numeric(arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2)))
+#' lintrend <- seq(from=10,to=15,length.out=n)
 #'
-#' age = NGRIP_5cm$age
-#' depth = NGRIP_5cm$depth
-#' d18O = NGRIP_5cm$d18O
-#' proxy=d18O
+#' proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))
+#' dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
 #'
-#' eventdepths = events_rasmussen$depth
-#' object = bremla(age,depth,proxy,events=eventdepths,plotsims=10000,
-#'   synchronization = list(locations=c(11050,12050,13050,22050,42050),
-#'                           locations.type="age",method="adolphi",
-#'                           samples=NULL),
-#'   print.progress=TRUE
-#'   )
+#' y0 = 11700;z0=1200
+#' age = y0+cumsum(dy)
+#' depth = 1200 + 1:n*0.05
+#'
+#'
+#' formula = dy~-1+depth2 + proxy
+#' data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+#' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
+#'
+#' events=list(locations=c(1210,1220,1240))
+#' control.fit = list(ncores=2,noise="ar1")
+#' control.sim=list(synchronized=2,
+#'                  summary=list(compute=TRUE))
+#'
+#' object = bremla_prepare(formula,data,nsims=5000,reference.label="simulated timescale",
+#'                         events = events,
+#'                         control.fit=control.fit,
+#'                         control.sim=control.sim)
+#' object = bremla_modelfitter(object)
+#' object = bremla_chronology_simulation(object, print.progress=TRUE)
+#' summary(object)
 #' plot(object)
+#'
 #' }
 #'
 #' @export
@@ -252,6 +269,63 @@ plot.bremla = function(x,
 
   }
 
+
+  if(!is.null(plot.tiepoints) && !is.null(x$tie_points)){
+    figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
+
+
+
+    if(x$tie_points$tie_n == 5){
+      la=layout(mat=matrix(c(1,4,1,4,2,4,2,5,3,5,3,5) ,nrow=2))
+
+
+    }else if(x$tie_points$tie_n==1){
+      par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
+    }else if(x$tie_points$tie_n==2){
+      par(mfrow=c(1,2),mar=c(5,4,4,2)+0.1)
+    }else if(x$tie_points$tie_n==3){
+      la=layout(mat=matrix(c(1,3,1,3,2,3,2,3) ,nrow=2))
+    }else if(x$tie_points$tie_n==4){
+      par(mfrow=c(2,2),mar=c(3,2,2,1)+0.1)
+    }else if(x$tie_points$tie_n==6){
+      par(mfrow=c(2,3),mar=c(5,4,4,2)+0.1)
+    }
+
+    if(is.null(plot.tiepoints$label.main)){
+      labs =c()
+      for(i in 1:x$tie_points$tie_n){
+        labs = c(labs,paste0("Tie-point #",i))
+      }
+    }else{
+      labs = plot.tiepoints$label.main
+    }
+    for(i in 1:min(x$tie_points$tie_n,6)){
+      if(!is.null(x$tie_points$x.ref[i])){
+        xlim=range(x$tie_points$samples[,i],x$tie_points$x.ref[i])
+      }else{
+        xlim=range(x$tie_points$samples[,i])
+      }
+      hist(x$tie_points$samples[,i],freq=0,col=plot.tiepoints$col.hist,
+           breaks=plot.tiepoints$breaks.hist,xlab=plot.tiepoints$label.x,
+           main=labs[i],xlim=xlim)
+      if(!is.null(x$tie_points$x.ref[i])){
+        abline(v=x$tie_points$x.ref[i],col="blue",lwd=3,lty=3)
+      }
+    }
+
+    par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
+
+
+
+    if(postscript || pdf){
+      if (names(dev.cur()) != "null device") {
+        dev.off()
+      }
+    }
+  }
+
+
+
   if(!is.null(plot.syncsims) && !is.null(x$simulation$age_sync)){
 
     xlim=range(z)
@@ -325,61 +399,6 @@ plot.bremla = function(x,
 
   }
 
-  if(!is.null(plot.tiepoints) && !is.null(x$tie_points)){
-    figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
-
-
-
-    if(x$tie_points$tie_n == 5){
-      la=layout(mat=matrix(c(1,4,1,4,2,4,2,5,3,5,3,5) ,nrow=2))
-
-
-    }else if(x$tie_points$tie_n==1){
-      par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
-    }else if(x$tie_points$tie_n==2){
-      par(mfrow=c(1,2),mar=c(5,4,4,2)+0.1)
-    }else if(x$tie_points$tie_n==3){
-      la=layout(mat=matrix(c(1,3,1,3,2,3,2,3) ,nrow=2))
-    }else if(x$tie_points$tie_n==4){
-      par(mfrow=c(2,2),mar=c(3,2,2,1)+0.1)
-    }else if(x$tie_points$tie_n==6){
-      par(mfrow=c(2,3),mar=c(5,4,4,2)+0.1)
-    }
-
-    if(is.null(plot.tiepoints$label.main)){
-      labs =c()
-      for(i in 1:x$tie_points$tie_n){
-        labs = c(labs,paste0("Tie-point #",i))
-      }
-    }else{
-      labs = plot.tiepoints$label.main
-    }
-    for(i in 1:min(x$tie_points$tie_n,6)){
-      if(!is.null(x$tie_points$x.ref[i])){
-        xlim=range(x$tie_points$samples[,i],x$tie_points$x.ref[i])
-      }else{
-        xlim=range(x$tie_points$samples[,i])
-      }
-      hist(x$tie_points$samples[,i],freq=0,col=plot.tiepoints$col.hist,
-           breaks=plot.tiepoints$breaks.hist,xlab=plot.tiepoints$label.x,
-           main=labs[i],xlim=xlim)
-      if(!is.null(x$tie_points$x.ref[i])){
-        abline(v=x$tie_points$x.ref[i],col="blue",lwd=3,lty=3)
-      }
-    }
-
-    par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
-
-
-
-    if(postscript || pdf){
-      if (names(dev.cur()) != "null device") {
-        dev.off()
-      }
-    }
-  }
-
-
 
   if(!is.null(plot.bias) && !is.null(x$biases)){
     figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
@@ -387,7 +406,8 @@ plot.bremla = function(x,
 
     yrange = c(0,0)
     for( iter in 1:nbiases){
-      yrange = range(yrange,x$biases[[paste0("bias",iter)]]$quant0.975-ageref,x$biases[[paste0("bias",iter)]]$quant0.025-ageref)
+      yrange = range(yrange,x$biases[[paste0("bias",iter)]]$quant0.975-ageref,
+                     x$biases[[paste0("bias",iter)]]$quant0.025-ageref)
     }
     if(!is.null(plot.bias$MCE)){
       yrange = range(yrange,-plot.bias$MCE,plot.bias$MCE)

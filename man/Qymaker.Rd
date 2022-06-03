@@ -17,6 +17,22 @@ Returns sparse precision matrix of dimension \code{n x n}.
 Precision matrix of cumulative Gaussian process
 Produces the sparse precision matrix of a cumulative Gaussian process
 }
+\examples{
+n=100
+sigma=1
+rho=0.8
+Q_method1 = Qmaker_ar1cum(n,sigma,rho)
+Q_ar1 = Matrix::sparseMatrix(
+       i = c(1,n,2:(n-1),1:(n-1)),
+       j = c(1,n,2:(n-1),2:n),
+       x = 1/(1-rho^2)*1/sigma^2*c(1,1,rep(1+rho^2,n-2),rep(-rho,n-1)),
+       symmetric = TRUE
+)
+Q_method2 = Qymaker(Q_ar1)
+}
+\seealso{
+\code{\link{Qsimmer}, \link{Qmaker_ar1cum}}
+}
 \author{
 Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 }

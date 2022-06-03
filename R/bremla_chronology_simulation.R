@@ -16,26 +16,40 @@
 #'
 #' @examples
 #' \donttest{
-#' data("event_intervals")
-#' data("events_rasmussen")
-#' data("NGRIP_5cm")
+#' require(stats)
+#' n <- 1000
+#' phi <- 0.8
+#' sigma <- 1.2
+#' a_lintrend <- 0.3; a_proxy = 0.8
+#' dy_noise <- as.numeric(arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2)))
+#' lintrend <- seq(from=10,to=15,length.out=n)
 #'
-#' age = NGRIP_5cm$age
-#' depth = NGRIP_5cm$depth
-#' d18O = NGRIP_5cm$d18O
-#' proxy=d18O
+#' proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))
+#' dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
 #'
-#' eventdepths = events_rasmussen$depth
-#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
-#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#' y0 = 11700;z0=1200
+#' age = y0+cumsum(dy)
+#' depth = 1200 + 1:n*0.05
 #'
-#' nsims = 5000
-#' object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=nsims)
+#'
+#' formula = dy~-1+depth2 + proxy
+#' data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+#' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
+#'
+#' events=list(locations=c(1210,1220,1240))
+#' control.fit = list(ncores=2,noise="ar1")
+#' control.sim=list(synchronized=2,
+#'                  summary=list(compute=TRUE))
+#'
+#' object = bremla_prepare(formula,data,nsims=5000,reference.label="simulated timescale",
+#'                         events = events,
+#'                         control.fit=control.fit,
+#'                         control.sim=control.sim)
 #' object = bremla_modelfitter(object)
-#' object = bremla_chronology_simulation(object,nsims=nsims)
-#' plot(object,plot.inlasims = list(nsims=30,legend=NULL,xrev=FALSE,label=NULL))
-#' }
-#'
+#' object = bremla_chronology_simulation(object, print.progress=TRUE)
+#' summary(object)
+#' plot(object)
+#'}
 #'
 #' @export
 #' @import INLA
@@ -48,7 +62,7 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
 
     if(!is.null(object$.args$control.sim)){
       if(print.progress){
-        cat("'control.sim' missing. Importing information from 'object'.",sep="")
+        cat("'control.sim' missing. Importing information from 'object'.\n",sep="")
       }
       control.sim = object$.args$control.sim
     }else{
@@ -61,7 +75,7 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
   object$.args$control.sim = control.sim
 
   ## sample hyperparameters
-  if(is.null(object$fitting)) stop("Fitting results not found. Run 'bremla_modelfitter' first.")
+  if(is.null(object$fitting)) stop("Fitting results not found. Run 'bremla_modelfitter' first.\n")
 
   nsims = object$.args$control.sim$nsims
   method = object$.args$control.fit$method

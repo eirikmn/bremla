@@ -21,6 +21,16 @@ Returns matrix with nsims samples of length equal to \code{nrow(Q)}.
 Efficient Gaussian simulation
 Simulate from multivariate Gaussian distribution efficiently by using sparse precision matrix
 }
+\examples{
+n=100
+sigma=1
+rho=0.8
+Q = Qmaker_ar1cum(n,sigma,rho)
+
+nsims = 1000
+muvek = seq(1,5,length.out=n)
+samples = Qsimmer(nsims,Q,muvek)
+}
 \author{
 Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 }

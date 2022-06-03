@@ -21,6 +21,20 @@ Returns sparse precision matrix of dimension \code{n x n}.
 Precision matrix of cumulative AR(1) process
 Produces the sparse precision matrix of a cumulative AR(1) process
 }
+\examples{
+n=100
+sigma=1
+rho=0.8
+Q = Qmaker_ar1cum(n,sigma,rho)
+
+nsims = 1000
+muvek = seq(1,5,length.out=n)
+samples = Qsimmer(nsims,Q,muvek)
+
+}
+\seealso{
+\code{\link{Qsimmer}, \link{Qymaker}}
+}
 \author{
 Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 }

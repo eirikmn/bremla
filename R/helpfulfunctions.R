@@ -27,42 +27,6 @@ meanmaker = function(coefs,reg.model,data){
     }
   }
 
-  # coefcounter = 1
-  # if(`(Intercept)` %in% names(reg.model)){
-  #   fitted = fitted + coefs[1]
-  # }
-  # coefcounter=1
-  # fitted=numeric(dim(data)[1])
-  # if(reg.model$const){
-  #   fitted=coefs[1]
-  #   coefcounter=coefcounter+1
-  # }
-  # if(reg.model$depth1){
-  #   fitted = fitted + coefs[coefcounter]*data$z
-  #   coefcounter=coefcounter+1
-  # }
-  # if(reg.model$depth2){
-  #   fitted = fitted + coefs[coefcounter]*data$z2
-  #   coefcounter=coefcounter+1
-  # }
-  # if(reg.model$proxy){
-  #   fitted=fitted + coefs[coefcounter]*data$x
-  #   coefcounter=coefcounter+1
-  # }
-  # if(nevents>0){
-  #   for(i in 2:nevents){
-  #     if(reg.model$psi0){
-  #       #aa = coefs[coefcounter]
-  #       fitted = fitted + coefs[coefcounter]*data[[paste0("a",i-1)]]
-  #       coefcounter=coefcounter+1
-  #     }
-  #     if(reg.model$psi1){
-  #       #cc = coefs[coefcounter]
-  #       fitted = fitted + coefs[coefcounter]*data[[paste0("c",i-1)]]
-  #       coefcounter=coefcounter+1
-  #     }
-  #   }
-  # }
   return(fitted)
 }
 #' Linear ramp function
@@ -159,24 +123,41 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
 #'
 #' @examples
 #' \donttest{
-#' data("event_intervals")
-#' data("events_rasmussen")
-#' data("NGRIP_5cm")
+#' require(stats)
+#' n <- 1000
+#' phi <- 0.8
+#' sigma <- 1.2
+#' a_lintrend <- 0.3; a_proxy = 0.8
+#' dy_noise <- as.numeric(arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2)))
+#' lintrend <- seq(from=10,to=15,length.out=n)
 #'
-#' age = NGRIP_5cm$age
-#' depth = NGRIP_5cm$depth
-#' d18O = NGRIP_5cm$d18O
-#' proxy=d18O
+#' proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))
+#' dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
 #'
-#' eventdepths = events_rasmussen$depth
-#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
-#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#' y0 = 11700;z0=1200
+#' age = y0+cumsum(dy)
+#' depth = 1200 + 1:n*0.05
 #'
-#' object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=0)
+#'
+#' formula = dy~-1+depth2 + proxy
+#' data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+#' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
+#'
+#' events=list(locations=c(1210,1220,1240))
+#' control.fit = list(ncores=2,noise="ar1")
+#' control.sim=list(synchronized=2,
+#'                  summary=list(compute=TRUE))
+#'
+#' object = bremla_prepare(formula,data,nsims=5000,reference.label="simulated timescale",
+#'                         events = events,
+#'                         control.fit=control.fit,
+#'                         control.sim=control.sim)
 #' object = bremla_modelfitter(object)
-#' object = bremla_chronology_simulation(object,nsims=1000)
-#' object = bremla_simulationsummarizer(object,CI.type="quant",sync=FALSE)
+#' object = bremla_chronology_simulation(object)
+#' object = bremla_simulationsummarizer(object,sync=FALSE,print.progress=TRUE)
+#' summary(object)
 #' plot(object)
+#'
 #' }
 #' @export
 #' @importFrom matrixStats rowMeans2 rowSds rowMedians
@@ -297,47 +278,6 @@ lat.selector <- function(formulastring){
 }
 
 
-# formulasplitter <- function(formulastring){
-#   formulastring=cleanstring(formulastring)
-#   reg.model=list()
-#
-#   tildepos = str_locate(formulastring,"~")[1]
-#   response = str_sub(formulastring,start=1L,end=tildepos-1)
-#
-#
-#
-#   pluspos = str_locate_all(formulastring,'\\+')[[1]]
-#   if(nrow(pluspos)>1){
-#     pluspos = c(tildepos,pluspos[,1])
-#   }else{
-#     pluspos = c(tildepos,pluspos[1])
-#   }
-#   if(str_detect(covarstring,"-1+")){
-#     intercept = FALSE
-#     startpoint = pluspos[2]
-#   }else if(str_detect(covarstring,"1+")){
-#     intercept = TRUE
-#     reg.model=list(`(Intercept)`=1)
-#     startpoint = pluspos[2]
-#   }else{
-#     intercept = TRUE
-#     reg.model=list(`(Intercept)`=1)
-#     startpoint = pluspos[1]
-#   }
-#   covarstring = str_sub(formulastring,startpoint+1)
-#
-#   currentpos = startpoint+1
-#   for(i in 2:length(pluspos)){
-#     reg.model[[substr(formulastring,currentpos,pluspos[i]-1)]]
-#   }
-#
-#
-#   covarstring = str_sub(formulastring,start=str_locate(formulastring,'\\+')[1]+1)
-#
-#
-#
-# }
-#
 
 
 control.fixed.priors = function(reg.model, fit, nevents){
@@ -516,29 +456,38 @@ adolphi_tiepoint_simmer = function(nsims=10000,tieshifts = numeric(5), plotdens=
 #'
 #' @return returns the same \code{object} from input but appends tie-point samples
 #' and information in \code{object\$tie_points}.
-#'
 #' @examples
 #' \donttest{
-#' data("event_intervals")
-#' data("events_rasmussen")
-#' data("NGRIP_5cm")
+#' require(stats)
+#' n <- 1000
+#' phi <- 0.8
+#' sigma <- 1.2
+#' a_lintrend <- 0.3; a_proxy = 0.8
+#' dy_noise <- as.numeric(arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2)))
+#' lintrend <- seq(from=10,to=15,length.out=n)
 #'
-#' age = NGRIP_5cm$age
-#' depth = NGRIP_5cm$depth
-#' d18O = NGRIP_5cm$d18O
-#' proxy=d18O
+#' proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))
+#' dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
 #'
-#' eventdepths = events_rasmussen$depth
-#' eventindexes = c(1,which.index(eventdepths, depth[2:length(depth)]) )
-#' eventindexes = unique(eventindexes[!is.na(eventindexes)])
+#' y0 = 11700;z0=1200
+#' age = y0+cumsum(dy)
+#' depth = 1200 + 1:n*0.05
 #'
-#' object = bremla_prepare(age,depth,proxy,events=eventdepths,nsims=0)
-#' object = tiepointsimmer(object,nsims=10000,method="adolphi")
-#' hist(object$tie_points$samples[,2],col="orange",freq=0,breaks=40,
-#'     main="Tie-point 3",xlab="Age (yb2k)")
+#'
+#' formula = dy~-1+depth2 + proxy
+#' data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+#' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
+#'
+#' events=list(locations=c(1210,1220,1240))
+#' synchronization=list(locations=depth[c(100,400,700)],method="gauss")
+#' object = bremla_prepare(formula,data,nsims=5000,
+#'                         reference.label="simulated timescale",
+#'                         events = events,
+#'                         synchronization=synchronization)
+#' object = tiepointsimmer(object)
+#' summary(object)
+#' plot(object)
 #' }
-#'
-#'
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @keywords tiepoint sample
 #' @export
@@ -602,7 +551,8 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
                            method=synchronization$method,
                            nsims=synchronization$nsims,
                            x.ref=synchronization$x.ref,
-                           locations_indexes=locations_indexes)
+                           locations_indexes=locations_indexes,
+                           tie_n=length(synchronization$locations))
 
   time.total = difftime(Sys.time(), time.start,units="secs")[[1]]
 
@@ -620,9 +570,18 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
 #' @param muvek The mean vector.
 #'
 #' @return Returns matrix with nsims samples of length equal to \code{nrow(Q)}.
+#' @examples
+#' n=100
+#' sigma=1
+#' rho=0.8
+#' Q = Qmaker_ar1cum(n,sigma,rho)
 #'
+#' nsims = 1000
+#' muvek = seq(1,5,length.out=n)
+#' samples = Qsimmer(nsims,Q,muvek)
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @keywords simulation GMRF sparse
+#' @export
 Qsimmer = function(nsims, Q, muvek){
   nn=dim(Q)[1]
   samples = matrix(NA,nrow=nn,ncol=nsims)
@@ -645,8 +604,20 @@ Qsimmer = function(nsims, Q, muvek){
 #'
 #' @return Returns sparse precision matrix of dimension \code{n x n}.
 #'
+#' @examples
+#' n=100
+#' sigma=1
+#' rho=0.8
+#' Q = Qmaker_ar1cum(n,sigma,rho)
+#'
+#' nsims = 1000
+#' muvek = seq(1,5,length.out=n)
+#' samples = Qsimmer(nsims,Q,muvek)
+#'
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @keywords GMRF sparse precision matrix
+#' @seealso \code{\link{Qsimmer}, \link{Qymaker}}
+#' @export
 Qmaker_ar1cum = function(n,sigma,rho){
 
   noise = sigma^2*(1-rho^2)
@@ -669,8 +640,22 @@ Qmaker_ar1cum = function(n,sigma,rho){
 #'
 #' @return Returns sparse precision matrix of dimension \code{n x n}.
 #'
+#' @examples
+#' n=100
+#' sigma=1
+#' rho=0.8
+#' Q_method1 = Qmaker_ar1cum(n,sigma,rho)
+#' Q_ar1 = Matrix::sparseMatrix(
+#'        i = c(1,n,2:(n-1),1:(n-1)),
+#'        j = c(1,n,2:(n-1),2:n),
+#'        x = 1/(1-rho^2)*1/sigma^2*c(1,1,rep(1+rho^2,n-2),rep(-rho,n-1)),
+#'        symmetric = TRUE
+#' )
+#' Q_method2 = Qymaker(Q_ar1)
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @keywords GMRF sparse precision matrix
+#' @seealso \code{\link{Qsimmer}, \link{Qmaker_ar1cum}}
+#' @export
 Qymaker = function(Qx){
   nn = dim(Qx)[1]
   ii = c(1:nn,2:nn); jj = c(1:nn,1:(nn-1)); xx = c(rep(1,nn),rep(-1,nn-1))
