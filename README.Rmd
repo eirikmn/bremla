@@ -1,4 +1,9 @@
-
+```{r global_options, include = FALSE}
+library(knitr)
+options(width = 120)
+opts_chunk$set(fig.width = 12, fig.height = 8, fig.path = 'Figs/',
+               include = TRUE, warning = FALSE, message = FALSE)
+```
 
 # Bremla
 This Repository contains the Bremla package for uncertainty quantification and synchronization for layer-counted proxy archives, including all the data/code to reproduce the results for
@@ -12,8 +17,7 @@ Myrvoll-Nilsen, E., Riechers, K. & Boers, N. (202x). Tie-point paper (title TBD)
 ## installation
 
 The simplest way to install the package is to install the remotes package and run
-
-```r
+```{r github-install, eval=FALSE}
 #install.packages("remotes")
 remotes::install_github("eirikmn/bremla")
 ```
@@ -26,8 +30,7 @@ Warning: The provided real data example generates several thousand simulated chr
 
 ## Example
 
-
-```r
+```{r example}
 This is a real data example which produces 5000 simulations from a synchronized time scale.
 require(INLA)
 data("event_intervals")
@@ -53,12 +56,6 @@ object = bremla(formula,data,reference.label="GICC05",
                   print.progress=TRUE )
 summary(object)
 plot(object)
-```
-
-```
-## Error: <text>:1:6: unexpected symbol
-## 1: This is
-##          ^
 ```
 
 ## Attribution
