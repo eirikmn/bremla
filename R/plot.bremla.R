@@ -82,7 +82,7 @@ plot.bremla = function(x,
                        plot.event_age = list(age.reference=NULL,xrev=TRUE,label=NULL),
                        postscript=FALSE,
                        pdf=FALSE,
-                       prefix = "bemla.plots/figure-",
+                       prefix = "bremla.plots/figure-",
                        ...){
   if(!postscript && !pdf){
     dev=getOption("device")

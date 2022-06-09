@@ -6,7 +6,7 @@ opts_chunk$set(fig.width = 12, fig.height = 8, fig.path = 'Figs/',
 ```
 
 # Bremla
-This Repository contains the Bremla package for uncertainty quantification and synchronization for layer-counted proxy archives, including all the data/code to reproduce the results for
+This Repository contains the Bremla package for uncertainty quantification and synchronization for layer-counted proxy archives, including the data and code to reproduce the results for
 
 Myrvoll-Nilsen, E., Riechers, K., Rypdal, M. & Boers, N. (2022). Comprehensive uncertainty estimation of the timing of Greenland warmings of the Greenland Ice core records. Climate of the Past, x(x),x-x. doi:xxxxx
 
@@ -29,9 +29,8 @@ The package includes the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm' downloa
 Warning: The provided real data example generates several thousand simulated chronologies with individual lengths exceeding 18,000. More if synchronized chronologies is also computed. This will require a significant amount of memory. If needed, reduce the number of samples generated or free up memory before use.
 
 ## Example
-
-```{r example}
 This is a real data example which produces 5000 simulations from a synchronized time scale.
+```{r example, message=FALSE, warning=FALSE, include=FALSE}
 require(INLA)
 data("event_intervals")
 data("events_rasmussen")
@@ -39,8 +38,8 @@ data("NGRIP_5cm")
 
 age = NGRIP_5cm$age
 depth = NGRIP_5cm$depth
-d18O = NGRIP_5cm$d18O
-proxy=d18O
+proxy = NGRIP_5cm$d18O
+
 data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
 formula = dy~-1+depth2
 

@@ -5,7 +5,7 @@ Version: 0.3.1.9000
 Author: Eirik Myrvoll-Nilsen
 Maintainer: Eirik Myrvoll-Nilsen <eirikmn91@gmail.com>
 Description: Performs efficient Bayesian regression modeling of layer-counted climate records. Default method of inference is integrated nested Laplace approximations (INLAs).
-License: MIT + file LICENSE
+License: GPL (>= 2) + file LICENSE
 Imports: INLA, numDeriv, Matrix, matrixStats, ggplot2, rlang, stringr
 Depends: R (>= 3.5)
 Additional_repositories: https://inla.inla-r-download.org/R/testing
