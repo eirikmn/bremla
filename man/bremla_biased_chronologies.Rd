@@ -25,6 +25,7 @@ Fits the linear ramp described by Erhardt et al. (2019) to proxy values using IN
 \examples{
 \donttest{
 require(stats)
+set.seed(1)
 n <- 1000
 phi <- 0.8
 sigma <- 1.2

@@ -15,6 +15,7 @@
 #'
 #' @examples
 #' \donttest{
+#' set.seed(1)
 #' n=500
 #' timepoints = 1:n/n #should be scaled so that timepoints is between 0 and 1
 #'                    #(you can always transform back later, but this helps

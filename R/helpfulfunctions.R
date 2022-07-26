@@ -124,6 +124,7 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
 #' @examples
 #' \donttest{
 #' require(stats)
+#' set.seed(1)
 #' n <- 1000
 #' phi <- 0.8
 #' sigma <- 1.2
@@ -459,6 +460,7 @@ adolphi_tiepoint_simmer = function(nsims=10000,tieshifts = numeric(5), plotdens=
 #' @examples
 #' \donttest{
 #' require(stats)
+#' set.seed(1)
 #' n <- 1000
 #' phi <- 0.8
 #' sigma <- 1.2

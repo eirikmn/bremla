@@ -61,27 +61,26 @@ formula = dy~-1+depth2
 events=list(locations = events_rasmussen$depth,
             locations_unit="depth",degree=1)
 
-object = bremla(formula,data,reference.label="GICC05",
+results = bremla(formula,data,reference.label="GICC05",
                 nsims=5000,
                 events=events,
                 synchronization=list(method="adolphi"),
                 control.fit=list(method="inla"),
-                control.sim=list(synchronized=TRUE),
-                print.progress=TRUE )
-summary(object)
+                control.sim=list(synchronized=TRUE) )
+summary(results)
 ```
 
 ```{r plot, message=FALSE, eval=TRUE, echo=FALSE}
 require(ggplot2)
-free_indexes = x$tie_points$free_indexes
-tie_indexes = x$tie_points$tie_indexes
-ageref_free = x$data$age[free_indexes]
-ageref_tie = x$data$age[tie_indexes]
+free_indexes = results$tie_points$free_indexes
+tie_indexes = results$tie_points$tie_indexes
+ageref_free = results$data$age[free_indexes]
+ageref_tie = results$data$age[tie_indexes]
 
-fullpd = data.frame(depth = x$data$depth[free_indexes],
-                medians=x$simulation$summary_sync$median[free_indexes]-ageref_free,
-                lower=x$simulation$summary_sync$lower[free_indexes]-ageref_free,
-                upper=x$simulation$summary_sync$upper[free_indexes]-ageref_free)
+fullpd = data.frame(depth = results$data$depth[free_indexes],
+                medians=results$simulation$summary_sync$median[free_indexes]-ageref_free,
+                lower=results$simulation$summary_sync$lower[free_indexes]-ageref_free,
+                upper=results$simulation$summary_sync$upper[free_indexes]-ageref_free)
 
 gg2 = ggplot(data=fullpd,aes(x=.data$depth)) +
 geom_line(aes(y=0),color="blue",linetype="dotted",size=0.2)+
@@ -93,10 +92,10 @@ gg2 = gg2+geom_line(aes(y=.data$medians))+
 geom_ribbon(aes(ymin=.data$lower,ymax=.data$upper),color="red",fill="red",alpha=0.3)
 
 
-gg2 = gg2 + geom_segment(data=data.frame(depth=x$data$depth[tie_indexes],                                          median=x$simulation$summary_sync$median[tie_indexes]-ageref_tie,                               lower=x$simulation$summary_sync$lower[tie_indexes]-ageref_tie,
-                    upper=x$simulation$summary_sync$upper[tie_indexes]-ageref_tie),
-                    aes(x=.data$depth,y=.data$lower,xend=.data$depth,yend=.data$upper),
-                    col="magenta")
+gg2 = gg2 + geom_segment(data=data.frame(depth=results$data$depth[tie_indexes],                                   median=results$simulation$summary_sync$median[tie_indexes]-ageref_tie,                         lower=x$simulation$summary_sync$lower[tie_indexes]-ageref_tie,
+                   upper=results$simulation$summary_sync$upper[tie_indexes]-ageref_tie),
+                   aes(x=.data$depth,y=.data$lower,xend=.data$depth,yend=.data$upper),
+                   col="magenta")
 print(gg2)
 ```   
 

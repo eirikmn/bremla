@@ -19,6 +19,7 @@ Prints essentials from bremla S3 class.
 \examples{
 \donttest{
 require(stats)
+set.seed(1)
 n <- 1000
 phi <- 0.8
 sigma <- 1.2

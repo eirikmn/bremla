@@ -3,4 +3,6 @@
 ^LICENSE\.md$
 ^README.Rmd
 ^README\.Rmd$
+^README.html
+^README\.html$
 ^\.github$
