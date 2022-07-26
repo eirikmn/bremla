@@ -71,7 +71,7 @@ summary.bremla = function(object,
 
   if(!is.null(object$time$simulation$total)){
     cpu=as.numeric(c(cpu,round(object$time$simulation$total,digits=digits)))
-    cpu.navn=c(cpu.navn,"Chronology sampling")
+    cpu.navn=c(cpu.navn,"Chron. sampling")
   }
   if(!is.null(object$linramp) && !is.null(object$event_dating)){
     cpu=as.numeric(c(cpu,round(object$time$t1_and_ramp + object$time$event_age$total,digits=digits)))
@@ -124,11 +124,20 @@ summary.bremla = function(object,
       colnames(hypers) = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
       rownames(hypers) = c("sigma_epsilon","phi1","phi2")
     }
-    maxlength=2048L
-    formulastring = format(object$.args$formula.ls)
-    if(sum(nchar(formulastring)) > maxlength){
-      formulastring = paste0( substr(deparse(object$.args$formula.ls),1L,maxlength),"...")
+
+    formulastring = format(object$.args$formula.input)
+
+    if(!is.null(object$.args$events)){
+      if(object$.args$events$fill_formula){
+        formulastring = paste0(formulastring," + psi_fill(degree=",object$.args$events$degree,
+                               ", n_events=",object$.args$events$nevents,")")
+      }
     }
+
+    # formulastring = format(object$.args$formula.ls)
+    # if(sum(nchar(formulastring)) > maxlength){
+    #   formulastring = paste0( substr(deparse(object$.args$formula.ls),1L,maxlength),"...")
+    # }
     fit.arg = list(formula = formulastring,noise=object$.args$control.fit$noise,
                    nevents=object$.args$events$nevents,
                    method = object$.args$control.fit$method)
@@ -153,7 +162,7 @@ summary.bremla = function(object,
                      method=object$tie_points$method,
                      nsims=object$tie_points$nsims,
                      locations=object$tie_points$locations,
-                     locations_unit=object$tie_points$unit)
+                     locations_unit=object$tie_points$locations_unit)
     ut = c(ut,list(tiepoints=tiepoints))
   }
 
@@ -351,52 +360,58 @@ print.summary.bremla = function(x,
     }
 
     print(x$hyperramp)
-
-    if(!is.null(x$tie_points)){
-      cat("\n",x$tie_points$nsims, " chronologies sampled using ", x$tie_points$tie_n ,
-          " tie-point distributions",sep="")
-      if(tolower(x$tie_points$method) %in% c("adolphi")){
-        cat(" (Adolphi).",sep="")
-      }else if(tolower(x$tie_points$method) %in% c("precomputed", "given")){
-        cat(" (precomputed).",sep="")
-      }else if(tolower(x$tie_points$method) %in% c("normal", "gauss","gaussian")){
-        cat(" (Gaussian).",sep="")
-      }else if(tolower(x$tie_points$method) %in% c("semigauss","semi-gauss","quasigauss","quasi-gauss",
-                                                  "skewered","skewered-gauss")){
-        cat(" (merged Gaussians).",sep="")
-      }else{cat(".")}
-
-      if(x$tie_points$tie_n <= 6){
-        cat("\nTie-points are fixed at ")
-        if(tolower(x$tie_points$locations_unit) %in% c("depth","z")){
-          cat("NGRIP depths (m) ",sep="")
-          cat(x$tie_points$locations, sep=", ")
-          cat(".")
-        }else if(tolower(x$tie_points$locations_unit) %in% c("age","y")){
-          cat(x$reference.label," ages (yb2k) ",sep="")
-          cat(x$tie_points$locations, sep=", ")
-          cat(".")
-        }else if(tolower(x$tie_points$locations_unit) %in% c("index","ind")){
-          cat("indices ",sep="")
-          cat(x$tie_points$locations, sep=", ")
-          cat(".")
-        }
-        cat("\n",sep="")
-      }
-
-    }
-
-    if(x$rampsims>0) cat("\n",x$rampsims, " samples of linear ramp function produced.\n",sep="")
-
-    if(!is.null(x$age.reference)){
-      if(!is.null(x$event_age)) cat("\nGenerated ",x$datingsims, " samples of onset ages (reference onset age is ",x$age.reference,").\n",sep="")
-    }else{
-      if(!is.null(x$event_age)) cat("\nGenerated ",x$datingsims, " samples of onset ages.\n",sep="")
-    }
-
-    if(!is.null(x$event_age)) print(x$event_age)
-    #if(!is.null(x$age.reference)) cat("The reference onset age is ",x$age.reference,"\n",sep="")
   }
+
+  if(!is.null(x$tiepoints)){
+      cat("\n",x$tiepoints$nsims, " synchronized chronologies sampled using ", x$tiepoints$tie_n ,
+          " tie-point distributions",sep="")
+
+
+    if(tolower(x$tiepoints$method) %in% c("adolphi")){
+      cat(" (Adolphi).",sep="")
+    }else if(tolower(x$tiepoints$method) %in% c("precomputed", "given")){
+      cat(" (precomputed).",sep="")
+    }else if(tolower(x$tiepoints$method) %in% c("normal", "gauss","gaussian")){
+      cat(" (Gaussian).",sep="")
+    }else if(tolower(x$tiepoints$method) %in% c("semigauss","semi-gauss","quasigauss","quasi-gauss",
+                                                "skewered","skewered-gauss")){
+      cat(" (merged Gaussians).",sep="")
+    }else{cat(".")}
+
+    if(x$tiepoints$tie_n <= 6){
+      cat("\nTie-points are fixed at ")
+      if(tolower(x$tiepoints$locations_unit) %in% c("depth","z")){
+        cat("NGRIP depths (m):\n",sep="")
+        cat(x$tiepoints$locations, sep=", ")
+        cat(".")
+      }else if(tolower(x$tiepoints$locations_unit) %in% c("age","y")){
+        cat(x$reference.label," ages (yb2k):\n",sep="")
+        cat(x$tiepoints$locations, sep=", ")
+        cat(".")
+      }else if(tolower(x$tiepoints$locations_unit) %in% c("index","ind")){
+        cat("indices:\n",sep="")
+        cat(x$tiepoints$locations, sep=", ")
+        cat(".")
+      }
+      cat("\n",sep="")
+    }
+
+  }
+
+  if(!is.null(x$rampsims)){
+    if(x$rampsims>0) cat("\n",x$rampsims, " samples of linear ramp function produced.\n",sep="")
+  }
+
+
+  if(!is.null(x$age.reference)){
+    if(!is.null(x$event_age)) cat("\nGenerated ",x$datingsims, " samples of onset ages (reference onset age is ",x$age.reference,").\n",sep="")
+  }else{
+    if(!is.null(x$event_age)) cat("\nGenerated ",x$datingsims, " samples of onset ages.\n",sep="")
+  }
+
+  if(!is.null(x$event_age)) print(x$event_age)
+  #if(!is.null(x$age.reference)) cat("The reference onset age is ",x$age.reference,"\n",sep="")
+
 
   if(!is.null(x$biasparam)){
     cat("\nGenerated ",x$biasnsims," samples for ",x$nbiases, " sets of (",x$bias.model,") biased chronologies, with parameters:\n",sep="")

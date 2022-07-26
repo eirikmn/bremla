@@ -58,7 +58,7 @@
 #' @export
 bremla_synchronized_simulation = function(object,control.sim,print.progress=FALSE){
 
-
+time.start = Sys.time()
   if(missing(control.sim)){
 
     if(!is.null(object$.args$control.sim)){
@@ -74,6 +74,7 @@ bremla_synchronized_simulation = function(object,control.sim,print.progress=FALS
   control.sim = set.options(control.sim,control.sim.default())
 
   object$.args$control.sim = control.sim
+  if(control.sim$synchronized==FALSE) control.sim$synchronized=2
 
   ## sample hyperparameters
   if(is.null(object$fitting)) stop("Fitting results not found. Run 'bremla_modelfitter' first.")
@@ -139,6 +140,7 @@ bremla_synchronized_simulation = function(object,control.sim,print.progress=FALS
     if(print.progress) cat(" completed!\n",sep="")
   }
 
+  if(print.progress) cat("Sampling fixed coefficients...",sep="")
   latentselection = object$.internal$lat.selection
   # latentselection = list()
   # reg.model = object$.args$reg.model
@@ -151,15 +153,19 @@ bremla_synchronized_simulation = function(object,control.sim,print.progress=FALS
   #   if(reg.model$psi0) latentselection[[paste0("a",i-1)]] = 1
   #   if(reg.model$psi1)latentselection[[paste0("c",i-1)]] = 1
   # }
+  timecoef.start = Sys.time()
   ncores_postsamp = max(1,object$.args$control.sim$ncores)
   latentsamples = inla.posterior.sample(nsims,object$fitting$inla$fit,
                                         selection=latentselection,verbose=FALSE,
                                         add.names=FALSE,num.threads = ncores_postsamp)
 
+  timecoef.end = Sys.time()
+  if(print.progress) cat(" completed in ",difftime(timecoef.end,timecoef.start,units="secs")[[1]]," seconds.\n",sep="")
   samples = matrix(NA,nrow=n,ncol=nsims)
 
 
-  time.start = Sys.time()
+  if(print.progress) cat("Simulating synchronized chronologies...\n",sep="")
+  timeage.start = Sys.time()
   for(r in 1:nsims){
     sigma_sample = object$simulation$sigma[r]
     phi_sample = object$simulation$phi[r]
@@ -199,11 +205,11 @@ bremla_synchronized_simulation = function(object,control.sim,print.progress=FALS
 
     #samples[free_indexes,r] = Qsimmer(1,Qa,mu_amidb)
     if((r %% 1000) == 0){
-      cat("Synchronous age simulation ",r,"/",nsims,". Elapsed time: ",difftime(Sys.time(),time.start,units="secs")[[1]]," seconds...","\n",sep="")
+      cat("Synchronous age simulation ",r,"/",nsims,". Elapsed time: ",difftime(Sys.time(),timeage.start,units="secs")[[1]]," seconds...","\n",sep="")
     }
   }
 
-  time.end = Sys.time()-time.start
+  timeage.end = Sys.time()
 
   object$simulation$age_sync = samples
   object$tie_points$free_indexes=free_indexes
@@ -211,7 +217,14 @@ bremla_synchronized_simulation = function(object,control.sim,print.progress=FALS
   object$tie_points$free_n=length(free_indexes)
   object$tie_points$tie_n=length(tie_indexes)
 
-  object$time$tiepoints = time.end
+  #object$time$tiepoints = time.end
+  if(object$.args$control.sim$synchronized == 2){
+    object$time$simulation$total = object$time$simulation$total+difftime(timeage.end,timeage.start,units="secs")[[1]]
+  }else{
+    object$time$simulation$total = difftime(timeage.end,time.start,units="secs")[[1]]
+  }
+
+  object$.args$sim = list(sync=TRUE)
   if(object$.args$control.sim$summary$compute){
     object = bremla_simulationsummarizer(object,sync=TRUE,print.progress=print.progress)
   }

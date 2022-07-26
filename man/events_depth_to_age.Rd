@@ -24,6 +24,7 @@ of abrupt warming transitions events using Monte Carlo simulation.
 \examples{
 \donttest{
 require(stats)
+set.seed(1)
 n <- 1000
 phi <- 0.8
 sigma <- 1.2
@@ -46,7 +47,7 @@ data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z
 events=list(locations=c(1210,1220,1240))
 control.fit = list(ncores=2,noise="ar1")
 synchronization=list(method="gauss")
-control.sim=list(synchronized=2,
+control.sim=list(synchronized=TRUE,
                  summary=list(compute=TRUE))
 
 #simulate transition:

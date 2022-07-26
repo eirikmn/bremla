@@ -75,6 +75,7 @@ bremla_modelfitter = function(object, control.fit,
 
   fit = lm(object$.internal$formula.ls,object$data) #fits model using least squares
 
+
   if(sum(is.na(fit$coefficients))){
     stop(paste0("least squares yields NA estimates for ",sum(is.na(fit$coefficients)),
                 " coefficients. Make sure 'formula' does not include linearly dependent variables.

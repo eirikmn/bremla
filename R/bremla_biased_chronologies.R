@@ -90,7 +90,7 @@ bremla_biased_chronologies = function(object,control.bias,print.progress=FALSE){
   n = nrow(object$simulation$age)
   biasparams = control.bias$biasparams
 
-  if(class(biasparams) == "numeric"){
+  if(is.null(dim(biasparams))){
     biasparams = matrix(biasparams,ncol=1)
   }
   m = ncol(biasparams)

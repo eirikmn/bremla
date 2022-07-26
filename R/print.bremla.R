@@ -68,11 +68,11 @@ print.bremla = function(x,
 
   if(!is.null(x$simulation)){
     cpu=as.numeric(c(cpu,round(x$time$simulation$total,digits=digits)))
-    cpu.navn=c(cpu.navn,"Chronology sampling")
+    cpu.navn=c(cpu.navn,"Chron. sampling")
   }
-  if(!is.null(x$linramp) && !is.null(x$DO_dating)){
-    cpu=as.numeric(c(cpu,round(x$time$t1_and_ramp + x$time$DO_age$total,digits=digits)))
-    cpu.navn=c(cpu.navn,"DO dating")
+  if(!is.null(x$linramp) && !is.null(x$event_dating)){
+    cpu=as.numeric(c(cpu,round(x$time$t1_and_ramp + x$time$event_age$total,digits=digits)))
+    cpu.navn=c(cpu.navn,"Event dating")
   }
   if(!is.null(x$biases)){
     cpu=as.numeric(c(cpu,round(x$time$biases,digits=digits)))
@@ -127,11 +127,19 @@ print.bremla = function(x,
         colnames(hypers) = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
         rownames(hypers) = c("sigma_epsilon","phi1","phi2")
       }
-      maxlength=2048L
-      formulastring = format(x$.args$formula.ls)
-      if(sum(nchar(formulastring)) > maxlength){
-        formulastring = paste0( substr(deparse(x$.args$formula.ls),1L,maxlength),"...")
+      formulastring = format(x$.args$formula.input)
+
+      if(!is.null(x$.args$events)){
+        if(x$.args$events$fill_formula){
+          formulastring = paste0(formulastring," + psi_fill(degree=",x$.args$events$degree,
+                                 ", n_events=",x$.args$events$nevents,")")
+        }
       }
+      # maxlength=2048L
+      # formulastring = format(x$.args$formula.ls)
+      # if(sum(nchar(formulastring)) > maxlength){
+      #   formulastring = paste0( substr(deparse(x$.args$formula.ls),1L,maxlength),"...")
+      # }
       cat("The fixed component is explained by linear predictor: \n",formulastring,
           "\n\nThe noise component is explained by an ",noise," process.\n\n",sep="")
 
@@ -170,10 +178,10 @@ print.bremla = function(x,
     lab = x$linramp$.args$label
     if(is.null(lab)) lab="unlabeled"
     cat("\nEstimated onset depth and age for event ",lab,": \n",sep="")
-    if(!is.null(x$DO_dating)){
-      DO_age = matrix(round(c(x$DO_dating$mean,x$DO_dating$sd,x$DO_dating$q0.025,x$DO_dating$q0.5,x$DO_dating$q0.975),digits=digits),nrow=1)
-      rownames(DO_age) = "onset age"
-      hyperramp = rbind(hyperramp,DO_age)
+    if(!is.null(x$event_dating)){
+      event_age = matrix(round(c(x$event_dating$mean,x$event_dating$sd,x$event_dating$q0.025,x$event_dating$q0.5,x$event_dating$q0.975),digits=digits),nrow=1)
+      rownames(event_age) = "onset age"
+      hyperramp = rbind(hyperramp,event_age)
 
     }
     colnames(hyperramp) = c("mean","sd","quant0.025","quant0.5","quant0.975")

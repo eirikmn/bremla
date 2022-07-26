@@ -69,8 +69,8 @@
 #' @importFrom rlang .data
 #' @importFrom ggplot2 ggplot aes geom_line geom_ribbon theme_bw xlab ylab geom_segment geom_point
 plot.bremla = function(x,
-                       plot.ls = list(fitted=TRUE,legend=NULL,residuals=TRUE,histogram=TRUE,qqplot=TRUE,acf=TRUE,xrev=FALSE,
-                                      label.fit=NULL,label.res=NULL,label.hist=NULL,label.qq=NULL,label.acf=NULL),
+                       plot.ls = list(fitted=TRUE,legend=NULL,residuals=TRUE,histogram=TRUE,qqplot=FALSE,acf=TRUE,xrev=FALSE,
+                                      label.fit=NULL,label.res=NULL,label.hist=NULL,label.qq=NULL,label.acf=NULL,merge=TRUE),
                        plot.inla.posterior = list(posteriors=TRUE,label=NULL),
                        plot.inlasims = list(plotsims=0,legend=NULL,xrev=FALSE,label=NULL),
                        plot.syncsims = list(plotsims=0,legend=NULL,xrev=FALSE,label=NULL),
@@ -115,8 +115,16 @@ plot.bremla = function(x,
 
   if(!is.null(plot.ls) && !is.null(x$fitting$LS$fit)){
     figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
-    par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
+    if(plot.ls$merge){
+      par(mfrow=c(2,2),mar=c(5,4,4,2)+0.1)
+    }else{
+      par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
+    }
+    plotnum=0
+
+
     if(plot.ls$fitted){
+      plotnum=plotnum+1
       xlim = range(z)
       if(plot.ls$xrev) xlim=rev(xlim)
       if(is.null(plot.ls$label.fit)){
@@ -133,6 +141,7 @@ plot.bremla = function(x,
     if(!is.null(plot.ls$legend)) legend(x=leg$x,y=leg$y,legend=leg$legend,col=leg$col,lty=leg$lty,cex=leg$cex,pch=leg$pch,lwd=leg$lwd,pt.cex=leg$pt.cex,bty=leg$bty)
 
     if(plot.ls$residuals){
+      plotnum=plotnum+1
       if(is.null(plot.ls$label.res)){
         plot.label="Least squares residuals"
       }else{
@@ -141,6 +150,7 @@ plot.bremla = function(x,
       plot(z,x$fitting$LS$fit$residuals,type="l",xlab="Depth (m)",ylab="Residual errors per 5 cm",main=plot.label,xlim=xlim); abline(h=0,lty=3,col="gray")
     }
     if(plot.ls$histogram){
+      plotnum=plotnum+1
       if(is.null(plot.ls$label.hist)){
         plot.label="Histogram: Residuals"
       }else{
@@ -149,6 +159,7 @@ plot.bremla = function(x,
       hist(x$fitting$LS$fit$residuals,freq=0,col="orange",breaks=20,xlab="Residual errors per 5 cm", main=plot.label)
     }
     if(plot.ls$qqplot){
+      plotnum=plotnum+1
       if(is.null(plot.ls$label.qq)){
         plot.label="Q-Q Plot"
       }else{
@@ -156,13 +167,20 @@ plot.bremla = function(x,
       }
       qqnorm(x$fitting$LS$fit$residuals,main=plot.label); qqline(x$fitting$LS$fit$residuals)
     }
+    if(plotnum>4){
+      par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
+    }
     if(plot.ls$acf){
+      plotnum=plotnum+1
       if(is.null(plot.ls$label.acf)){
         plot.label="Autocorrelation function"
       }else{
         plot.label=plot.ls$label.acf
       }
       acf(x$fitting$LS$fit$residuals,lag.max = 30,main=plot.label,lwd=2)
+    }
+    if(plot.ls$merge){
+      par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
     }
     if(postscript || pdf){
       if (names(dev.cur()) != "null device") {
@@ -213,7 +231,10 @@ plot.bremla = function(x,
     }
   }
 
-  if(!is.null(plot.inlasims) && !is.null(x$simulation$age)){
+  if(!is.null(plot.inlasims) && !is.null(x$.args$control.sim$synchronized)){
+
+
+  if(x$.args$control.sim$synchronized %in% c(FALSE,2)){
 
     xlim=range(z)
     if(plot.inlasims$xrev) xlim=rev(xlim)
@@ -266,7 +287,7 @@ plot.bremla = function(x,
         }
       }
 
-
+  }
   }
 
 

@@ -34,6 +34,7 @@
 #' \donttest{
 #' ## Simulation example
 #' require(stats)
+#' set.seed(1)
 #' n <- 1000
 #' phi <- 0.8
 #' sigma <- 1.2
@@ -186,7 +187,8 @@ bremla <- function(formula,data,reference.label=NULL,
   }
 
 
-  if(nsims>0 && control.sim$synchronized %in% c(FALSE,2)){
+  if(nsims>0 && control.sim$synchronized %in% c(TRUE,2)){
+    control.sim$nsims=nsims
     #produce samples from the chronologies
     object = bremla_synchronized_simulation(object, control.sim=control.sim,
                                             print.progress=print.progress)

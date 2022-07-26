@@ -72,6 +72,7 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
   #if(!is.null(control.sim))
    control.sim = set.options(control.sim,control.sim.default())
 
+   if(control.sim$synchronized==TRUE) control.sim$synchronized=2
   object$.args$control.sim = control.sim
 
   ## sample hyperparameters
@@ -186,6 +187,7 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
     }
   }
 
+  object$.args$sim = list(unsync=TRUE)
   time.endage = Sys.time()
   if(print.progress) cat("Completed in ",difftime(time.endage,time.startage,units="secs")[[1]]," seconds!\n",sep="")
   object$time$simulation$mean = difftime(time.endmean,time.startmean,"secs")[[1]]

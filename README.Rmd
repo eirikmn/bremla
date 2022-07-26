@@ -1,14 +1,28 @@
-```{r global_options, include = FALSE}
-library(knitr)
-options(width = 120)
-opts_chunk$set(fig.width = 12, fig.height = 8, fig.path = 'Figs/',
-               include = TRUE, warning = FALSE, message = FALSE)
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  dev = "png",
+  out.width = "80%"
+)
 ```
 
-# Bremla
+# bremla
+
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/eirikmn/bremla/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/eirikmn/bremla/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 This Repository contains the Bremla package for uncertainty quantification and synchronization for layer-counted proxy archives, including the data and code to reproduce the results for
 
-Myrvoll-Nilsen, E., Riechers, K., Rypdal, M. & Boers, N. (2022). Comprehensive uncertainty estimation of the timing of Greenland warmings of the Greenland Ice core records. Climate of the Past, x(x),x-x. doi:xxxxx
+Myrvoll-Nilsen, E., Riechers, K., Rypdal, M. & Boers, N. (2022). Comprehensive uncertainty estimation of the timing of Greenland warmings of the Greenland Ice core records. Climate of the Past, 18, 1275-1294. doi.org/10.5194/cp-18-1275-2022
 
 and 
 
@@ -17,14 +31,14 @@ Myrvoll-Nilsen, E., Riechers, K. & Boers, N. (202x). Tie-point paper (title TBD)
 ## installation
 
 The simplest way to install the package is to install the remotes package and run
-```{r github-install, eval=FALSE}
-#install.packages("remotes")
-remotes::install_github("eirikmn/bremla")
+```{r install, eval=FALSE}
+#install.packages("devtools")
+devtools::install_github("eirikmn/bremla")
 ```
 
 To get started, see the documentation '?bremla' and the associated example.
 
-The package includes the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm' downloaded from [iceandclimate.nbi.ku.dk](Centre for Ice and Climate) at the Niels Bohr Institute of the University of Copenhagen, Denmark, and the table of stadial-interstadial events presented by [https://www.sciencedirect.com/science/article/pii/S0277379114003485](Rasmussen et al. (2014)). Also includes the tie-point presented in [https://cp.copernicus.org/articles/14/1755/2018/](Adolphi et al. (2018)) and [https://www.cambridge.org/core/journals/radiocarbon/article/testing-and-improving-the-intcal20-calibration-curve-with-independent-records/D72D9214C47FE9441B5E730D33DCCE3D](Muscheler et al. (2020)). Other data and tie-points should work as well.
+The package includes the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm' downloaded from [Centre for Ice and Climate](iceandclimate.nbi.ku.dk) at the Niels Bohr Institute of the University of Copenhagen, Denmark, and the table of stadial-interstadial events presented by [Rasmussen et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0277379114003485). Also includes the tie-point presented in [Adolphi et al. (2018)](https://cp.copernicus.org/articles/14/1755/2018/) and [Muscheler et al. (2020)](https://www.cambridge.org/core/journals/radiocarbon/article/testing-and-improving-the-intcal20-calibration-curve-with-independent-records/D72D9214C47FE9441B5E730D33DCCE3D). Other data and tie-points should work as well.
 
 Warning: The provided real data example generates several thousand simulated chronologies with individual lengths exceeding 18,000. More if synchronized chronologies is also computed. This will require a significant amount of memory. If needed, reduce the number of samples generated or free up memory before use.
 
@@ -32,6 +46,7 @@ Warning: The provided real data example generates several thousand simulated chr
 This is a real data example which produces 5000 simulations from a synchronized time scale.
 ```{r example, message=FALSE, warning=FALSE, include=FALSE}
 require(INLA)
+library(bremla)
 data("event_intervals")
 data("events_rasmussen")
 data("NGRIP_5cm")
@@ -44,23 +59,50 @@ data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=pr
 formula = dy~-1+depth2
 
 events=list(locations = events_rasmussen$depth,
-             locations_unit="depth",degree=1)
-control.transition_dating=list(age.ref=age.reference,age.label="years (yb2k)")
+            locations_unit="depth",degree=1)
+
 object = bremla(formula,data,reference.label="GICC05",
-                  nsims=5000,
-                  events=events,
-                  synchronization=list(method="adolphi"),
-                  control.fit=list(method="inla"),
-                  control.sim=list(synchronized=TRUE),
-                  print.progress=TRUE )
+                nsims=5000,
+                events=events,
+                synchronization=list(method="adolphi"),
+                control.fit=list(method="inla"),
+                control.sim=list(synchronized=TRUE),
+                print.progress=TRUE )
 summary(object)
-plot(object)
 ```
 
+```{r plot, message=FALSE, eval=TRUE, echo=FALSE}
+require(ggplot2)
+free_indexes = x$tie_points$free_indexes
+tie_indexes = x$tie_points$tie_indexes
+ageref_free = x$data$age[free_indexes]
+ageref_tie = x$data$age[tie_indexes]
+
+fullpd = data.frame(depth = x$data$depth[free_indexes],
+                medians=x$simulation$summary_sync$median[free_indexes]-ageref_free,
+                lower=x$simulation$summary_sync$lower[free_indexes]-ageref_free,
+                upper=x$simulation$summary_sync$upper[free_indexes]-ageref_free)
+
+gg2 = ggplot(data=fullpd,aes(x=.data$depth)) +
+geom_line(aes(y=0),color="blue",linetype="dotted",size=0.2)+
+theme_bw()+ylab("Estimated age - reference (years)")+
+xlab("NGRIP depth (m)")
+
+
+gg2 = gg2+geom_line(aes(y=.data$medians))+
+geom_ribbon(aes(ymin=.data$lower,ymax=.data$upper),color="red",fill="red",alpha=0.3)
+
+
+gg2 = gg2 + geom_segment(data=data.frame(depth=x$data$depth[tie_indexes],                                          median=x$simulation$summary_sync$median[tie_indexes]-ageref_tie,                               lower=x$simulation$summary_sync$lower[tie_indexes]-ageref_tie,
+                    upper=x$simulation$summary_sync$upper[tie_indexes]-ageref_tie),
+                    aes(x=.data$depth,y=.data$lower,xend=.data$depth,yend=.data$upper),
+                    col="magenta")
+print(gg2)
+```   
 ## Attribution
 
 This code is associated and written for the papers Myrvoll-Nilsen et al. (2022) and Myrvoll-Nilsen et al. (202x) mentioned above. Feel free to use the code, but please cite the accompanying papers.
 
 ## License
 
-The code in this repository is made available under the terms of the MIT License. For details, see LICENSE file.
+The code in this repository is made available under the terms of the GNU (version >=2) License. For details, see LICENSE.md file.

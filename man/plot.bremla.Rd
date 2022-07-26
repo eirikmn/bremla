@@ -7,8 +7,8 @@
 \method{plot}{bremla}(
   x,
   plot.ls = list(fitted = TRUE, legend = NULL, residuals = TRUE, histogram = TRUE,
-    qqplot = TRUE, acf = TRUE, xrev = FALSE, label.fit = NULL, label.res = NULL,
-    label.hist = NULL, label.qq = NULL, label.acf = NULL),
+    qqplot = FALSE, acf = TRUE, xrev = FALSE, label.fit = NULL, label.res = NULL,
+    label.hist = NULL, label.qq = NULL, label.acf = NULL, merge = TRUE),
   plot.inla.posterior = list(posteriors = TRUE, label = NULL),
   plot.inlasims = list(plotsims = 0, legend = NULL, xrev = FALSE, label = NULL),
   plot.syncsims = list(plotsims = 0, legend = NULL, xrev = FALSE, label = NULL),
@@ -21,7 +21,7 @@
   plot.event_age = list(age.reference = NULL, xrev = TRUE, label = NULL),
   postscript = FALSE,
   pdf = FALSE,
-  prefix = "bemla.plots/figure-",
+  prefix = "bremla.plots/figure-",
   ...
 )
 }

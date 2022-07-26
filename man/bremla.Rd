@@ -65,6 +65,7 @@ Fits a regression model to the data and produces chronology simulations.
 \donttest{
 ## Simulation example
 require(stats)
+set.seed(1)
 n <- 1000
 phi <- 0.8
 sigma <- 1.2

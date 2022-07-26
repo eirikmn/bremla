@@ -15,6 +15,7 @@
 #' @examples
 #' \donttest{
 #' require(stats)
+#' set.seed(1)
 #' n <- 1000
 #' phi <- 0.8
 #' sigma <- 1.2
@@ -37,7 +38,7 @@
 #' events=list(locations=c(1210,1220,1240))
 #' control.fit = list(ncores=2,noise="ar1")
 #' synchronization=list(method="gauss")
-#' control.sim=list(synchronized=2,
+#' control.sim=list(synchronized=TRUE,
 #'                  summary=list(compute=TRUE))
 #'
 #' #simulate transition:
