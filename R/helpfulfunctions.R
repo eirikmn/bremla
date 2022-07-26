@@ -97,7 +97,7 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
   eventindexes = numeric(length(events))
   for(i in 1:length(events)){
     if(events[i] < min(record) || events[i] > max(record)){ #Gives NA if located outside range of 'record'
-      warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'record' (",min(record),", ",max(record),"). The event will be omitted!"))
+      #print(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'record' (",min(record),", ",max(record),"). The event will be omitted!"))
       eventindexes[i] = NA
     }else{
       eventindexes[i] = which(abs(events[i]-record) == min(abs(events[i]-record)))

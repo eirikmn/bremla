@@ -155,7 +155,7 @@ bremla_modelfitter = function(object, control.fit,
                    control.compute=list(config=TRUE),
                    verbose=object$.args$control.fit$verbose,
                    control.inla=list(restart=TRUE,h=0.1),
-                   #control.mode=list(theta=initialmodes,restart=TRUE)
+                   control.mode=list(theta=initialmodes,restart=TRUE)
                    )
 
 

@@ -220,7 +220,7 @@ time.start = Sys.time()
 
   #object$time$tiepoints = time.end
   if(object$.args$control.sim$synchronized == 2){
-    object$time$simulation$total = object$time$simulation$total+difftime(timeage.end,timeage.start,units="secs")[[1]]
+    object$time$simulation$total = object$time$simulation$total+difftime(timeage.end,time.start,units="secs")[[1]]
   }else{
     object$time$simulation$total = difftime(timeage.end,time.start,units="secs")[[1]]
   }
