@@ -44,7 +44,7 @@ Warning: The provided real data example generates several thousand simulated chr
 
 ## Example
 This is a real data example which produces 5000 simulations from a synchronized time scale.
-```{r example, message=FALSE, warning=FALSE, include=FALSE}
+```{r example, message=FALSE, warning=FALSE, include=TRUE}
 require(INLA)
 library(bremla)
 data("event_intervals")
@@ -99,6 +99,7 @@ gg2 = gg2 + geom_segment(data=data.frame(depth=x$data$depth[tie_indexes],       
                     col="magenta")
 print(gg2)
 ```   
+
 ## Attribution
 
 This code is associated and written for the papers Myrvoll-Nilsen et al. (2022) and Myrvoll-Nilsen et al. (202x) mentioned above. Feel free to use the code, but please cite the accompanying papers.
