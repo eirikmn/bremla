@@ -52,6 +52,12 @@
 bremla_modelfitter = function(object, control.fit,
                               print.progress=FALSE){
 
+  if( .Platform$OS.type=="windows" && nrow(object$data)>7000){
+    warning("Windows is poorly suited for large data sets. Try a different operating system if one is available.
+              Using Windows Subsystem for Linux (WSL) might also provide a solution.")
+    return(object)
+  }
+
   if(missing(control.fit)){
     if(!is.null(object$.args$control.fit)){
       if(print.progress){
@@ -62,9 +68,15 @@ bremla_modelfitter = function(object, control.fit,
         stop("Could not find 'control.fit'. Stopping.")
     }
   }
+
+
+
   #if(!is.null(control.fit))
   control.fit = set.options(control.fit,control.fit.default())
   object$.args$control.fit = control.fit
+
+
+
 
   method = control.fit$method
   noise = control.fit$noise
@@ -121,7 +133,7 @@ bremla_modelfitter = function(object, control.fit,
   if(tolower(control.fit$method) == "inla"){
 
     ## will use results from least squares fit as starting point in INLA optimization. Requires proper parametrization
-    if(print.progress) cat("Performing INLA fit...\n",sep="")
+    if(print.progress) cat("Performing INLA fit...",sep="")
 
     #set initial values for fixed parameters based on least squares 'fit'
     my.control.fixed = control.fixed.priors(object$.internal$lat.selection, fit,
@@ -147,18 +159,24 @@ bremla_modelfitter = function(object, control.fit,
 
     object$data$idy=1:nrow(object$data) #create covariate for random effect in INLA
 
+    my.control.fixed$prec=1
+
     ## fit using INLA
     inlafit = inla(object$formula, family="gaussian",data=object$data,
                    control.family=list(hyper=list(prec=list(initial=12, fixed=TRUE))) ,
-                   #control.fixed=my.control.fixed,
+                   control.fixed=my.control.fixed,
                    num.threads = object$.args$control.fit$ncores,
                    control.compute=list(config=TRUE),
+                   #verbose=TRUE,
                    verbose=object$.args$control.fit$verbose,
-                   control.inla=list(restart=TRUE,h=0.1),
+                   control.inla=list(restart=TRUE,h=0.005,dz=0.75,
+                                     int.strategy="auto"),
                    control.mode=list(theta=initialmodes,restart=TRUE)
                    )
 
-
+    if(print.progress){
+      cat(" completed.\n",sep="")
+    }
     object$fitting$inla = list(fit=inlafit)
 
 

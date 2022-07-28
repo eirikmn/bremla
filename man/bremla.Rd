@@ -118,6 +118,7 @@ data("event_intervals")
 data("events_rasmussen")
 data("NGRIP_5cm")
 
+
 age = NGRIP_5cm$age
 depth = NGRIP_5cm$depth
 d18O = NGRIP_5cm$d18O

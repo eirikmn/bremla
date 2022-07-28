@@ -27,8 +27,8 @@ plot(adolphipdfs$tie1,type="l",xlab="Time (yb2k)",ylab="Density",main="Tie-point
 }
 \references{
 Adolphi, F., Bronk Ramsey, C., Erhardt, T., Edwards, R. L., Cheng, H., Turney, C. S. M., Cooper, A., Svensson, A., Rasmussen, S. O., Fischer, H., and Muscheler, R. (2018).
-Connecting the Greenland ice-core and U∕Th timescales via cosmogenic radionuclides: testing the synchroneity of Dansgaard–Oeschger events,
-Clim. Past, 14, 1755–1781, https://doi.org/10.5194/cp-14-1755-2018
+Connecting the Greenland ice-core and U/Th timescales via cosmogenic radionuclides: testing the synchroneity of Dansgaard-Oeschger events,
+Clim. Past, 14, 1755-1781, https://doi.org/10.5194/cp-14-1755-2018
 
 Muscheler, R., Adolphi, F., Heaton, T., Bronk Ramsey, C., Svensson, A., Van der Plicht, J., & Reimer, P. (2020).
 Testing and Improving the IntCal20 Calibration Curve with Independent Records.

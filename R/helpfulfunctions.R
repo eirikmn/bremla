@@ -97,7 +97,7 @@ which.index = function(events, record){ ## Finds which indices of 'record' that 
   eventindexes = numeric(length(events))
   for(i in 1:length(events)){
     if(events[i] < min(record) || events[i] > max(record)){ #Gives NA if located outside range of 'record'
-      #print(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'record' (",min(record),", ",max(record),"). The event will be omitted!"))
+      warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'record' (",min(record),", ",max(record),"). The event will be omitted!"))
       eventindexes[i] = NA
     }else{
       eventindexes[i] = which(abs(events[i]-record) == min(abs(events[i]-record)))
@@ -343,8 +343,8 @@ skewsampler = function(n,mode=0,sdL=1,sdU=1,log=FALSE,plothist=list(compute=FALS
 #' plot(adolphipdfs$tie1,type="l",xlab="Time (yb2k)",ylab="Density",main="Tie-point #1")
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @references Adolphi, F., Bronk Ramsey, C., Erhardt, T., Edwards, R. L., Cheng, H., Turney, C. S. M., Cooper, A., Svensson, A., Rasmussen, S. O., Fischer, H., and Muscheler, R. (2018).
-#' Connecting the Greenland ice-core and U∕Th timescales via cosmogenic radionuclides: testing the synchroneity of Dansgaard–Oeschger events,
-#' Clim. Past, 14, 1755–1781, https://doi.org/10.5194/cp-14-1755-2018
+#' Connecting the Greenland ice-core and U/Th timescales via cosmogenic radionuclides: testing the synchroneity of Dansgaard-Oeschger events,
+#' Clim. Past, 14, 1755-1781, https://doi.org/10.5194/cp-14-1755-2018
 #' @references Muscheler, R., Adolphi, F., Heaton, T., Bronk Ramsey, C., Svensson, A., Van der Plicht, J., & Reimer, P. (2020).
 #' Testing and Improving the IntCal20 Calibration Curve with Independent Records.
 #' Radiocarbon, 62(4), 1079-1094. doi:10.1017/RDC.2020.54

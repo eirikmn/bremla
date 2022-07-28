@@ -11,8 +11,8 @@
 #'   \item{group}{Integer indicating to which tie-point each point is associated with.}
 #'   }
 #' @references Adolphi, F., Bronk Ramsey, C., Erhardt, T., Edwards, R. L., Cheng, H., Turney, C. S. M., Cooper, A., Svensson, A., Rasmussen, S. O., Fischer, H., and Muscheler, R. (2018).
-#' Connecting the Greenland ice-core and U∕Th timescales via cosmogenic radionuclides: testing the synchroneity of Dansgaard–Oeschger events,
-#' Clim. Past, 14, 1755–1781, https://doi.org/10.5194/cp-14-1755-2018
+#' Connecting the Greenland ice-core and U/Th timescales via cosmogenic radionuclides: testing the synchroneity of Dansgaard-Oeschger events,
+#' Clim. Past, 14, 1755-1781, https://doi.org/10.5194/cp-14-1755-2018
 #' @references Muscheler, R., Adolphi, F., Heaton, T., Bronk Ramsey, C., Svensson, A., Van der Plicht, J., & Reimer, P. (2020).
 #' Testing and Improving the IntCal20 Calibration Curve with Independent Records.
 #' Radiocarbon, 62(4), 1079-1094. doi:10.1017/RDC.2020.54

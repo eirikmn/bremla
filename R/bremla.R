@@ -87,6 +87,7 @@
 #' data("events_rasmussen")
 #' data("NGRIP_5cm")
 #'
+#'
 #' age = NGRIP_5cm$age
 #' depth = NGRIP_5cm$depth
 #' d18O = NGRIP_5cm$d18O
@@ -162,6 +163,13 @@ bremla <- function(formula,data,reference.label=NULL,
 
   if(!is.null(control.fit)){
     #fit the data, first by least squares, then by INLA (if specified)
+
+    if( .Platform$OS.type=="windows" && nrow(data)>7000){
+      warning("Windows is poorly suited for large data sets. Try a different operating system if one is available.
+              Using Windows Subsystem for Linux (WSL) might also provide a solution.")
+      return(object)
+    }
+
     object = bremla_modelfitter(object, control.fit, #set controls to NULL and use via object
                                 print.progress=print.progress)
 
