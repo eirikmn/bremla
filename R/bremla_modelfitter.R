@@ -164,7 +164,7 @@ bremla_modelfitter = function(object, control.fit,
     ## fit using INLA
     inlafit = inla(object$formula, family="gaussian",data=object$data,
                    control.family=list(hyper=list(prec=list(initial=12, fixed=TRUE))) ,
-                   control.fixed=my.control.fixed,
+                   #control.fixed=my.control.fixed,
                    num.threads = object$.args$control.fit$ncores,
                    control.compute=list(config=TRUE),
                    #verbose=TRUE,
