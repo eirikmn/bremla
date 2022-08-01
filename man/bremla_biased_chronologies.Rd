@@ -56,7 +56,7 @@ object = bremla_prepare(formula,data,nsims=5000,reference.label="simulated times
                         control.sim=control.sim)
 object = bremla_modelfitter(object)
 object = bremla_chronology_simulation(object)
-object = bremla_biased_chronologies(object, control.bias = list(bias.model="uniform"),
+object = bremla_biased_chronologies(object, control.bias = list(bias.model="uniform",nsims=5000),
              print.progress=TRUE)
 summary(object)
 plot(object)

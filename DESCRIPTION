@@ -1,10 +1,23 @@
 Package: bremla
 Type: Package
-Title: Bayesian Regression Modeling of Layered Archives
+Title: Bayesian Regression Modeling of Layer-Counted Archives
 Version: 0.3.1.9000
-Author: Eirik Myrvoll-Nilsen
-Maintainer: Eirik Myrvoll-Nilsen <eirikmn91@gmail.com>
-Description: Performs efficient Bayesian regression modeling of layer-counted climate records. Default method of inference is integrated nested Laplace approximations (INLAs).
+Authors@R: c(
+    person("Eirik", "Myrvoll-Nilsen", email = "eirikmn91@gmail.com",
+           role = c("aut","cre","cph"),
+           comment = c(ORCID = "0000-0002-1643-5661")
+Description: Performs efficient Bayesian regression modeling of layer-counted climate proxy records. This 
+    model defines a probabilistic age-depth model using a generalized additive model (GAM), where physical 
+    processes and systematic counting errors can be described using a regression model and the remaining 
+    error can be explained using a noise process. The model is fitted to the accumulated number of layers 
+    (number of counted layers per unit of depth) using integrated nested Laplace approximation via the 
+    INLA package (<https://www.r-inla.org>). An ensemble of plausible chronologies are then sampled from 
+    the estimated posterior distributions, on which further analyses can be performed such that dating 
+    uncertainty propagation is treated rigorously. Additionally, the package also allows the chronologies 
+    to be constrained using tie-points. The simulated chronologies can also be used to estimate the dating 
+    uncertainty of the onsets of climate transitions. Details on the age-depth model in Myrvoll-Nilsen, 
+    Riechers, Rypdal and Boers (2022) <doi:10.5194/cp-18-1275-2022>, and on how to incorporate tie-points 
+    in Myrvoll-Nilsen, Riechers and Boers (preprint) <doi:.....>.
 License: GPL (>= 2)
 Imports: 
     INLA (>= 21.08.31),
