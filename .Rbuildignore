@@ -2,6 +2,8 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^README.Rmd
+^paper_results\.Rmd$
+^paper_results.Rmd
 ^README\.Rmd$
 ^README.html
 ^README\.html$
