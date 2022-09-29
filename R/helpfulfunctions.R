@@ -487,7 +487,8 @@ adolphi_tiepoint_simmer = function(nsims=10000,tieshifts = numeric(5), plotdens=
 #' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
 #'
 #' events=list(locations=c(1210,1220,1240))
-#' synchronization=list(locations=depth[c(100,400,700)],method="gauss")
+#' synchronization=list(locations=depth[c(100,400,700)],method="gauss",locations_unit="depth",
+#'         params=list(mean=age[c(100,400,700)]+c(20,5,-20),sd=c(20,10,50)))
 #' object = bremla_prepare(formula,data,nsims=5000,
 #'                         reference.label="simulated timescale",
 #'                         events = events,
@@ -539,7 +540,20 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
     }else if(synchronization$method %in% c("normal","gaussian","gauss")){
       #synchronization$locations = object$data$depth[c(100,400,700)]
 
+      if(tolower(synchronization$locations_unit) %in% c("age","y","time")){
+        locations_indexes = which.index(synchronization$locations,object$data$age)
+      }else if(tolower(synchronization$locations_unit) %in% c("depth","z")){
+        locations_indexes = which.index(synchronization$locations,object$data$depth)
+      }else{
+        locations_indexes = synchronization$locations
+      }
+
       ntie = length(synchronization$locations)
+      if(is.null(synchronization$params)){
+        no_offset = object$original.chron$age[locations_indexes]
+        synchronization$params$mean = rep(no_offset,ntie)
+        synchronization$params$sd = rep(1,ntie)
+      }
       means = synchronization$params$mean
       sds = synchronization$params$sd
       samples = matrix(NA,nrow=synchronization$nsims,ncol=ntie)

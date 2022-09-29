@@ -48,7 +48,7 @@
 #'
 #' events=list(locations=c(1210,1220,1240))
 #' control.fit = list(ncores=2,noise="ar1")
-#' control.sim=list(synchronized=2,
+#' control.sim=list(synchronized=FALSE,
 #'                  summary=list(compute=TRUE))
 #'
 #' object = bremla_prepare(formula,data,nsims=5000,reference.label="simulated timescale",
