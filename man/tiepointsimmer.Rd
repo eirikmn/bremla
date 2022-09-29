@@ -51,8 +51,7 @@ data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
 data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
 
 events=list(locations=c(1210,1220,1240))
-synchronization=list(locations=depth[c(100,400,700)],method="gauss",locations_unit="depth",
-        params=list(mean=age[c(100,400,700)]+c(20,5,-20),sd=c(20,10,50)))
+synchronization=list(locations=depth[c(100,400,700)],method="gauss")
 object = bremla_prepare(formula,data,nsims=5000,
                         reference.label="simulated timescale",
                         events = events,

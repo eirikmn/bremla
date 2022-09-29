@@ -87,8 +87,7 @@ data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z
 
 events=list(locations=c(1210,1220,1240))
 control.fit = list(ncores=2,noise="ar1")
-synchronization=list(locations=depth[c(100,400,700)],locations_unit="depth",method="gauss",
-        params=list(mean=age[c(100,400,700)]+c(20,5,-20),sd=c(20,10,50)))
+synchronization=list(method="gauss")
 control.sim=list(synchronized=2,
                  summary=list(compute=TRUE))
 

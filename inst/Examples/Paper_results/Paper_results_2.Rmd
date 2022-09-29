@@ -353,7 +353,7 @@ buiind = c(NA,2,NA,3,4,6,NA,NA,8,9,NA,11,12,13,NA,NA,NA,NA,NA,15,16,17,NA,NA,19,
 ```
 
 We then estimate the dating uncertainty for all 29 events
-```{r compare_transitions_1}
+```{r}
 agesimmatrix_d18O = matrix(NA,29,nsims)
 depthlist_d18O = c()
 do.plot.rampfit = TRUE
@@ -435,7 +435,7 @@ for(eventnumber in 1:29){
 ```
 
 
-```{r compare_transitions_2}
+```{r}
 
 {
 par(mfrow=c(5,6),mar=c(2,2,1.5,1))
