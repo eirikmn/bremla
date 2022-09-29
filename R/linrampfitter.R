@@ -39,8 +39,7 @@
 #'
 #' events=list(locations=c(1210,1220,1240))
 #' control.fit = list(ncores=2,noise="ar1")
-#' synchronization=list(locations=depth[c(100,400,700)],locations_unit="depth",method="gauss",
-#'         params=list(mean=age[c(100,400,700)]+c(20,5,-20),sd=c(20,10,50)))
+#' synchronization=list(method="gauss")
 #' control.sim=list(synchronized=TRUE,
 #'                  summary=list(compute=TRUE))
 #'
@@ -166,15 +165,7 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
   if(print.progress) cat("Fitting linear ramp model in INLA using rgeneric model specification...\n",sep="")
   ## creating linear ramp INLA model using rgeneric framework. Requires further specification, see "rgeneric.uneven" function
   time.startinla = Sys.time()
-<<<<<<< HEAD
-  model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,n=n,
-                                        tstart=timepoints[1],tslutt=timepoints[n],
-                                        ystart=ypoints[1],timepoints = timepoints,
-                                        priorparams = control.linramp$priorparams
-                                        )
-=======
   model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,n=n,tstart=timepoints[1],tslutt=timepoints[n],ystart=y[1],timepoints = timepoints)
->>>>>>> parent of 19db1dc (Added some more features and Rmd files to generate the plots and results from both papers)
   formula = y ~ -1+ f(idx, model=model.rgeneric)
 
   r = inla(formula,family="gaussian", data=data.frame(y=df0$y,idx=as.integer(df0$time)),

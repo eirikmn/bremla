@@ -108,7 +108,7 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
     age=data$age
   }else if("y" %in% colnames(data)){
     age=data$y
-    colnames(data)[which("y"==colnames(data))]="age"
+    colnames(data$y)="age"
   }else{
     stop("Could not find 'age' in data.frame. Stopping!")
   }
@@ -136,10 +136,8 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
       eventindexes = which.index (events$locations, z)
     }else if(tolower(events$locations_unit) %in% c("age","time","y")){
       eventindexes = which.index (events$locations, y)
-    }else{
-      eventindexes = events$locations
     }
-    eventindexes = unique(c(1,eventindexes[!is.na(eventindexes)],length(y)))
+    eventindexes = unique(c(1,eventindexes[!is.na(eventindexes)]))
     nevents = length(eventindexes)
   }else{
     nevents=0
@@ -159,49 +157,43 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
         if(events$degree>=1) formulastring=paste0(formulastring," + psi1_",i-1)
         if(events$degree==2) formulastring=paste0(formulastring," + psi2_",i-1)
       }
-      # formulastring = paste0(formulastring, " + psi0_",nevents)
-      # if(events$degree>=1) formulastring=paste0(formulastring," + psi1_",nevents)
-      # if(events$degree==2) formulastring=paste0(formulastring," + psi2_",nevents)
+      formulastring = paste0(formulastring, " + psi0_",nevents)
+      if(events$degree>=1) formulastring=paste0(formulastring," + psi1_",nevents)
+      if(events$degree==2) formulastring=paste0(formulastring," + psi2_",nevents)
     }
     if(events$fill_data){
       for(i in 2:nevents){
-        if(i==nevents){
-          subtract=0
-        }else{
-          subtract=1
-        }
         konst = numeric(n-1)
-        konst[eventindexes[i-1]:(eventindexes[i]-subtract)] = 1
+        konst[eventindexes[i-1]:(eventindexes[i]-1)] = 1
         data_obj[[paste0("psi0_",i-1)]] = konst
 
         if(events$degree>=1){
           ev1 = numeric(n-1)
-          ev1[ eventindexes[i-1]:(eventindexes[i]-subtract) ] = z[eventindexes[i-1]:(eventindexes[i]-subtract)]
+          ev1[ eventindexes[i-1]:(eventindexes[i]-1) ] = z[eventindexes[i-1]:(eventindexes[i]-1)]
           data_obj[[paste0("psi1_",i-1)]] = ev1
         }
         if(events$degree == 2){
           ev2 = numeric(n-1)
-          ev2[ eventindexes[i-1]:(eventindexes[i]-subtract) ] = z[eventindexes[i-1]:(eventindexes[i]-subtract)]^2
+          ev2[ eventindexes[i-1]:(eventindexes[i]-1) ] = z[eventindexes[i-1]:(eventindexes[i]-1)]^2
           data_obj[[paste0("psi2_",i-1)]] = ev2
         }
 
-      }
-      #   konst = numeric(n-1)
-      #   konst[eventindexes[nevents]:(n-1)] = 1
-      #   data_obj[[paste0("psi0_",nevents)]] = konst
-      #
-      #   if(events$degree>=1){
-      #     ev1 = numeric(n-1)
-      #     ev1[ eventindexes[nevents]:(n-1) ] = z[eventindexes[nevents]:(n-1)]
-      #     data_obj[[paste0("psi1_",nevents)]] = ev1
-      #   }
-      #   if(events$degree == 2){
-      #     ev2 = numeric(n-1)
-      #     ev2[ eventindexes[nevents]:(n-1) ] = z[eventindexes[nevents]:(n-1)]^2
-      #     data_obj[[paste0("psi2_",nevents)]] = ev2
-      #
-      # }
+        konst = numeric(n-1)
+        konst[eventindexes[nevents]:(n-1)] = 1
+        data_obj[[paste0("psi0_",nevents)]] = konst
 
+        if(events$degree>=1){
+          ev1 = numeric(n-1)
+          ev1[ eventindexes[nevents]:(n-1) ] = z[eventindexes[nevents]:(n-1)]
+          data_obj[[paste0("psi1_",nevents)]] = ev1
+        }
+        if(events$degree == 2){
+          ev2 = numeric(n-1)
+          ev2[ eventindexes[nevents]:(n-1) ] = z[eventindexes[nevents]:(n-1)]^2
+          data_obj[[paste0("psi2_",nevents)]] = ev2
+
+      }
+    }
     }
   }
 

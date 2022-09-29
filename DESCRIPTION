@@ -5,7 +5,8 @@ Version: 0.3.1.9000
 Authors@R: c(
     person("Eirik", "Myrvoll-Nilsen", email = "eirikmn91@gmail.com",
            role = c("aut","cre","cph"),
-           comment = c(ORCID = "0000-0002-1643-5661")
+           comment = c(ORCID = "0000-0002-1643-5661"))
+    )
 Description: Performs efficient Bayesian regression modeling of layer-counted climate proxy records. This 
     model defines a probabilistic age-depth model using a generalized additive model (GAM), where physical 
     processes and systematic counting errors can be described using a regression model and the remaining 
