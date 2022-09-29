@@ -1,0 +1,484 @@
+---
+output: github_document
+---
+
+<!-- Paper_results.md is generated from paper_results.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/results-",
+  dev = "png",
+  out.width = "80%"
+)
+```
+
+# bremla
+
+This file includes the data and code needed to reproduce the results for
+
+Myrvoll-Nilsen, E., Riechers, K., Rypdal, M. & Boers, N. (2022). Comprehensive uncertainty estimation of the timing of Greenland warmings of the Greenland Ice core records. Climate of the Past, 18, 1275-1294. doi.org/10.5194/cp-18-1275-2022
+
+# installation
+
+The simplest way to install the package is to install the devtools package and run
+```{r install, eval=FALSE}
+#install.packages("devtools")
+devtools::install_github("eirikmn/bremla")
+```
+
+
+# Myrvoll-Nilsen et al. (2022)
+
+The data used is the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm', downloaded from [Centre for Ice and Climate](iceandclimate.nbi.ku.dk) at the Niels Bohr Institute of the University of Copenhagen, Denmark, and the table of stadial-interstadial events presented by [Rasmussen et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0277379114003485). These are included in the package and can be imported as follows. 
+```{r bremla, eval=TRUE}
+library(bremla)
+data("event_intervals")
+data("events_rasmussen")
+data("NGRIP_5cm")
+age = NGRIP_5cm$age
+depth = NGRIP_5cm$depth
+proxy = NGRIP_5cm$d18O
+n=length(diff(age))
+data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
+events=list(locations = events_rasmussen$depth,
+            locations_unit="depth",degree=1)
+plot(depth,proxy,xlab="Age (yb2k)",ylab=expression(paste(d^18,"O (permil)")),type="l",
+     xlim=rev(range(depth)))+abline(v=events$locations,col="gray",lwd=0.7)
+formula = dy~-1+depth2+proxy
+nsims=3000
+results = bremla(formula,data,reference.label="GICC05",
+                nsims=nsims,
+                events=events,
+                control.fit=list(noise="ar1"),
+                control.sim=list(synchronized=FALSE) ,
+                print.progress=TRUE
+                )
+```
+
+The results from the linear fit can be extracted by running:
+
+```{r ls, eval=TRUE}
+fit = results$fitting$LS$fit
+{
+  par(mfrow=c(2,1),mar=c(5,4,4,2)+0.1)
+plot(results$data$depth,results$data$dy,type="l",xlab="Depth (m)",ylab="Layers per 5cm",main="(a) Least squares fit",xlim=rev(range(results$data$depth))) + lines(results$data$depth,fit$fitted.values,col="red")   
+abline(v=events$locations,col="gray",lwd=0.8)
+legend(1770,6.35,legend=c("Layer increments","Regression fit","Climate transitions"),
+       col=c("black","red","gray"),lty=c(1,1,NA),cex=0.9,pch=c(NA,NA,"|"))
+plot(results$data$depth,fit$residuals,type="l",xlab="Depth (m)",ylab="Residual errors per 5cm",main="(b) Least squares residuals",xlim=rev(range(results$data$depth)))
+}
+{
+layout(mat=matrix(c(1,3,2,3),nrow=2))
+  par(mar=c(5,3.5,4,2)+0.1)
+hist(fit$residuals,xlab="Residual errors per 5cm",ylab="Density",main="(a) Histogram", col="orange")
+{qqnorm(fit$residuals,main="(b) Q-Q Plot")
+qqline(fit$residuals)}
+acf(fit$residuals, lag.max = 20,main="(c) Autocorrelation function")
+}
+par(mfrow=c(1,1))
+```
+
+To compare the final age-depth uncertainties across the iid, AR(1) and AR(2) models run:
+```{r iid_ar2, eval=TRUE}
+resultsiid = bremla(formula,data,reference.label="GICC05",
+                nsims=nsims,
+                events=events,
+                control.fit=list(noise="iid"),
+                control.sim=list(synchronized=FALSE) 
+                )
+resultsar2 = bremla(formula,data,reference.label="GICC05",
+                nsims=nsims,
+                events=events,
+                control.fit=list(noise="ar2"),
+                control.sim=list(synchronized=FALSE) 
+                )
+gicc05 = results$original.chron$age[1+1:n]
+{
+plot(depth[1+1:n],resultsar2$simulation$summary$upper-gicc05,type="l",col="red", xlab="Depth (m)", ylab="Simulated time scale - GICC05 (years)",ylim=c(-260,260),xlim=rev(range(depth)), lwd=2)
+lines(depth[1+1:n],results$simulation$summary$upper-gicc05,col="blue",lwd=2)
+lines(depth[1+1:n],resultsiid$simulation$summary$upper-gicc05,col="black",lwd=2)
+lines(depth[1+1:n],results$simulation$summary$mean-gicc05,col="gray",lwd=2)
+abline(h=0,lty=3)
+lines(depth[1+1:n],results$simulation$summary$lower-gicc05,col="blue",lwd=2)
+lines(depth[1+1:n],resultsiid$simulation$summary$lower-gicc05,col="black",lwd=2)
+lines(depth[1+1:n],resultsar2$simulation$summary$lower-gicc05,col="red",lwd=2)
+legend(1640,275,legend=c("Mean","iid CI","AR(1) CI", "AR(2) CI"),
+       col=c("gray","black","blue","red"),lty=c(1,1,1,1),cex=0.75)
+}
+```
+
+To generate the plot to compare different parameters for additional stochastic bias use the following code.
+
+```{r biased, eval=TRUE}
+results_biased = bremla(formula,data,reference.label="GICC05",
+                nsims=nsims,
+                events=events,
+                control.fit=list(noise="ar1"),
+                control.sim=list(synchronized=FALSE),
+                control.bias=list(bias.model="uniform",nsims=nsims,
+                                  biasparams = matrix(c(0.98,1.02,0.96,1.04),nrow=2)
+                                  ),
+                print.progress=TRUE
+                )
+{
+  plot(depth[1+1:n],results_biased$biases$bias1$quant0.975-gicc05,type="l",col="blue",lty=2, xlab="depth", ylab="Simulated time scale - GICC05 (years)",xlim = rev(range(depth)), ylim = c(-2700,2700))
+  lines(depth[1+1:n], results_biased$biases$bias2$quant0.975-gicc05,col="blue",lty=3)
+  lines(depth[1+1:n], results$simulation$summary$upper-gicc05,col="blue",lty=1)
+  abline(h=0,lty=3,col="gray")
+  lines(depth[1+1:n], results$simulation$summary$lower-gicc05,col="blue",lty=1)
+  lines(depth[1+1:n], results_biased$biases$bias1$quant0.025-gicc05,col="blue",lty=2)
+  lines(depth[1+1:n], results_biased$biases$bias2$quant0.025-gicc05,col="blue",lty=3)
+  lines(depth[1+1:n], NGRIP_5cm$MCE[1+1:n],col="black",lwd=2)
+  legend(1660,2700,legend=c("MCE","Unbiased","2% bias rate", "4% bias rate"),
+       col=c("black","blue","blue","blue"),lty=c(1,1,2,3),lwd=c(2,1,1,1),cex=0.65)
+}
+```
+
+
+
+## Abrupt warming transitions
+
+We also import table XXXX from Myrvoll-Nilsen et al. (2022) which gives suitable data windows for each abrupt warming transition that is analysed. This was found by varying the start and end point over a 2-dimensional grid and picking those where the noise in the linear ramp model yielded the lowest amplitude.
+
+
+
+
+```{r events_individual, eval=TRUE}
+eventnumber=13 #number between 1 and 29. specifies which transition to consider
+#load data window and specifics to transition
+lowerints = which.index(event_intervals$depth_int_lower.m, depth[2:length(depth)])
+upperints = which.index(event_intervals$depth_int_upper.m, depth[2:length(depth)])
+depth.reference = event_intervals$NGRIP_depth_m[eventnumber]
+age.reference = event_intervals$GICC_age.yb2k[eventnumber]
+interval = lowerints[eventnumber]:upperints[eventnumber]
+transitionlabel = str_sub(event_intervals$onsetlabel[eventnumber],
+                      str_locate(event_intervals$onsetlabel[eventnumber],"GI")[1])
+control.linramp=list(proxy=proxy,
+                     interval=interval,
+                     interval.unit="index",
+                     depth.reference=event_intervals$NGRIP_depth_m[eventnumber]
+                     )
+results_event = linrampfitter(results,control.linramp)
+control.transition_dating = list(label="Simulated transition")
+results_event = events_depth_to_age(results_event,
+                                    control.transition_dating=control.transition_dating)
+{
+  layout(mat=matrix(c(1,3,2,3),nrow=2))
+  
+  
+  plot(depth[interval],proxy[interval],type="l",col="gray",
+     main=paste0("(a) ",transitionlabel," linear ramp fit"),
+     xlab="Depth (m)", ylab=paste(expression(delta^18,"O (permil)")),
+     xlim = rev(range(depth[interval]))
+     )
+lines(results_event$linramp$data$x,results_event$linramp$linrampfit$mean,lwd=1.5)
+lines(results_event$linramp$data$x,results_event$linramp$linrampfit$q0.025,lwd=1.5,col="red")
+lines(results_event$linramp$data$x,results_event$linramp$linrampfit$q0.975,lwd=1.5,col="red")
+abline(v=depth.reference,lty=3,lwd=0.7,col="black")
+ybottom = min(results_event$linramp$data$y)
+ytop = min(results_event$linramp$linrampfit$q0.025)
+margt0=results_event$linramp$param$t0$marg.t0
+normt0.y = margt0[,2]/diff(range(margt0[,2]))*(ytop-ybottom)-min(margt0[,2])+ybottom
+lines(x=margt0[,1],y=normt0.y,col="blue",lwd=2)
+ybottom = min(results_event$linramp$data$y)
+ytop = min(results_event$linramp$linrampfit$q0.025)
+margt1 = results_event$linramp$param$t1$marginal
+normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom
+lines(x=margt1[,1],y=normt1.y,col="blue",lwd=2,lty=3)
+plot(results_event$linramp$param$t0$marg.t0,type="l",xlab="Depth (m)",ylab="Density",
+     main="(b) Marginal posterior of onset depth", 
+     xlim=rev(range(depth.reference,results_event$linramp$param$t0$marg.t0[,1])))
+abline(v=depth.reference,lty=3)
+abline(v=results_event$linramp$param$t0$mean,lwd=1.5)
+abline(v=results_event$linramp$param$t0$q0.025,col="gray")
+abline(v=results_event$linramp$param$t0$q0.975,col="gray")
+hist(results_event$event_dating$samples,main="(c) Histogram of onset age",
+     xlab="Onset age (yr b2k)",col="orange",xlim=rev(range(results_event$event_dating$samples)), breaks=40)
+abline(v=age.reference,lty=3)
+abline(v=results_event$event_dating$mean,lwd=2)
+par(mar=c(5,3.5,4,2)+0.1)
+}
+```
+
+
+We want to compare the dating onsets with those given by Rasmussen et al. (2014), Capron () and Buizert (). We start by importing those values
+
+```{r events_import, eval=TRUE}
+library(readxl)
+rasmussen_depths = event_intervals$NGRIP_depth_m
+rasmussen_ages = event_intervals$GICC_age.yb2k #GISevents$`Age (a b2k)`
+buizert_onsets = read_excel("inst/Examples/Paper_results/data/Buizert_onsets.xlsx",
+                            col_types=c("text","numeric","numeric","numeric","numeric"))
+buizert_depths = buizert_onsets$Depth; buizert_ages = buizert_onsets$Age
+#buizert_depths[c(2:6,8:9,12:13,15:17,19:21)]
+buizert_ages = buizert_ages[c(2:6,8:9,12:13,15:17,19:21)]
+capron_onsets_NGRIP_d18O = read_excel("inst/Examples/Paper_results/data/Capron_onsets.xls",
+                           sheet="d18O",n_max=25)
+capron_ages_NGRIP_d18O = capron_onsets_NGRIP_d18O$`t1 (50%)`
+capron_onsets_NGRIP_dust = read_excel("inst/Examples/Paper_results/data/Capron_onsets.xls",
+                                sheet="Ca2+",n_max=24)
+capron_ages_NGRIP_dust = capron_onsets_NGRIP_dust$`t1 (50%)`
+capind = numeric(29); buiind = numeric(29)
+capind = c(NA,2,3, 4,5,6,NA,NA,7,8,NA,9,10,11,NA,NA,NA,NA,NA,12,13,14,NA,NA,15,NA,NA,16,17)
+buiind = c(NA,2,NA,3,4,6,NA,NA,8,9,NA,11,12,13,NA,NA,NA,NA,NA,15,16,17,NA,NA,19,NA,NA,20,21)
+```
+
+We then generate a model fit using log-Ca as proxy
+
+```{r events_imputedust, eval=TRUE}
+dust = NGRIP_5cm$logdust
+library(zoo)
+dust_filled = na.approx(dust) #Impute missing data using linear interpolation
+logdust = log(dust_filled)
+data2=data
+data2$proxy = logdust
+results_dust = bremla(formula,data2,reference.label="GICC05",
+                nsims=nsims,
+                events=events,
+                control.fit=list(noise="ar1"),
+                control.sim=list(synchronized=FALSE) 
+                )
+```
+
+We then estimate the dating uncertainty for all 29 events
+
+```{r events_all, evals=TRUE}
+agesimmatrix_dust = matrix(NA,29,nsims)
+agesimmatrix_d18O = matrix(NA,29,nsims)
+depthlist_dust = c()
+depthlist_d18O = c()
+do.plot.rampfit = FALSE
+do.plot.agehist = FALSE
+depthstats = as.data.frame(matrix(NA,7,29))
+colnames(depthstats) = c("true", "mean", "CIL","CIU","dustmean","dustCIL","dustCIU")
+agestats = as.data.frame(matrix(NA,7,29))
+colnames(agestats) = c("true", "mean", "CIL","CIU","dustmean","dustCIL","dustCIU")
+# below is some fiddling with optimization parameters to improve the linear ramp fit for 
+# some of the more challenging fits
+steplengths = rep(0.005,29) 
+steplengths[c(5,10)]=0.0001 #sometimes changing the steplength in the INLA optimization procedure can improve convergence (default is 0.005)
+#compute.dust = rep(TRUE,29); compute.dust[c(8,27)]=FALSE #
+#dtparams1 = rep(1,29); dtparams2 = rep(0.2,29) #prior-parameters for transition length
+#t0params1 = rep(1,29); t0params2 = rep(0.2,29) #prior-parameters for transition onset
+#dtparams1[10] = 20; dtparams2[10] = 0.1 #
+#t0params1[10] = 120; t0params2[10] = 20
+for(eventnumber in 1:29){
+  if(eventnumber == 10){ #one of the transitions struggled to find good initial value 
+    opt.params = c(40,NA,NA,NA) #for onset depth
+    priorparams=NULL
+  }else{
+    opt.params = NULL
+    priorparams=NULL
+  }
+    
+    
+  lowerints = which.index(event_intervals$depth_int_lower.m, results$data$depth)
+  upperints = which.index(event_intervals$depth_int_upper.m, results$data$depth)
+  interval_d18O = (lowerints[eventnumber]):upperints[eventnumber]+1
+  
+  lowerints = which.index(event_intervals$depth_int_lower.m, results_dust$data$depth)
+  upperints = which.index(event_intervals$depth_int_upper.m, results_dust$data$depth)
+  interval_dust = lowerints[eventnumber]:upperints[eventnumber]+1
+  
+  
+  
+  depth.reference = event_intervals$NGRIP_depth_m[eventnumber]
+  age.reference = event_intervals$GICC_age.yb2k[eventnumber]
+  
+  control.linramp = list(proxy=proxy,interval=interval_d18O,interval.unit="index",
+                         depth.ref=depth.reference, imp.fit=imp.fits[eventnumber],
+                         h=steplengths[eventnumber],
+                         opt.params=opt.params,
+                         priorparams=priorparams,
+                         silent=2L,
+                         label=paste0(eventnumber," (d18O):", event_intervals[eventnumber,2])
+                         )
+  
+  control.linramp_dust = list(proxy=logdust,interval=interval_dust,interval.unit="index",
+                         depth.ref=depth.reference, imp.fit=imp.fits[eventnumber],
+                         h=steplengths[eventnumber],
+                         opt.params=opt.params,
+                         priorparams=priorparams,
+                         silent=2L,
+                         label=paste0(eventnumber," (logCa):", event_intervals[eventnumber,2])
+                         )
+  
+  temp_d18O = linrampfitter(results,control.linramp)
+  if(do.plot.rampfit){
+    {
+      plot(depth[interval_d18O],proxy[interval_d18O],type="l",col="gray",
+          xlim=rev(range(depth[interval_d18O])), xlab="Depth (m)",ylab=expression(paste(delta^18,"O (permil)")),
+          main=paste0(eventnumber," (d18O): ", event_intervals[eventnumber,2]))
+      lines(temp_d18O$linramp$data$x,temp_d18O$linramp$linrampfit$mean)
+      lines(temp_d18O$linramp$data$x,temp_d18O$linramp$linrampfit$q0.025,col="red")
+      lines(temp_d18O$linramp$data$x,temp_d18O$linramp$linrampfit$q0.975,col="red")
+      abline(v=rasmussen_depths[eventnumber],lty=3)
+      
+      ybottom = min(temp_d18O$linramp$data$y)
+      ytop = min(temp_d18O$linramp$linrampfit$q0.025)
+      margt0=temp_d18O$linramp$param$t0$marg.t0
+      normt0.y = margt0[,2]/diff(range(margt0[,2]))*(ytop-ybottom)-min(margt0[,2])+ybottom
+      lines(x=margt0[,1],y=normt0.y,col="blue",lwd=2)
+      ybottom = min(temp_d18O$linramp$data$y)
+      ytop = min(temp_d18O$linramp$linrampfit$q0.025)
+      margt1 = temp_d18O$linramp$param$t1$marginal
+      normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom
+      lines(x=margt1[,1],y=normt1.y,col="blue",lwd=2,lty=3)
+    }
+  }
+  temp_dust = linrampfitter(results_dust,control.linramp_dust)
+  if(do.plot.rampfit){
+    {
+      plot(temp_dust$linramp$data$x,temp_dust$linramp$data$y,type="l",col="gray",xlim=rev(range(depth[interval_dust])), xlab="Depth (m)",ylab=expression(paste("log(Ca)","")),
+          main=paste0(eventnumber," (logdust): ", event_intervals[eventnumber,2]))
+      # plot(depth[interval_d18O],logdust[interval_d18O],type="l",col="gray",xlim=rev(range(depth[interval_dust])), xlab="Depth (m)",ylab=expression(paste("log(Ca)","")),
+      #     main=paste0(eventnumber," (logdust): ", event_intervals[eventnumber,2]))
+      lines(temp_dust$linramp$data$x,temp_dust$linramp$linrampfit$mean)
+      lines(temp_dust$linramp$data$x,temp_dust$linramp$linrampfit$q0.025,col="red")
+      lines(temp_dust$linramp$data$x,temp_dust$linramp$linrampfit$q0.975,col="red")
+      abline(v=rasmussen_depths[eventnumber],lty=3)
+      
+      ybottom = min(temp_dust$linramp$data$y)
+      ytop = min(temp_dust$linramp$linrampfit$q0.025)
+      margt0=temp_dust$linramp$param$t0$marg.t0
+      normt0.y = margt0[,2]/diff(range(margt0[,2]))*(ytop-ybottom)-min(margt0[,2])+ybottom
+      lines(x=margt0[,1],y=normt0.y,col="blue",lwd=2)
+      ybottom = min(temp_dust$linramp$data$y)
+      ytop = min(temp_dust$linramp$linrampfit$q0.025)
+      margt1 = temp_dust$linramp$param$t1$marginal
+      normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom
+      lines(x=margt1[,1],y=normt1.y,col="blue",lwd=2,lty=3)
+    }
+  }
+  
+  control.transition_dating=list(label="d18O")
+  agetemp_d18O = events_depth_to_age(temp_d18O,control.transition_dating)
+  
+  
+  agesimmatrix_d18O[eventnumber,] = agetemp_d18O$event_dating$samples 
+  if(do.plot.agehist){
+    hist(agesimmatrix_d18O[eventnumber,],freq=0,breaks=50,col="orange",main=paste0("d18O: ",eventnumber),xlab="Age (yb2k)")
+    abline(v=age.reference,col="blue")
+  }
+  control.transition_dating_dust=list(label="dust")
+  agetemp_dust = events_depth_to_age(temp_d18O,control.transition_dating_dust)
+  agesimmatrix_dust[eventnumber,] = agetemp_dust$event_dating$samples
+   if(do.plot.agehist){
+    hist(agesimmatrix_dust[eventnumber,],freq=0,breaks=50,col="orange",main=paste0("dust: ",eventnumber),xlab="Age (yb2k)")
+     abline(v=age.reference,col="blue")
+  } 
+    
+  
+  
+  #compute summary statistics
+  depthstats[1,eventnumber] = event_intervals$NGRIP_depth_m[eventnumber]
+  depthstats[2,eventnumber] = agetemp_d18O$linramp$param$t0$mean
+  depthstats[3,eventnumber] = agetemp_d18O$linramp$param$t0$q0.025
+  depthstats[4,eventnumber] = agetemp_d18O$linramp$param$t0$q0.975
+  depthstats[5,eventnumber] = agetemp_dust$linramp$param$t0$mean
+  depthstats[6,eventnumber] = agetemp_dust$linramp$param$t0$q0.025
+  depthstats[7,eventnumber] = agetemp_dust$linramp$param$t0$q0.975
+  
+  densage1 = density(agesimmatrix_d18O[eventnumber,]); densage1 = data.frame(x=densage1$x,y=densage1$y)
+  densage2 = density(agesimmatrix_dust[eventnumber,]); densage2 = data.frame(x=densage2$x,y=densage2$y)
+  zage1 = inla.zmarginal(densage1,silent=TRUE)
+  zage2 = inla.zmarginal(densage2,silent=TRUE)
+  
+  agestats[1,eventnumber] = event_intervals$GICC_age.yb2k[eventnumber]
+  agestats[2,eventnumber] = mean(agesimmatrix_d18O[eventnumber])
+  agestats[3,eventnumber] = zage1$quant0.025
+  agestats[4,eventnumber] = zage1$quant0.975
+  agestats[5,eventnumber] = mean(agesimmatrix_dust[eventnumber])
+  agestats[6,eventnumber] = zage1$quant0.025
+  agestats[7,eventnumber] = zage1$quant0.975
+  
+  
+  
+  
+  
+}
+```
+
+## Results
+
+To plot all posteriors with the comparison onsets run the code below.
+
+```{r events_plot, eval=TRUE}
+library(stringr)
+par(mfrow=c(5,6),mar=c(2,2,1.5,1))
+for(i in 1:29){
+  dens1 = density(agesimmatrix_dust[i,]); dens1 = data.frame(x=dens1$x,y=dens1$y)#/max(dens1$y))
+  dens2 = density(agesimmatrix_d18O[i,]); dens2 = data.frame(x=dens2$x,y=dens2$y)#/max(dens2$y))
+  xlim = range(dens1$x,dens2$x);ylim = range(dens1$y,dens2$y)
+  #par(mar=c(2,2,1.5,1))
+  
+  {
+    plot(dens1,type="l",col=1,xlab="Onset year (b2k)",ylab="Density",
+       main=str_sub(event_intervals[i,2],str_locate(event_intervals[i,2],"GI-")[1]),
+       xlim=xlim,ylim=ylim)
+  #Axis(side=1,labels=FALSE,at=dens1$x,tck=0.1)
+  
+  lines(dens2,type="l",col="gray")
+  
+  
+  if(FALSE){#95% credible intervals
+    abline(v=mean(agesimmatrix_dust[i,]),col=1)
+    zdens1 = inla.zmarginal(dens1,silent = TRUE)
+    abline(v=c(zdens1$quant0.025,zdens1$quant0.975),col=1,lty=3,lwd=0.8)
+    abline(v=mean(agesimmatrix_d18O[i,]),col=2)
+    zdens2 = inla.zmarginal(dens2,silent = TRUE)
+    abline(v=c(zdens2$quant0.025,zdens2$quant0.975),col=2,lty=3,lwd=0.8)
+  }
+  
+  abline(v=event_intervals$GICC_age.yb2k[i],col="blue")  
+  if(!is.na(buiind[i])){
+    abline(v=buizert_onsets$Age[buiind[i]],col="green")
+    #abline(v=buizert_ages[buiind[i]],col="green")
+  }
+  
+  
+  # abline(v=capron_ages_NGRIP_d18O,col="orange")
+  # abline(v=capron_ages_NGRIP_dust,col="orange",lty=3)
+  if(!is.na(capind[i])){
+    abline(v=capron_ages_NGRIP_d18O[capind[i]],col="red")
+    abline(v=capron_ages_NGRIP_dust[capind[i]],col="pink",lty=1)
+  }
+  }
+  
+}
+par(mar=c(0,0,0,0));plot(-1,axes=FALSE,xlab="",ylab="",xlim=c(0,1),ylim=c(0,1))
+legend(0,1,legend=c("d18O onset posterior","Ca2+ onset posterior",
+                    "Rasmussen onset","Buizert onset",
+                    "Capron d18O onset","Capron Ca2+ onset"),
+       col=c("black","gray", "blue", "green", "red", "pink"),
+       lty=c(1,1,1,1,1,1), cex=0.65,bty="n")
+par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
+rownames=c()
+for(i in 1:29){
+  rownames=c(rownames,str_sub(event_intervals[i,2],str_locate(event_intervals[i,2],"GI-")[1]))
+}
+```
+
+To format the summary statistics of the onset depth and age into a data.frame object, run the code below.
+
+```{r events_table, eval=TRUE}
+colnames = c("d18O_mean","d18O_q0.025","d18O_q0.975",
+             "Ca_mean","Ca_q0.025","Ca_q0.975")
+depthresults = t(depthstats)[,2:7]
+colnames(depthresults)=colnames
+rownames(depthresults)=rownames
+ageresults = t(agestats[2:7,])
+colnames(ageresults)=colnames
+rownames(ageresults)=rownames
+```
+
+
+## Attribution
+
+This code is associated and written for the papers Myrvoll-Nilsen et al. (2022) and Myrvoll-Nilsen et al. (202x) mentioned above. Feel free to use the code, but please cite the accompanying papers.
+
+## License
+
+The code in this repository is made available under the terms of the GNU (version >=2) License. For details, see LICENSE.md file.

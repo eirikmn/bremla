@@ -173,6 +173,7 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
                              restart=TRUE),
            num.threads = control.linramp$ncores,
            verbose=control.linramp$verbose,
+           silent=control.linramp$silent,
            control.inla=list(h=control.linramp$h),
            control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))) )#, num.threads = 1)
   time.endinla = Sys.time()

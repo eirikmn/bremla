@@ -86,6 +86,7 @@ linramprev = function(t,t0=0,dt=1,y0=0,dy=1){
 #'
 #' @param events Vector describing the values of interest (here: either depth or age of events)
 #' @param record Vector we want to search (here: either full depth or age record)
+#' @param suppress Boolean. Set to \code{TRUE} to suppress warnings that events fall outside designated interval.
 #'
 #' @return Returns a vector of indices for which elements of \code{record} best matches the elements of \code{events}-
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
@@ -93,11 +94,14 @@ linramprev = function(t,t0=0,dt=1,y0=0,dy=1){
 #' @keywords indices
 #'
 #' @export
-which.index = function(events, record){ ## Finds which indices of 'record' that are located closest to the 'event's
+which.index = function(events, record,suppress=TRUE){ ## Finds which indices of 'record' that are located closest to the 'event's
   eventindexes = numeric(length(events))
   for(i in 1:length(events)){
     if(events[i] < min(record) || events[i] > max(record)){ #Gives NA if located outside range of 'record'
-      warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'record' (",min(record),", ",max(record),"). The event will be omitted!"))
+      if(!suppress){
+        warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'record' (",min(record),", ",max(record),"). The event will be omitted!"))
+      }
+
       eventindexes[i] = NA
     }else{
       eventindexes[i] = which(abs(events[i]-record) == min(abs(events[i]-record)))

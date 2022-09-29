@@ -23,41 +23,29 @@ Myrvoll-Nilsen, E., Riechers, K. & Boers, N. (202x). Tie-point paper (title TBD)
 # Myrvoll-Nilsen et al. (202x)
 
 The data used is the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm', downloaded from [Centre for Ice and Climate](iceandclimate.nbi.ku.dk) at the Niels Bohr Institute of the University of Copenhagen, Denmark, and the table of stadial-interstadial events presented by [Rasmussen et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0277379114003485). These are included in the package and can be imported as follows. 
-<<<<<<< HEAD
 ```{r initialize, eval=FALSE}
-=======
-```{r install, eval=FALSE}
->>>>>>> parent of 67d821f (Revert "Added some more features and Rmd files to generate the plots and results from both papers")
 #library(bremla)
 data("event_intervals")
 data("events_rasmussen")
 data("NGRIP_5cm")
-
 age = NGRIP_5cm$age
 depth = NGRIP_5cm$depth
 proxy = NGRIP_5cm$d18O
 n=length(diff(age))
-
 data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
 events=list(locations = events_rasmussen$depth,
             locations_unit="depth",degree=1)
-
 plot(depth,proxy,xlab="Age (yb2k)",ylab=expression(paste(d^18,"O (permil)")),type="l",
      xlim=rev(range(depth)))+abline(v=events$locations,col="gray",lwd=0.7)
 formula = dy~-1+depth2+proxy
-
-
-
 ```
 
 
 We also use tie-points described by probability distributions obtained from Adolphi et al. (2018) and Muscheler et al. (2020). These can be imported as follows.
 
 ```{r adolphi, eval=TRUE}
-
 adolphipdfs = adolphiloader(tieshifts=c(11050,12050,13050,22050,42050),plotdens = TRUE,
                             x.ref=c(11050,12050,13050,22050,42050))
-
 ```
 
 The model can be fitted using the \texttt{bremla} function, which estimates the posterior marginal distributions of the hyperparameters and also performs simulations of chronologies.
@@ -65,7 +53,6 @@ The model can be fitted using the \texttt{bremla} function, which estimates the 
 
 ```{r hyperpars, eval=FALSE}
 nsims=10000
-
 results = bremla(formula,data,reference.label="GICC05",
                 nsims=nsims,
                 events=events,
@@ -73,7 +60,6 @@ results = bremla(formula,data,reference.label="GICC05",
                 control.sim=list(synchronized=FALSE) ,
                 print.progress=TRUE
                 )
-
 {
   
   par(mfrow=c(1,2))
@@ -91,7 +77,6 @@ results = bremla(formula,data,reference.label="GICC05",
              col="red")
  par(mfrow=c(1,1)) 
 }
-
 ```
 
 The fitted model to the layer increments and the simulated chronologies (as compared to the GICC05 time scale) can be plotted as follows.
@@ -116,7 +101,6 @@ ggd = data.frame(y = results$data$dy,depth=results$data$depth,
  
  #ggsave("fitdiff-4800x2000.eps", device=cairo_ps,width=4800,height=2000,units="px",dpi=500,limitsize=FALSE)
 }
-
 {
   gicc05=results$original.chron$age[1+1:n]
   ggd = data.frame(depth=results$data$depth,
@@ -142,9 +126,6 @@ ggd = data.frame(y = results$data$dy,depth=results$data$depth,
 In the paper we demonstrate our model first using the Adolphi tie-points fixed to be equal to the mode of the probability distribution. We omit the first tie-point since it falls outside of our considered interval. The constrained chronologies can be computed as follows.
 
 ```{r fixed, eval=TRUE}
-
-
-
 fixedsims = cbind(#rep(inla.mmarginal(adolphipdfs$tie1),nsims),
                   rep(inla.mmarginal(adolphipdfs$tie2),nsims),
                   rep(inla.mmarginal(adolphipdfs$tie3),nsims),
@@ -155,7 +136,6 @@ synchronization = list(samples = fixedsims,nsims=nsims,
                        locations=c(#1492.50,
                                    1502.80,1532.70,1767.25,2132.40),
                        locations_unit="depth")
-
 results_fixed = bremla(formula,data,reference.label="GICC05",
                 nsims=nsims,
                 events=events,
@@ -164,7 +144,6 @@ results_fixed = bremla(formula,data,reference.label="GICC05",
                 control.sim=list(synchronized=TRUE) ,
                 print.progress=TRUE
                 )
-
 {
   gicc05=results_fixed$original.chron$age[1+1:n]
   ggd = data.frame(depth=results_fixed$data$depth,
@@ -181,8 +160,6 @@ results_fixed = bremla(formula,data,reference.label="GICC05",
   
   #ggsave("fixed-4800x2000.eps", device=cairo_ps,width=4800,height=2000,units="px",dpi=500,limitsize=FALSE)
 }
-
-
 ```
 
 Synchronizing our chronologies with the Adolphi tie-points where the uncertainties is incorporated cam be done using Monte Carlo simulations. All of this can be done using the bremla function.
@@ -193,7 +170,6 @@ synchronization = list(method="adolphi",nsims=nsims,
                        locations=c(#1492.50,
                                    1502.80,1532.70,1767.25,2132.40),
                        locations_unit="depth")
-
 results_sync = bremla(formula,data,reference.label="GICC05",
                 nsims=nsims,
                 events=events,
@@ -202,18 +178,14 @@ results_sync = bremla(formula,data,reference.label="GICC05",
                 control.sim=list(synchronized=TRUE,summary=list(CI.type="hpd")) ,
                 print.progress=TRUE
                 )
-
 tiepointranges = as.data.frame(matrix(NA,nrow=5,ncol=3))
-
 gicc05=results_sync$original.chron$age[1+1:n]
 gicc05tie = gicc05[results_sync$tie_points$locations_indexes]
-
 colnames(tiepointranges)=c("lower","upper","depth")
 for(i in 2:5){
   tiepointranges[i,1:2] = inla.hpdmarginal(0.95,adolphipdfs[[paste0("tie",i)]])-gicc05tie[i]
 }
 tiepointranges[,3] = depth[results_sync$tie_points$locations_indexes]
-
 {
   
   ggd = data.frame(depth=results_sync$data$depth,
@@ -231,7 +203,6 @@ tiepointranges[,3] = depth[results_sync$tie_points$locations_indexes]
   
   #ggsave("sync-4800x2000.eps", device=cairo_ps,width=4800,height=2000,units="px",dpi=500,limitsize=FALSE)
 }
-
 ```
 
 
@@ -247,28 +218,21 @@ The onset of abrupt warmings is dated in two stages that are combined to express
 
 
 ```{r events_individual, eval=FALSE}
-
 eventnumber=13 #number between 1 and 29. specifies which transition to consider
-
 #load data window and specifics to transition
 lowerints = which.index(event_intervals$depth_int_lower.m, depth[2:length(depth)])
 upperints = which.index(event_intervals$depth_int_upper.m, depth[2:length(depth)])
 depth.reference = event_intervals$NGRIP_depth_m[eventnumber]
 age.reference = event_intervals$GICC_age.yb2k[eventnumber]
 interval = lowerints[eventnumber]:upperints[eventnumber]
-
 transitionlabel = str_sub(event_intervals$onsetlabel[eventnumber],
                       str_locate(event_intervals$onsetlabel[eventnumber],"GI")[1])
-
-
 control.linramp=list(proxy=proxy,
                      interval=interval,
                      interval.unit="index",
                      depth.reference=event_intervals$NGRIP_depth_m[eventnumber]
                      )
-
 results_event = linrampfitter(results_sync,control.linramp)
-
 control.transition_dating = list(label="Simulated transition")
 results_event = events_depth_to_age(results_event,
                                     control.transition_dating=control.transition_dating)
@@ -285,7 +249,6 @@ lines(results_event$linramp$data$x,results_event$linramp$linrampfit$mean,lwd=1.5
 lines(results_event$linramp$data$x,results_event$linramp$linrampfit$q0.025,lwd=1.5,col="red")
 lines(results_event$linramp$data$x,results_event$linramp$linrampfit$q0.975,lwd=1.5,col="red")
 abline(v=depth.reference,lty=3,lwd=0.7,col="black")
-
 ybottom = min(results_event$linramp$data$y)
 ytop = min(results_event$linramp$linrampfit$q0.025)
 margt0=results_event$linramp$param$t0$marg.t0
@@ -296,8 +259,6 @@ ytop = min(results_event$linramp$linrampfit$q0.025)
 margt1 = results_event$linramp$param$t1$marginal
 normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom
 lines(x=margt1[,1],y=normt1.y,col="blue",lwd=2,lty=3)
-
-
 plot(results_event$linramp$param$t0$marg.t0,type="l",xlab=expression(paste("Onset depth (m)")),ylab="Density",
      main="(b) Marginal posterior of onset depth")#, 
      #xlim=rev(range(depth.reference,results_event$linramp$param$t0$marg.t0[,1])))
@@ -305,7 +266,6 @@ plot(results_event$linramp$param$t0$marg.t0,type="l",xlab=expression(paste("Onse
 abline(v=results_event$linramp$param$t0$mean,lwd=1.5)
 abline(v=results_event$linramp$param$t0$q0.025,col="red")
 abline(v=results_event$linramp$param$t0$q0.975,col="red")
-
 plot(results_event$linramp$param$t1$marginal,type="l",xlab=expression(paste("End point depth (m)")),ylab="Density",
      main="(c) Marginal posterior of end point depth")#, 
      #xlim=rev(range(depth.reference,results_event$linramp$param$t0$marg.t0[,1])))
@@ -313,23 +273,14 @@ plot(results_event$linramp$param$t1$marginal,type="l",xlab=expression(paste("End
 abline(v=results_event$linramp$param$t1$mean,lwd=1.5)
 abline(v=results_event$linramp$param$t1$q0.025,col="red")
 abline(v=results_event$linramp$param$t1$q0.975,col="red")
-
-
 par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
-
 hist(results_event$event_dating$samples,main=paste0(transitionlabel," Onset age"),
-<<<<<<< HEAD
      xlab="Onset age (yr b2k)",col="orange",xlim=rev(range(results_event$event_dating$samples)), breaks=40, freq=0)
-=======
-     xlab="Onset age (yr b2k)",col="orange",xlim=rev(range(results_event$event_dating$samples)), breaks=40)
->>>>>>> parent of 67d821f (Revert "Added some more features and Rmd files to generate the plots and results from both papers")
 abline(v=age.reference,lty=3)
 abline(v=results_event$event_dating$mean,lwd=2)
 abline(v=results_event$event_dating$q0.025,lwd=2,col="red")
 abline(v=results_event$event_dating$q0.975,lwd=2,col="red")
-
 }
-
 ```
 
 
@@ -339,29 +290,24 @@ We want to compare the dating onsets with those given by Rasmussen et al. (2014)
 library(readxl)
 rasmussen_depths = event_intervals$NGRIP_depth_m
 rasmussen_ages = event_intervals$GICC_age.yb2k #GISevents$`Age (a b2k)`
-
 buizert_onsets = read_excel("inst/Examples/Paper_results/data/Buizert_onsets.xlsx",
                             col_types=c("text","numeric","numeric","numeric","numeric"))
 buizert_depths = buizert_onsets$Depth; buizert_ages = buizert_onsets$Age
 #buizert_depths[c(2:6,8:9,12:13,15:17,19:21)]
 buizert_ages = buizert_ages[c(2:6,8:9,12:13,15:17,19:21)]
-
 capron_onsets_NGRIP_d18O = read_excel("inst/Examples/Paper_results/data/Capron_onsets.xls",
                            sheet="d18O",n_max=25)
 capron_ages_NGRIP_d18O = capron_onsets_NGRIP_d18O$`t1 (50%)`
-
 capron_onsets_NGRIP_dust = read_excel("inst/Examples/Paper_results/data/Capron_onsets.xls",
                                 sheet="Ca2+",n_max=24)
 capron_ages_NGRIP_dust = capron_onsets_NGRIP_dust$`t1 (50%)`
-
 capind = numeric(29); buiind = numeric(29)
-
 capind = c(NA,2,3, 4,5,6,NA,NA,7,8,NA,9,10,11,NA,NA,NA,NA,NA,12,13,14,NA,NA,15,NA,NA,16,17)
 buiind = c(NA,2,NA,3,4,6,NA,NA,8,9,NA,11,12,13,NA,NA,NA,NA,NA,15,16,17,NA,NA,19,NA,NA,20,21)
 ```
 
 We then estimate the dating uncertainty for all 29 events
-```{r}
+```{r compare_transitions_1}
 agesimmatrix_d18O = matrix(NA,29,nsims)
 depthlist_d18O = c()
 do.plot.rampfit = TRUE
@@ -370,10 +316,8 @@ depthstats = as.data.frame(matrix(NA,4,29))
 colnames(depthstats) = c("true", "mean", "CIL","CIU","dustmean","dustCIL","dustCIU")
 agestats = as.data.frame(matrix(NA,4,29))
 colnames(agestats) = c("true", "mean", "CIL","CIU","dustmean","dustCIL","dustCIU")
-
 steplengths = rep(0.01,29)
 steplengths[21]=0.001 #sometimes changing the steplength slightly might improve convergence (default is 0.01)
-
 for(eventnumber in 1:29){
   transitionlabel = str_sub(event_intervals$onsetlabel[eventnumber],
                       str_locate(event_intervals$onsetlabel[eventnumber],"GI")[1])
@@ -439,12 +383,10 @@ for(eventnumber in 1:29){
   agestats[4,eventnumber] = zage$quant0.975
   
 }
-
 ```
 
 
-```{r}
-
+```{r compare_transitions_2}
 {
 par(mfrow=c(5,6),mar=c(2,2,1.5,1))
 for(i in 1:29){
@@ -493,26 +435,20 @@ legend(0,1,legend=c("Onset posterior distribution",#"Ca2+ onset posterior",
                     "Capron onset"),#"Capron Ca2+ onset"),
        col=c("black", "blue", "green", "red"),
        lty=c(1,1,1,1,1,1), cex=1,bty="n")
-
 par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
-
 }
-
 rownames=c()
 for(i in 1:29){
   rownames=c(rownames,str_sub(event_intervals[i,2],str_locate(event_intervals[i,2],"GI-")[1]))
 }
-
 #colnames = colnames(depthstats)[1:4]
 #colnames = c("name","d18O_mean","d18O_q0.025","d18O_q0.975")
 depthresults = t(depthstats)[,2:4]
 colnames(depthresults)=c("Z* mean", "Z* q0.025","Z* q0.975")
-
 ageresults = t(agestats[2:4,])
 colnames(ageresults)=c("Y* mean", "Y* q0.025","Y* q0.975")
 allresults = cbind(depthresults,ageresults)
 rownames(allresults)=rownames
-
 latexstr = "Event & Z^* mean (m) & Z^* 95\\% CI (m) & Y^* mean (yb2k) & Y^* 95\\% CI (yb2k) \\\\ \n"
 for(i in 1:29){
   latexstr = paste0(latexstr,rownames[i], "& ", format(round(allresults[i,1],2),nsmall=2)," & (", format(round(allresults[i,2],2),nsmall=2), ",
@@ -535,7 +471,6 @@ The package includes the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm' downloa
 
 Warning: The provided real data example generates several thousand simulated chronologies with individual lengths exceeding 18,000. More if synchronized chronologies is also computed. This will require a significant amount of memory. If needed, reduce the number of samples generated or free up memory before use.
 
-<<<<<<< HEAD
 ## Simulation example
 
 To verify our model we can test it on simulated data where the true parameters are known.
@@ -545,12 +480,10 @@ rm(list=ls())
 require(stats)
 library(ggplot2)
 set.seed(123)
-
 n=1000
 y0 = 1000
 z0 = 1200
 phi=0.8; sigma=1.2
-
 depth = z0+seq(from=0.5,500,length.out=1000)
 dnoise = sigma*arima.sim(n=n,model=list(ar=c(phi)),sd=sqrt(1-phi^2))
 proxy = arima.sim(n=n,model=list(ar=0.9),sd=sqrt(1-0.9^2))
@@ -562,38 +495,27 @@ c1 = c(depth[1:249]/60,numeric(751))
 c2 = c(numeric(249),-depth[1:500]/40,numeric(251))
 c3 = c(numeric(749),depth[1:251]/10)
 dy = dnoise + a1+a2+a3+c1+c2+c3 + proxy*0.5
-
-
 age = y0+cumsum(dy)
-
-
 df=data.frame(age=age,dy=as.numeric(dy),proxy=as.numeric(proxy),depth=depth,depth2=depth^2); data=rbind(c(y0,z0,0,0,0),df)
-
 formula=dy~-1+proxy#+depth2
-
 nsims = 10000
-
 synchronization = list(locations = c(200,400,800),locations_unit="index",method="gauss", nsims=nsims,params=list(mean=c(2200,5600,11500),sd=c(10,50,60)))
-
 res = bremla(formula,data,reference.label="simulated time scale",nsims=nsims,
              events=list(locations=c(1,250,750,1000),locations_unit="index"),
              control.fit=list(noise="ar1"),
              synchronization=synchronization,
              control.sim = list(synchronized=TRUE,
                                 nsims=nsims))
-
 par(mfrow=c(1,2))
 plot(res$fitting$inla$hyperparameters$posteriors$sigma_epsilon,type="l",xlab=expression(sigma),ylab="Density",main=expression(paste("(a) Posterior distribution of ",sigma)))
 abline(v=res$fitting$inla$hyperparameters$results$sigma_epsilon$mean,lwd=1.5)
 abline(v=c(res$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.025,
            res$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.975),lwd=1.5,col="red")
-
 plot(res$fitting$inla$hyperparameters$posteriors$phi,type="l",xlab=expression(phi),ylab="Density",main=expression(paste("(b) Posterior distribution of ",phi)))
 abline(v=res$fitting$inla$hyperparameters$results$phi$mean,lwd=1.5)
 abline(v=c(res$fitting$inla$hyperparameters$results$phi$quant0.025,
            res$fitting$inla$hyperparameters$results$phi$quant0.975),lwd=1.5,col="red")
 par(mfrow=c(1,1))
-
 #plot results
   
   dsims = colDiffs(rbind(matrix(rep(res$initial$age,ncol(res$simulation$age)),nrow=1), res$simulation$age))
@@ -618,7 +540,6 @@ ggd = data.frame(y = res$data$dy,depth=res$data$depth,
   
  reference=res$original.chron$age[1+1:n]
  reftie = reference[res$tie_points$locations_indexes]
-
 ggdtie = data.frame(mean=synchronization$params$mean-reftie,
                     upper=synchronization$params$mean+1.96*synchronization$params$sd-reftie,
                     lower=synchronization$params$mean-1.96*synchronization$params$sd-reftie,
@@ -629,25 +550,18 @@ ggp2 = ggplot(data=ggd2,aes(x=depth)) + theme_bw()+
   geom_linerange(data=ggdtie,aes(x=locations,ymin=lower,ymax=upper),color="magenta")+
   xlab("Depth (m)") + ylab("Deviation from simulated reference (years)")+
   ggtitle("(b) Simulated chronologies")
-
 library(gridExtra)
-
 ggsave("fitdiffsim-5500x4000.eps", device=cairo_ps,width=5500,height=4000,units="px",dpi=500,limitsize=FALSE,arrangeGrob(ggp,ggp2))
-
 str = ""
 for(i in 1:length(res$fitting$inla$fit$summary.fixed$mean)){
   str=paste0(str," & & ",format(res$fitting$inla$fit$summary.fixed$mean[i],digits=7,scientific=FALSE), " & (",
              format(res$fitting$inla$fit$summary.fixed$`0.025quant`[i],digits=7,scientific=FALSE),", ",
              format(res$fitting$inla$fit$summary.fixed$`0.975quant`[i],digits=7,scientific=FALSE),") \\\\ \n")
 }
-
 cat(str)  
 ```
 
 ## Real data example
-=======
-## Example
->>>>>>> parent of 67d821f (Revert "Added some more features and Rmd files to generate the plots and results from both papers")
 This is a real data example which produces 5000 simulations from a synchronized time scale.
 ```{r example, message=FALSE, warning=FALSE, include=TRUE}
 require(INLA)
@@ -655,17 +569,13 @@ library(bremla)
 data("event_intervals")
 data("events_rasmussen")
 data("NGRIP_5cm")
-
 age = NGRIP_5cm$age
 depth = NGRIP_5cm$depth
 proxy = NGRIP_5cm$d18O
-
 data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
 formula = dy~-1+depth2
-
 events=list(locations = events_rasmussen$depth,
             locations_unit="depth",degree=1)
-
 results = bremla(formula,data,reference.label="GICC05",
                 nsims=nsims,
                 events=events,
@@ -681,22 +591,16 @@ free_indexes = results$tie_points$free_indexes
 tie_indexes = results$tie_points$tie_indexes
 ageref_free = results$data$age[free_indexes]
 ageref_tie = results$data$age[tie_indexes]
-
 fullpd = data.frame(depth = results$data$depth[free_indexes],
                 medians=results$simulation$summary_sync$median[free_indexes]-ageref_free,
                 lower=results$simulation$summary_sync$lower[free_indexes]-ageref_free,
                 upper=results$simulation$summary_sync$upper[free_indexes]-ageref_free)
-
 gg2 = ggplot(data=fullpd,aes(x=depth)) +
 geom_line(aes(y=rep(0,nrow(fullpd))),color="blue",linetype="dotted",size=0.2)+
 theme_bw()+ylab("Estimated age - reference (years)")+
 xlab("NGRIP depth (m)")
-
-
 gg2 = gg2+geom_line(aes(y=medians))+
 geom_ribbon(aes(ymin=.data$lower,ymax=.data$upper),color="red",fill="red",alpha=0.3)
-
-
 gg2 = gg2 + geom_segment(data=data.frame(depth=results$data$depth[tie_indexes],                                   median=results$simulation$summary_sync$median[tie_indexes]-ageref_tie,                         lower=results$simulation$summary_sync$lower[tie_indexes]-ageref_tie,
                    upper=results$simulation$summary_sync$upper[tie_indexes]-ageref_tie),
                    aes(x=.data$depth,y=.data$lower,xend=.data$depth,yend=.data$upper),
