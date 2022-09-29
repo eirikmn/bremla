@@ -23,11 +23,7 @@ Myrvoll-Nilsen, E., Riechers, K. & Boers, N. (202x). Tie-point paper (title TBD)
 # Myrvoll-Nilsen et al. (202x)
 
 The data used is the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm', downloaded from [Centre for Ice and Climate](iceandclimate.nbi.ku.dk) at the Niels Bohr Institute of the University of Copenhagen, Denmark, and the table of stadial-interstadial events presented by [Rasmussen et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0277379114003485). These are included in the package and can be imported as follows. 
-<<<<<<< HEAD
 ```{r initialize, eval=FALSE}
-=======
-```{r install, eval=FALSE}
->>>>>>> parent of 67d821f (Revert "Added some more features and Rmd files to generate the plots and results from both papers")
 #library(bremla)
 data("event_intervals")
 data("events_rasmussen")
@@ -318,11 +314,7 @@ abline(v=results_event$linramp$param$t1$q0.975,col="red")
 par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
 
 hist(results_event$event_dating$samples,main=paste0(transitionlabel," Onset age"),
-<<<<<<< HEAD
      xlab="Onset age (yr b2k)",col="orange",xlim=rev(range(results_event$event_dating$samples)), breaks=40, freq=0)
-=======
-     xlab="Onset age (yr b2k)",col="orange",xlim=rev(range(results_event$event_dating$samples)), breaks=40)
->>>>>>> parent of 67d821f (Revert "Added some more features and Rmd files to generate the plots and results from both papers")
 abline(v=age.reference,lty=3)
 abline(v=results_event$event_dating$mean,lwd=2)
 abline(v=results_event$event_dating$q0.025,lwd=2,col="red")
@@ -361,7 +353,7 @@ buiind = c(NA,2,NA,3,4,6,NA,NA,8,9,NA,11,12,13,NA,NA,NA,NA,NA,15,16,17,NA,NA,19,
 ```
 
 We then estimate the dating uncertainty for all 29 events
-```{r}
+```{r compare_transitions_1}
 agesimmatrix_d18O = matrix(NA,29,nsims)
 depthlist_d18O = c()
 do.plot.rampfit = TRUE
@@ -443,7 +435,7 @@ for(eventnumber in 1:29){
 ```
 
 
-```{r}
+```{r compare_transitions_2}
 
 {
 par(mfrow=c(5,6),mar=c(2,2,1.5,1))
@@ -535,7 +527,6 @@ The package includes the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm' downloa
 
 Warning: The provided real data example generates several thousand simulated chronologies with individual lengths exceeding 18,000. More if synchronized chronologies is also computed. This will require a significant amount of memory. If needed, reduce the number of samples generated or free up memory before use.
 
-<<<<<<< HEAD
 ## Simulation example
 
 To verify our model we can test it on simulated data where the true parameters are known.
@@ -645,9 +636,6 @@ cat(str)
 ```
 
 ## Real data example
-=======
-## Example
->>>>>>> parent of 67d821f (Revert "Added some more features and Rmd files to generate the plots and results from both papers")
 This is a real data example which produces 5000 simulations from a synchronized time scale.
 ```{r example, message=FALSE, warning=FALSE, include=TRUE}
 require(INLA)

@@ -37,7 +37,8 @@
 #'
 #' events=list(locations=c(1210,1220,1240))
 #' control.fit = list(ncores=2,noise="ar1")
-#' synchronization=list(method="gauss")
+#' synchronization=list(locations=depth[c(100,400,700)],locations_unit="depth",method="gauss",
+#'         params=list(mean=age[c(100,400,700)]+c(20,5,-20),sd=c(20,10,50)))
 #' control.sim=list(synchronized=TRUE,
 #'                  summary=list(compute=TRUE))
 #'
