@@ -212,7 +212,8 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
   model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,n=n,
                                         tstart=timepoints[1],tslutt=timepoints[n],
                                         ystart=ypoints[1],timepoints = timepoints,
-                                        priorparams = control.linramp$priorparams
+                                        priorparams = control.linramp$priorparams,
+                                        priorparams = list()
                                         )
   formula = y ~ -1+ f(idx, model=model.rgeneric)
 
