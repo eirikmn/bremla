@@ -165,7 +165,16 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
   if(print.progress) cat("Fitting linear ramp model in INLA using rgeneric model specification...\n",sep="")
   ## creating linear ramp INLA model using rgeneric framework. Requires further specification, see "rgeneric.uneven" function
   time.startinla = Sys.time()
+<<<<<<< HEAD
   model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,n=n,tstart=timepoints[1],tslutt=timepoints[n],ystart=y[1],timepoints = timepoints)
+=======
+  model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,n=n,
+                                        tstart=timepoints[1],tslutt=timepoints[n],
+                                        ystart=ypoints[1],timepoints = timepoints,
+                                        priorparams = control.linramp$priorparams,
+                                        priorparams = list()
+                                        )
+>>>>>>> parent of 2f37be8 (Fixed bug in rgeneric.uneven.AR1 example)
   formula = y ~ -1+ f(idx, model=model.rgeneric)
 
   r = inla(formula,family="gaussian", data=data.frame(y=df0$y,idx=as.integer(df0$time)),
