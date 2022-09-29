@@ -28,7 +28,6 @@ tie-points used for synchronization. The list contains the following arguments:
   distribution with mean and standard deviations supplied by user (TODO).
   If \code{"adolphi"} is used, then \code{locations}, \code{locations_unit} is
   filled out accordingly.
-  \item \code{params} List containing parameters used to simulate tie-points.
   \item \code{x.ref} Numeric giving a reference for the x-axis (given by \code{locations_unit})
   that will be included in future \code{plot}.
 }

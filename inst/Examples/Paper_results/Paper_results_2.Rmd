@@ -23,7 +23,7 @@ Myrvoll-Nilsen, E., Riechers, K. & Boers, N. (202x). Tie-point paper (title TBD)
 # Myrvoll-Nilsen et al. (202x)
 
 The data used is the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm', downloaded from [Centre for Ice and Climate](iceandclimate.nbi.ku.dk) at the Niels Bohr Institute of the University of Copenhagen, Denmark, and the table of stadial-interstadial events presented by [Rasmussen et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0277379114003485). These are included in the package and can be imported as follows. 
-```{r initialize, eval=FALSE}
+```{r install, eval=FALSE}
 #library(bremla)
 data("event_intervals")
 data("events_rasmussen")
@@ -314,7 +314,7 @@ abline(v=results_event$linramp$param$t1$q0.975,col="red")
 par(mfrow=c(1,1),mar=c(5,4,4,2)+0.1)
 
 hist(results_event$event_dating$samples,main=paste0(transitionlabel," Onset age"),
-     xlab="Onset age (yr b2k)",col="orange",xlim=rev(range(results_event$event_dating$samples)), breaks=40, freq=0)
+     xlab="Onset age (yr b2k)",col="orange",xlim=rev(range(results_event$event_dating$samples)), breaks=40)
 abline(v=age.reference,lty=3)
 abline(v=results_event$event_dating$mean,lwd=2)
 abline(v=results_event$event_dating$q0.025,lwd=2,col="red")
@@ -527,115 +527,7 @@ The package includes the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm' downloa
 
 Warning: The provided real data example generates several thousand simulated chronologies with individual lengths exceeding 18,000. More if synchronized chronologies is also computed. This will require a significant amount of memory. If needed, reduce the number of samples generated or free up memory before use.
 
-## Simulation example
-
-To verify our model we can test it on simulated data where the true parameters are known.
-
-```{r simex}
-rm(list=ls())
-require(stats)
-library(ggplot2)
-set.seed(123)
-
-n=1000
-y0 = 1000
-z0 = 1200
-phi=0.8; sigma=1.2
-
-depth = z0+seq(from=0.5,500,length.out=1000)
-dnoise = sigma*arima.sim(n=n,model=list(ar=c(phi)),sd=sqrt(1-phi^2))
-proxy = arima.sim(n=n,model=list(ar=0.9),sd=sqrt(1-0.9^2))
-events=list(locations=c(1,250,750,1000))
-a1 = c(-rep(1,249)*15,numeric(751))
-a2 = c(numeric(249),rep(1,500)*50,numeric(251))
-a3 = c(numeric(749),-rep(1,251)*110)
-c1 = c(depth[1:249]/60,numeric(751))
-c2 = c(numeric(249),-depth[1:500]/40,numeric(251))
-c3 = c(numeric(749),depth[1:251]/10)
-dy = dnoise + a1+a2+a3+c1+c2+c3 + proxy*0.5
-
-
-age = y0+cumsum(dy)
-
-
-df=data.frame(age=age,dy=as.numeric(dy),proxy=as.numeric(proxy),depth=depth,depth2=depth^2); data=rbind(c(y0,z0,0,0,0),df)
-
-formula=dy~-1+proxy#+depth2
-
-nsims = 10000
-
-synchronization = list(locations = c(200,400,800),locations_unit="index",method="gauss", nsims=nsims,params=list(mean=c(2200,5600,11500),sd=c(10,50,60)))
-
-res = bremla(formula,data,reference.label="simulated time scale",nsims=nsims,
-             events=list(locations=c(1,250,750,1000),locations_unit="index"),
-             control.fit=list(noise="ar1"),
-             synchronization=synchronization,
-             control.sim = list(synchronized=TRUE,
-                                nsims=nsims))
-
-par(mfrow=c(1,2))
-plot(res$fitting$inla$hyperparameters$posteriors$sigma_epsilon,type="l",xlab=expression(sigma),ylab="Density",main=expression(paste("(a) Posterior distribution of ",sigma)))
-abline(v=res$fitting$inla$hyperparameters$results$sigma_epsilon$mean,lwd=1.5)
-abline(v=c(res$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.025,
-           res$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.975),lwd=1.5,col="red")
-
-plot(res$fitting$inla$hyperparameters$posteriors$phi,type="l",xlab=expression(phi),ylab="Density",main=expression(paste("(b) Posterior distribution of ",phi)))
-abline(v=res$fitting$inla$hyperparameters$results$phi$mean,lwd=1.5)
-abline(v=c(res$fitting$inla$hyperparameters$results$phi$quant0.025,
-           res$fitting$inla$hyperparameters$results$phi$quant0.975),lwd=1.5,col="red")
-par(mfrow=c(1,1))
-
-#plot results
-  
-  dsims = colDiffs(rbind(matrix(rep(res$initial$age,ncol(res$simulation$age)),nrow=1), res$simulation$age))
-  dmeans = rowMeans(dsims)
-  dsd = rowSds(dsims)
-ggd = data.frame(y = res$data$dy,depth=res$data$depth,
-                   mean=dmeans,
-                   lower = dmeans-1.96*dsd,
-                   upper = dmeans+1.96*dsd)
-  ggp = ggplot(data=ggd,aes(x=depth)) + theme_bw()+ #xlim(rev(range(results$data$depth)))+
-    geom_line(aes(y=y),col="gray")+
-    geom_line(aes(y=mean),col="blue",size=0.8)+
-    geom_ribbon(aes(ymin=lower,ymax=upper),color="red",alpha=0,size=0.8)+
-    xlab("Depth (m)")+ylab("Layers per 5cm")+ggtitle("(a) Fitted layer increment model")
-  
-  
-  ggd2 = data.frame(mean=res$simulation$summary_sync$mean-res$data$age,
-                    lower=res$simulation$summary_sync$lower-res$data$age,
-                    upper=res$simulation$summary_sync$upper-res$data$age,
-                    depth=res$data$depth
-                    )
-  
- reference=res$original.chron$age[1+1:n]
- reftie = reference[res$tie_points$locations_indexes]
-
-ggdtie = data.frame(mean=synchronization$params$mean-reftie,
-                    upper=synchronization$params$mean+1.96*synchronization$params$sd-reftie,
-                    lower=synchronization$params$mean-1.96*synchronization$params$sd-reftie,
-                    locations = res$data$depth[synchronization$locations])
-ggp2 = ggplot(data=ggd2,aes(x=depth)) + theme_bw()+
-  geom_ribbon(aes(ymin=lower,ymax=upper),color="red",fill="red",alpha=0.3)+
-  geom_line(aes(y=mean),color="blue") +
-  geom_linerange(data=ggdtie,aes(x=locations,ymin=lower,ymax=upper),color="magenta")+
-  xlab("Depth (m)") + ylab("Deviation from simulated reference (years)")+
-  ggtitle("(b) Simulated chronologies")
-
-library(gridExtra)
-
-ggsave("fitdiffsim-5500x4000.eps", device=cairo_ps,width=5500,height=4000,units="px",dpi=500,limitsize=FALSE,arrangeGrob(ggp,ggp2))
-
-str = ""
-for(i in 1:length(res$fitting$inla$fit$summary.fixed$mean)){
-  str=paste0(str," & & ",format(res$fitting$inla$fit$summary.fixed$mean[i],digits=7,scientific=FALSE), " & (",
-             format(res$fitting$inla$fit$summary.fixed$`0.025quant`[i],digits=7,scientific=FALSE),", ",
-             format(res$fitting$inla$fit$summary.fixed$`0.975quant`[i],digits=7,scientific=FALSE),") \\\\ \n")
-}
-
-cat(str)  
-```
-
-## Real data example
+## Example
 This is a real data example which produces 5000 simulations from a synchronized time scale.
 ```{r example, message=FALSE, warning=FALSE, include=TRUE}
 require(INLA)
