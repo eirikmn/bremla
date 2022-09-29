@@ -17,8 +17,7 @@ linear ramp model fitting procedure for a given transition. The list contains th
    \item \code{proxy} Numeric giving the proxy data to perform the linear ramp model fit.
    Default value is \code{NULL} meaning that it must be provided by the user.
    \item \code{interval} Interval describing the window of \code{proxy} to perform the
-   linear ramp model fit. Default value is \code{NULL} which will tell the \code{linramp}
-   function to use \code{1:length(proxy)}.
+   linear ramp model fit. Default value is \code{NULL} so it must be given by the user.
    \item \code{interval.unit} Character giving which axis is used for interval. Can be
    \code{"depth"} (default), \code{"age"} or \code{"index"}.
    \item \code{depth.label} Character describing what label to place on x-axis (depth) in a
@@ -34,14 +33,10 @@ linear ramp model fitting procedure for a given transition. The list contains th
    compute transition end point \code{t1} if \code{compute.t1} is \code{TRUE}.
    \item \code{h} Step length of optimization procedure in the \code{inla}-program.
    Default value is \code{0.01}.
-   \item \code{imp.fit} Boolean indicaating whether initial values for \code{inla} be computed using \code{optim}.
    \item \code{ncores} Integer giving the number of cores used in the \code{inla}-program.
    For \code{rgeneric} models which are used here, stability can sometimes be
    improved if the number of cores is set to \code{1}, which is why it is the
    default here.
-   \item \code{silent}. If equal to \code{TRUE} or \code{1L}, then \code{inla} will run in "silent" mode,
-   If equal to \code{2L} then error messages will also be suppressed.
-   \item \code{priorparams} List object containing values for the priors for the hyperparameters.
    \item \code{verbose} Boolean stating whether or not the \code{inla}-program should
    run in verbose mode. Default \code{FALSE}.
 }

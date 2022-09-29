@@ -86,8 +86,6 @@ linramprev = function(t,t0=0,dt=1,y0=0,dy=1){
 #'
 #' @param events Vector describing the values of interest (here: either depth or age of events)
 #' @param record Vector we want to search (here: either full depth or age record)
-#' @param suppress Boolean. Set to \code{TRUE} to suppress warnings that events fall outside designated
-#' interval.
 #'
 #' @return Returns a vector of indices for which elements of \code{record} best matches the elements of \code{events}-
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
@@ -95,14 +93,11 @@ linramprev = function(t,t0=0,dt=1,y0=0,dy=1){
 #' @keywords indices
 #'
 #' @export
-which.index = function(events, record,suppress=TRUE){ ## Finds which indices of 'record' that are located closest to the 'event's
+which.index = function(events, record){ ## Finds which indices of 'record' that are located closest to the 'event's
   eventindexes = numeric(length(events))
   for(i in 1:length(events)){
     if(events[i] < min(record) || events[i] > max(record)){ #Gives NA if located outside range of 'record'
-      if(!suppress){
-        warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'record' (",min(record),", ",max(record),"). The event will be omitted!\n"))
-      }
-
+      warning(paste0("Event ",i,", located at ",events[i]," is outside the interval covered by 'record' (",min(record),", ",max(record),"). The event will be omitted!"))
       eventindexes[i] = NA
     }else{
       eventindexes[i] = which(abs(events[i]-record) == min(abs(events[i]-record)))
@@ -202,12 +197,11 @@ bremla_simulationsummarizer = function(object,sync=TRUE,print.progress=FALSE){
         lower[i] = samples[i,1]
         upper[i] = samples[i,1]
       }else{
-        dens = density(samples[i,]); dens = data.frame(x=dens$x,y=dens$y)
+        dens = density(samples[i,])
 
-        hpds = suppressWarnings( inla.hpdmarginal(0.95,inla.smarginal(dens)) )
 
-        lower[i] = hpds[1]
-        upper[i] = hpds[2]
+        lower[i] = inla.hpdmarginal(0.95,dens)[1]
+        upper[i] = inla.hpdmarginal(0.95,dens)[2]
       }
     }
   }else{
@@ -524,14 +518,6 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
     if(ncol(synchronization$samples) != length(synchronization$locations))
       warning("number of columns in 'samples' must correspond to length of 'locations'!")
     samples = synchronization$samples
-    if(synchronization$locations_unit %in% c("depth","z")){
-      locations_indexes = which.index(synchronization$locations,object$data$depth)
-    }else if(synchronization$locations_unit %in% c("age","y")){
-      locations_indexes = which.index(synchronization$locations,object$data$age)
-    }else if(synchronization$locations_unit %in% c("indexes","i")){
-      locations_indexes=synchronization$locations
-    }
-
   }else{
     if(synchronization$method=="adolphi"){
       synchronization$locations = c(11050,12050,13050,22050,42050)

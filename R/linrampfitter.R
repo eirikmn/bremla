@@ -93,10 +93,6 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
   if(is.null(object$simulation$age) && is.null(object$simulation$age_sync))
     stop("Chronologies not found. Run 'bremla_synchronized_simulation' or 'bremla_chronology_simulation' first!")
   interval = control.linramp$interval
-  if(is.null(interval)){
-    interval = 1:length(control.linramp$proxy)
-    control.linramp$interval.unit = "index"
-  }
 
 
 
@@ -110,19 +106,18 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
     interval = range(interval)[1]:range(interval)[2]
   }
 
-  n=length(interval)
   if(print.progress) cat("Initializing linear ramp fit using INLA.\n",sep="")
   df_event = data.frame(xx=rev(object$data$depth[interval]),
                         yy=rev(control.linramp$proxy[interval])) #reverse: Want depth axis representing old->new
 
+  ## default initial values for optim function
+  if(is.null(control.linramp$opt.params)){
+    optparams = c(round(length(interval)/2),round(length(interval)/10),df_event$yy[1],df_event$yy[length(interval)]-df_event$yy[1])
+  }else{
+    optparams = control.linramp$opt.params
+  }
 
-  timepoints = round((df_event$xx - df_event$xx[1])/(df_event$xx[n]-df_event$xx[1])*(n-1)+1,digits=4)
-  ypointsmin = min(df_event$yy)
-  ypointsmax = max(df_event$yy-ypointsmin)
-  #ypointsmax=1; ypointsmin=0
-  ypoints =(df_event$yy-ypointsmin)/ypointsmax
-
-
+  n=length(interval)
   df0=data.frame(y=df_event$yy,x=df_event$xx)
 
   t_start = df0$time[1];t_end = df0$time[n];y_start = df0$y[1]
@@ -132,101 +127,54 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
   if(print.progress) cat("Using 'optim' to find initial positions for hyperparameters in INLA.\n",sep="")
   ## for stability the x-axis is transformed to values ranging from 1:n.
 
-
+  timepoints = round((df_event$xx - df_event$xx[1])/(df_event$xx[n]-df_event$xx[1])*(n-1)+1,digits=4)
   df0$time = timepoints
-  df0$proxy = ypoints
 
-
-  if(control.linramp$imp.fit){
-    ## default initial values for optim function
-    if(is.null(control.linramp$opt.params)){
-      #optparams = c(round(length(interval)/2),round(length(interval)/10),df_event$yy[1],df_event$yy[length(interval)]-df_event$yy[1])
-
-      optparams = c(round(length(interval)/2),round(length(interval)/10),
-                    ypoints[1],ypoints[length(interval)]-ypoints[1])
-    }else{
-      optparams = control.linramp$opt.params
-      if(is.na(control.linramp$opt.params[1])){
-        optparams[1] = round(length(interval)/2)
-      }
-      if(is.na(control.linramp$opt.params[2])){
-        optparams[2] = round(length(interval)/10)
-      }
-      if(is.na(control.linramp$opt.params[3])){
-        optparams[3] = ypoints[1]
-      }
-      if(is.na(control.linramp$opt.params[4])){
-        optparams[4] = ypoints[length(interval)]-ypoints[1]
-      }
-
-    }
-
-
-
-    ## Finding initial values in INLA optimization procedure by first using a simple optimization
-    ## gradient and cost function given here
-    minfun.grad = function(param, args = NULL){
-      return (grad(minfun, param, args=args, method.args = list(r=6)))
-    }
-    minfun = function(param, args = NULL){
-      yhat = linramp(timepoints,t0=param[1],dt=param[2],y0=param[3],dy=param[4])
-      mse = sum((args$y-yhat)^2)
-      return(sqrt(mse))
-    }
-
-    ## perform optimization to find good starting values for INLA
-    param=optparams
-    args=list(y=ypoints)
-    fit = optim(param,
-                fn = minfun,
-                gr = minfun.grad,
-                method = "BFGS",
-                control = list(
-                  abstol = 0,
-                  maxit = 100000,
-                  reltol = 1e-11),
-                args = args)
-
-
-
-    ### use least squares estimates for fixed effects as initial values in inla
-
-    muvek = linramp(timepoints,t0=fit$par[1],dt=fit$par[2],y0=fit$par[3],dy=fit$par[4])
-     resi = ypoints-muvek
-     arfit = arima(resi,order=c(1,0,0))
-     #kap = 1/sd(resi)^2
-     dzz = median(diff(timepoints))
-     ta = -dzz/log(arfit$coef[1])
-    init = c(fit$par[1],log(fit$par[2]),fit$par[3],fit$par[4],0,0)
-
-    control.mode = list(restart=TRUE,theta=init)
-  }else{
-    control.mode = list(restart=TRUE)
+  ## Finding initial values in INLA optimization procedure by first using a simple optimization
+  ## gradient and cost function given here
+  minfun.grad = function(param, args = NULL){
+    return (grad(minfun, param, args=args, method.args = list(r=6)))
+  }
+  minfun = function(param, args = NULL){
+    yhat = linramp(timepoints,t0=param[1],dt=param[2],y0=param[3],dy=param[4])
+    mse = sum((args$y-yhat)^2)
+    return(sqrt(mse))
   }
 
+  ## perform optimization to find good starting values for INLA
+  param=optparams
+  args=list(y=y)
+  fit = optim(param,
+              fn = minfun,
+              gr = minfun.grad,
+              method = "BFGS",
+              control = list(
+                abstol = 0,
+                maxit = 100000,
+                reltol = 1e-11),
+              args = args)
 
+
+
+  ### use least squares estimates for fixed effects as initial values in inla
+
+  muvek = linramp(timepoints,t0=fit$par[1],dt=fit$par[2],y0=fit$par[3],dy=fit$par[4])
+
+  init = c(fit$par[1],log(fit$par[2]),fit$par[3],fit$par[4],0,0)
 
   if(print.progress) cat("Fitting linear ramp model in INLA using rgeneric model specification...\n",sep="")
   ## creating linear ramp INLA model using rgeneric framework. Requires further specification, see "rgeneric.uneven" function
   time.startinla = Sys.time()
-  model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,n=n,
-                                        tstart=timepoints[1],tslutt=timepoints[n],
-                                        ystart=ypoints[1],timepoints = timepoints,
-                                        priorparams = control.linramp$priorparams,
-                                        priorparams = list()
-                                        )
+  model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,n=n,tstart=timepoints[1],tslutt=timepoints[n],ystart=y[1],timepoints = timepoints)
   formula = y ~ -1+ f(idx, model=model.rgeneric)
 
-  r = inla(formula,family="gaussian", data=data.frame(y=df0$proxy,idx=as.integer(df0$time)),
-           control.mode=control.mode,
+  r = inla(formula,family="gaussian", data=data.frame(y=df0$y,idx=as.integer(df0$time)),
+           control.mode=list(theta=init,
+                             restart=TRUE),
            num.threads = control.linramp$ncores,
            verbose=control.linramp$verbose,
-           silent=control.linramp$silent,
            control.inla=list(h=control.linramp$h),
            control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))) )#, num.threads = 1)
-
-
-
   time.endinla = Sys.time()
   elapsedinla = difftime(time.endinla,time.startinla,units="secs")[[1]]
   if(print.progress) cat("Completed in ",elapsedinla," seconds.\n",sep="")
@@ -234,11 +182,7 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
   object$linramp = list(timepoints=timepoints,data=df0,inlafit=r)
 
   ## compute posterior marginals and posterior marginal means of z^* = t0 (transition onset), dt (transition duration), y0 (initial ramp level), dy (change in ramp level) sigma (amplitude of AR(1) noise) and tau (parameter for correlation of AR(1) noise)
-
-  #plot(r$marginals.hyperpar$`Theta2 for idx`)
-  t0=inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta1 for idx`);
-  dt=inla.emarginal(function(x)exp(x),r$marginals.hyperpar$`Theta2 for idx`);
-  y0=inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta3 for idx`); dy=inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta4 for idx`);rho = inla.emarginal(function(x)2/(1+exp(-x))-1,r$marginals.hyperpar$`Theta5 for idx`); sigma = inla.emarginal(function(x)1/sqrt(exp(x)),r$marginals.hyperpar$`Theta6 for idx`)
+  t0=inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta1 for idx`); dt=inla.emarginal(function(x)exp(x),r$marginals.hyperpar$`Theta2 for idx`);y0=inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta3 for idx`); dy=inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta4 for idx`);rho = inla.emarginal(function(x)2/(1+exp(-x))-1,r$marginals.hyperpar$`Theta5 for idx`); sigma = inla.emarginal(function(x)1/sqrt(exp(x)),r$marginals.hyperpar$`Theta6 for idx`)
   muvek = linramp(timepoints,t0=t0,dt=dt,y0=y0,dy=dy)
 
   t0mean = r$summary.hyperpar$mean[1]; t0lower = r$summary.hyperpar$`0.025quant`[1];t0upper = r$summary.hyperpar$`0.975quant`[1]
@@ -258,13 +202,8 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
     object$linramp$param$dt = list(marg.dt=margdt,mean=z.dt$mean,sd=z.dt$sd,q0.025=z.dt$quant0.025,q0.5=z.dt$quant0.5,q0.975=z.dt$quant0.975)
     object$linramp$param$dtpos = list(marg.dtpos=margdtpos,mean=z.dtpos$mean,sd=z.dtpos$sd,q0.025=z.dtpos$quant0.025,q0.5=z.dtpos$quant0.5,q0.975=z.dtpos$quant0.975)
   }
-  #transform back to original y scaling
-  y0marg0 = r$marginals.hyperpar$`Theta3 for idx`
-  y0marg0[,1] = y0marg0[,1]*ypointsmax+ypointsmin
-  margy0 = inla.smarginal(y0marg0)
-  dymarg0 = r$marginals.hyperpar$`Theta4 for idx`
-  dymarg0[,1] = dymarg0[,1]*ypointsmax
-  margdy = inla.tmarginal(function(x)x,inla.smarginal(dymarg0))
+  margy0 = inla.tmarginal(function(x)x,inla.smarginal(r$marginals.hyperpar$`Theta3 for idx`))
+  margdy = inla.tmarginal(function(x)x,inla.smarginal(r$marginals.hyperpar$`Theta4 for idx`))
   z.y0 = inla.zmarginal(margy0,silent=TRUE)
   z.dy = inla.zmarginal(margdy,silent=TRUE)
   object$linramp$param$y0 = list(marg.y0=margy0,mean=z.y0$mean,sd=z.y0$sd,q0.025=z.y0$quant0.025,q0.5=z.y0$quant0.5,q0.975=z.y0$quant0.975)
@@ -316,10 +255,7 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
     for(i in 1:control.linramp$nsims){
       t01 = hpars[i,3]
       dt1 = hpars[i,4]
-      y01 = hpars[i,1]*ypointsmax + ypointsmin
-      dy1 = hpars[i,2]*ypointsmax
-      vekmat[,i] = bremla::linramprev(object$linramp$data$x,t0=t01,dt=dt1,
-                                      y0=y01,dy=dy1)
+      vekmat[,i] = bremla::linramprev(object$linramp$data$x,t0=t01,dt=dt1,y0=hpars[i,1],dy=hpars[i,2])
     }
     vek.quant0.025 = numeric(n)
     vek.quant0.5 = numeric(n)

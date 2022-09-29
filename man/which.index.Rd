@@ -4,15 +4,12 @@
 \alias{which.index}
 \title{Corresponding index}
 \usage{
-which.index(events, record, suppress = TRUE)
+which.index(events, record)
 }
 \arguments{
 \item{events}{Vector describing the values of interest (here: either depth or age of events)}
 
 \item{record}{Vector we want to search (here: either full depth or age record)}
-
-\item{suppress}{Boolean. Set to \code{TRUE} to suppress warnings that events fall outside designated
-interval.}
 }
 \value{
 Returns a vector of indices for which elements of \code{record} best matches the elements of \code{events}-
