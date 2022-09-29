@@ -39,7 +39,11 @@
 #'
 #' events=list(locations=c(1210,1220,1240))
 #' control.fit = list(ncores=2,noise="ar1")
+<<<<<<< HEAD
 #' synchronization=list(method="adolphi")
+=======
+#' synchronization=list(method="gauss")
+>>>>>>> parent of c3a2300 (Fixed bug in tiepointsimmer)
 #' control.sim=list(synchronized=TRUE,
 #'                  summary=list(compute=TRUE))
 #'
