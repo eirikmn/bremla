@@ -206,7 +206,7 @@ time.start = Sys.time()
     #mu_amidb = (free_mu - solve(Qa)%*%Qab%*%(skewsamples[r]-tie_mu))[,1]
 
     #samples[free_indexes,r] = Qsimmer(1,Qa,mu_amidb)
-    if(print.progress && (r %% 1000 == 0)){
+    if((r %% 1000) == 0){
       cat("Synchronous age simulation ",r,"/",nsims,". Elapsed time: ",difftime(Sys.time(),timeage.start,units="secs")[[1]]," seconds...","\n",sep="")
     }
   }

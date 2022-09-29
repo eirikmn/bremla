@@ -147,7 +147,7 @@ bremla_modelfitter = function(object, control.fit,
       phi.ls = object$fitting$LS$params$phi
       initialmodes = c(initialmodes, log( (1+phi)/(1-phi) ))
 
-    }else if(tolower(object$.args$control.fit$noise) %in% c(2,"ar2","ar(2)")){
+    }else if(tolower(object$.args$noise) %in% c(2,"ar2","ar(2)")){
       phi1.ls = object$fitting$LS$params$phi1
       phi2.ls = object$fitting$LS$params$phi2
 
