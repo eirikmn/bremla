@@ -524,13 +524,7 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
     if(ncol(synchronization$samples) != length(synchronization$locations))
       warning("number of columns in 'samples' must correspond to length of 'locations'!")
     samples = synchronization$samples
-    if(synchronization$locations_unit %in% c("depth","z")){
-      locations_indexes = which.index(synchronization$locations,object$data$depth)
-    }else if(synchronization$locations_unit %in% c("age","y")){
-      locations_indexes = which.index(synchronization$locations,object$data$age)
-    }else if(synchronization$locations_unit %in% c("indexes","i")){
-      locations_indexes=synchronization$locations
-    }
+
 
   }else{
     if(synchronization$method=="adolphi"){
@@ -543,22 +537,37 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
       samples = adolphi_tiepoint_simmer(nsims=synchronization$nsims,
                                         tieshifts=tieshifts,...)
     }else if(synchronization$method %in% c("normal","gaussian","gauss")){
-      synchronization$locations = object$data$depth[c(100,400,700)]
+      #synchronization$locations = object$data$depth[c(100,400,700)]
 
       ntie = length(synchronization$locations)
-      ## temporary
+      means = synchronization$params$mean
+      sds = synchronization$params$sd
       samples = matrix(NA,nrow=synchronization$nsims,ncol=ntie)
-      loc.ind = which.index(synchronization$locations,object$data$depth)
-      meanvek = object$data$age[loc.ind]+c(1,-100,300)
-      sdvek = object$data$age[loc.ind]/meanvek[1]*(1:3)*50
+
+      #loc.ind = which.index(synchronization$locations,object$data$depth)
+
       for(i in 1:ntie){
-        samples[,i] = rnorm(synchronization$nsims,mean=meanvek[i],sd=sdvek[i])
+        samples[,i] = rnorm(synchronization$nsims,mean=means[i],sd=sds[i])
       }
-      locations_indexes=loc.ind
+      ## temporary
+
+      # meanvek = object$data$age[loc.ind]+c(1,-100,300)
+      # sdvek = object$data$age[loc.ind]/meanvek[1]*(1:3)*50
+      # for(i in 1:ntie){
+      #   samples[,i] = rnorm(synchronization$nsims,mean=meanvek[i],sd=sdvek[i])
+      # }
+      #locations_indexes=loc.ind
     }
 
 
 
+  }
+  if(synchronization$locations_unit %in% c("depth","z")){
+    locations_indexes = which.index(synchronization$locations,object$data$depth)
+  }else if(synchronization$locations_unit %in% c("age","y")){
+    locations_indexes = which.index(synchronization$locations,object$data$age)
+  }else if(synchronization$locations_unit %in% c("indexes","index","i")){
+    locations_indexes=synchronization$locations
   }
 
   object$tie_points = list(samples=samples,

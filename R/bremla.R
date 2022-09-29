@@ -175,17 +175,6 @@ bremla <- function(formula,data,reference.label=NULL,
 
   }
 
-
-  if(nsims>0 && control.sim$synchronized %in% c(FALSE,2)){
-    control.sim$nsims=nsims
-    #produce samples from the chronologies
-    object = bremla_chronology_simulation(object, control.sim=control.sim,
-                                          print.progress=print.progress)
-
-    #compute posterior marginal mean, quantiles and other summary statistics
-    #object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=FALSE,print.progress=print.progress)
-
-  }
   if(!is.null(synchronization)){
     synchronization$nsims=nsims
     ##format and or simulate tie-points
@@ -195,15 +184,32 @@ bremla <- function(formula,data,reference.label=NULL,
   }
 
 
-  if(nsims>0 && control.sim$synchronized %in% c(TRUE,2)){
-    control.sim$nsims=nsims
-    #produce samples from the chronologies
-    object = bremla_synchronized_simulation(object, control.sim=control.sim,
+  if(!is.null(control.sim)){
+    if(nsims>0 && control.sim$synchronized %in% c(FALSE,2)){
+      control.sim$nsims=nsims
+      #produce samples from the chronologies
+      object = bremla_chronology_simulation(object, control.sim=control.sim,
                                             print.progress=print.progress)
 
-    #compute posterior marginal mean, quantiles and other summary statistics
-    #object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=TRUE,print.progress=print.progress)
+      #compute posterior marginal mean, quantiles and other summary statistics
+      #object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=FALSE,print.progress=print.progress)
+
+    }
+
+
+
+    if(nsims>0 && control.sim$synchronized %in% c(TRUE,2)){
+      control.sim$nsims=nsims
+      #produce samples from the chronologies
+      object = bremla_synchronized_simulation(object, control.sim=control.sim,
+                                              print.progress=print.progress)
+
+      #compute posterior marginal mean, quantiles and other summary statistics
+      #object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=TRUE,print.progress=print.progress)
+    }
+
   }
+
 
 
   #if control.transition_dating list object (containing specifications) is included, perform dating estimation
