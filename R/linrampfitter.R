@@ -39,7 +39,7 @@
 #'
 #' events=list(locations=c(1210,1220,1240))
 #' control.fit = list(ncores=2,noise="ar1")
-#' synchronization=list(method="gauss")
+#' synchronization=list(method="adolphi")
 #' control.sim=list(synchronized=TRUE,
 #'                  summary=list(compute=TRUE))
 #'

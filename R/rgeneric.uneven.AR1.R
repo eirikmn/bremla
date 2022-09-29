@@ -35,8 +35,7 @@
 #'
 #' model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,
 #'                    n=n,tstart=timepoints[1],tslutt=timepoints[n],ystart=y[1],
-#'                    timepoints = timepoints,
-#'                    priorparams=NULL)
+#'                    timepoints = timepoints)
 #' formula = y ~ -1+ f(idx, model=model.rgeneric)
 #'
 #' result = inla(formula,family="gaussian", data=data.frame(y=y,idx=as.integer(1:n)),
@@ -50,9 +49,6 @@
 #' sd.mean = inla.emarginal(function(x)1/sqrt(exp(x)),result$marginals.hyperpar$`Theta6 for idx`)
 #' tau.mean = inla.emarginal(function(x)exp(x),result$marginals.hyperpar$`Theta5 for idx`)
 #' ##rho=exp(tau*(time_k-time_(k-1)))
-#' plot(timepoints,y,type="l",col="gray",xlab="Time",ylab="Observation")
-#' lines(timepoints,linvek,col="black")
-#' lines(timepoints,linramp(timepoints,t0=t0.mean,dt=dt.mean,y0=y0.mean,dy=dy.mean),col="blue",lwd=2)
 #'}
 #'
 #'

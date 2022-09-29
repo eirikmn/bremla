@@ -45,9 +45,7 @@ y = linvek+noise
 
 model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,
                    n=n,tstart=timepoints[1],tslutt=timepoints[n],ystart=y[1],
-                   timepoints = timepoints,
-                   priorparams = control.linramp$priorparams
-                   )
+                   timepoints = timepoints)
 formula = y ~ -1+ f(idx, model=model.rgeneric)
 
 result = inla(formula,family="gaussian", data=data.frame(y=y,idx=as.integer(1:n)),
