@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 #' Mean vector from fixed effects
 #'
 #' Gives the mean number of layer differences per depth from the fixed effects.
@@ -666,6 +667,8 @@ Qymaker = function(Qx){
   return(t(S)%*%Qx%*%S)
 }
 =======
+=======
+>>>>>>> parent of 67d821f (Revert "Added some more features and Rmd files to generate the plots and results from both papers")
 #' Mean vector from fixed effects
 #'
 #' Gives the mean number of layer differences per depth from the fixed effects.
@@ -1192,7 +1195,17 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
     if(ncol(synchronization$samples) != length(synchronization$locations))
       warning("number of columns in 'samples' must correspond to length of 'locations'!")
     samples = synchronization$samples
+<<<<<<< HEAD
 
+=======
+    if(synchronization$locations_unit %in% c("depth","z")){
+      locations_indexes = which.index(synchronization$locations,object$data$depth)
+    }else if(synchronization$locations_unit %in% c("age","y")){
+      locations_indexes = which.index(synchronization$locations,object$data$age)
+    }else if(synchronization$locations_unit %in% c("indexes","i")){
+      locations_indexes=synchronization$locations
+    }
+>>>>>>> parent of 67d821f (Revert "Added some more features and Rmd files to generate the plots and results from both papers")
 
   }else{
     if(synchronization$method=="adolphi"){
@@ -1205,6 +1218,7 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
       samples = adolphi_tiepoint_simmer(nsims=synchronization$nsims,
                                         tieshifts=tieshifts,...)
     }else if(synchronization$method %in% c("normal","gaussian","gauss")){
+<<<<<<< HEAD
       #synchronization$locations = object$data$depth[c(100,400,700)]
 
       ntie = length(synchronization$locations)
@@ -1225,11 +1239,26 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
       #   samples[,i] = rnorm(synchronization$nsims,mean=meanvek[i],sd=sdvek[i])
       # }
       #locations_indexes=loc.ind
+=======
+      synchronization$locations = object$data$depth[c(100,400,700)]
+
+      ntie = length(synchronization$locations)
+      ## temporary
+      samples = matrix(NA,nrow=synchronization$nsims,ncol=ntie)
+      loc.ind = which.index(synchronization$locations,object$data$depth)
+      meanvek = object$data$age[loc.ind]+c(1,-100,300)
+      sdvek = object$data$age[loc.ind]/meanvek[1]*(1:3)*50
+      for(i in 1:ntie){
+        samples[,i] = rnorm(synchronization$nsims,mean=meanvek[i],sd=sdvek[i])
+      }
+      locations_indexes=loc.ind
+>>>>>>> parent of 67d821f (Revert "Added some more features and Rmd files to generate the plots and results from both papers")
     }
 
 
 
   }
+<<<<<<< HEAD
   if(synchronization$locations_unit %in% c("depth","z")){
     locations_indexes = which.index(synchronization$locations,object$data$depth)
   }else if(synchronization$locations_unit %in% c("age","y")){
@@ -1237,6 +1266,8 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
   }else if(synchronization$locations_unit %in% c("indexes","index","i")){
     locations_indexes=synchronization$locations
   }
+=======
+>>>>>>> parent of 67d821f (Revert "Added some more features and Rmd files to generate the plots and results from both papers")
 
   object$tie_points = list(samples=samples,
                            locations=synchronization$locations,
@@ -1355,4 +1386,7 @@ Qymaker = function(Qx){
   S = sparseMatrix(i=ii,j=jj,x=xx)
   return(t(S)%*%Qx%*%S)
 }
+<<<<<<< HEAD
 >>>>>>> parent of c3a2300 (Fixed bug in tiepointsimmer)
+=======
+>>>>>>> parent of 67d821f (Revert "Added some more features and Rmd files to generate the plots and results from both papers")

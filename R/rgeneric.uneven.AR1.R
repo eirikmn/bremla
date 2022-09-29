@@ -153,17 +153,54 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
       tslutt=get("tslutt",envir)
       tstart=get("tstart",envir)
       ystart=get("ystart",envir)
+      priorparams=get("priorparams",envir)
     }
-    params = interpret.theta()
 
+
+    #print(priorparams)
+    #print(is.null(priorparams$t0))
     #log-priors are given for internal parametrisation using the change of variables theorem
+    if(is.null(priorparams$t0)){ #t0
+      if(is.null(priorparams$t0$sd)){
+        tempsd=20
+      }else{
+        tempsd=priorparams$t0$sd
+      }
+      lprior = dnorm(theta[1],mean=round(0.5*(tslutt+tstart)),sd=tempsd,log=TRUE) #t0
+    }else{
+      lprior = dnorm(theta[1],mean=priorparams$t0$mean,sd=priorparams$t0$sd,log=TRUE) #t0
+    }
+    if(is.null(priorparams$dt)){ #dt
+      lprior = lprior + dgamma(exp(theta[2]),shape=1.0,rate=0.2,log=TRUE) + theta[2] #dt
+    }else{
+      lprior = lprior + dgamma(exp(theta[2]),shape=priorparams$dt$shape,
+                               rate=priorparams$dt$rate,log=TRUE) + theta[2] #dt
+    }
+    if(is.null(priorparams$y0)){
+      lprior = lprior + dnorm(theta[3],mean=ystart,sd=0.1,log=TRUE) #y0
+    }else{
+      lprior = lprior + dnorm(theta[3],mean=priorparams$y0$mean,sd=priorparams$y0$sd,log=TRUE) #y0
+    }
+    if(is.null(priorparams$dy)){
+      lprior = lprior + dnorm(theta[4],mean=0,sd=0.2,log=TRUE) #dy
+    }else{
+      lprior = lprior + dnorm(theta[4],mean=priorparams$dy$mean,sd=priorparams$dy$sd,log=TRUE) #y0
+    }
+    if(is.null(priorparams$tau)){
+      lprior = lprior + dgamma(exp(theta[5]),2.5,rate = 0.15,log=TRUE) + theta[5] #tau/rho
+    }else{
+      lprior = lprior + dgamma(exp(theta[5]),priorparams$tau$shape,rate = priorparams$tau$rate,log=TRUE) + theta[5] #tau/rho
+    }
+    if(is.null(priorparams$kappa)){
+      lprior = lprior + dgamma(exp(theta[6]),2,rate = 0.15,log=TRUE) + theta[6] #sigma/kappa
+    }else{
+      lprior = lprior + dgamma(exp(theta[6]),priorparams$kappa$shape,
+                               rate = priorparams$kappa$rate,log=TRUE) + theta[6] #tau/rho
+    }
 
-    lprior = dnorm(theta[1],mean=round(0.5*(tslutt+tstart)),sd=50,log=TRUE) #t0
-    lprior = lprior + dgamma(exp(theta[2]),shape=1.0,rate=0.02,log=TRUE) + theta[2] #dt
-    lprior = lprior + dnorm(theta[3],mean=ystart,sd=5,log=TRUE) #y0
-    lprior = lprior + dnorm(theta[4],mean=0,sd=10.0,log=TRUE) #dy
-    lprior = lprior + dgamma(exp(theta[5]),2.5,rate = 0.15,log=TRUE) + theta[6] #tau/rho
-    lprior = lprior + dgamma(exp(theta[6]),2,rate = 0.15,log=TRUE) + theta[6] #sigma/kappa
+    #lprior = lprior + dgamma(exp(theta[2]),shape=1.0,rate=0.02,log=TRUE) + theta[2] #dt
+
+
     return (lprior)
   }
 
