@@ -540,6 +540,7 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
                                         tieshifts=tieshifts,...)
     }else if(synchronization$method %in% c("normal","gaussian","gauss")){
       #synchronization$locations = object$data$depth[c(100,400,700)]
+<<<<<<< HEAD
 
       if(tolower(synchronization$locations_unit) %in% c("age","y","time")){
         locations_indexes = which.index(synchronization$locations,object$data$age)
@@ -555,6 +556,10 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
         synchronization$params$mean = rep(no_offset,ntie)
         synchronization$params$sd = rep(1,ntie)
       }
+=======
+
+      ntie = length(synchronization$locations)
+>>>>>>> parent of 91e909b (Revert "Minor changes")
       means = synchronization$params$mean
       sds = synchronization$params$sd
       samples = matrix(NA,nrow=synchronization$nsims,ncol=ntie)
