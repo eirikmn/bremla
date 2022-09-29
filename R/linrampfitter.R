@@ -284,4 +284,4 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
 
   return(object)
 
-}
+}#
