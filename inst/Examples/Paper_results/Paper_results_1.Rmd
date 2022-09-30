@@ -140,7 +140,7 @@ results_biased = bremla(formula,data,reference.label="GICC05",
 
 ## Abrupt warming transitions
 
-We also import table XXXX from Myrvoll-Nilsen et al. (2022) which gives suitable data windows for each abrupt warming transition that is analysed. This was found by varying the start and end point over a 2-dimensional grid and picking those where the noise in the linear ramp model yielded the lowest amplitude.
+We also import table D1 from Myrvoll-Nilsen et al. (2022) which gives suitable data windows for each abrupt warming transition that is analysed. This was found by varying the start and end point over a 2-dimensional grid and picking those where the noise in the linear ramp model yielded the lowest amplitude.
 
 
 
@@ -209,16 +209,16 @@ We want to compare the dating onsets with those given by Rasmussen et al. (2014)
 library(readxl)
 rasmussen_depths = event_intervals$NGRIP_depth_m
 rasmussen_ages = event_intervals$GICC_age.yb2k #GISevents$`Age (a b2k)`
-buizert_onsets = read_excel("inst/Examples/Paper_results/data/Buizert_onsets.xlsx",
-                            col_types=c("text","numeric","numeric","numeric","numeric"))
+# buizert_onsets = read_excel("inst/Examples/Paper_results/data/Buizert_onsets.xlsx",
+#                             col_types=c("text","numeric","numeric","numeric","numeric"))
 buizert_depths = buizert_onsets$Depth; buizert_ages = buizert_onsets$Age
 #buizert_depths[c(2:6,8:9,12:13,15:17,19:21)]
 buizert_ages = buizert_ages[c(2:6,8:9,12:13,15:17,19:21)]
-capron_onsets_NGRIP_d18O = read_excel("inst/Examples/Paper_results/data/Capron_onsets.xls",
-                           sheet="d18O",n_max=25)
+# capron_onsets_NGRIP_d18O = read_excel("inst/Examples/Paper_results/data/Capron_onsets.xls",
+#                            sheet="d18O",n_max=25)
 capron_ages_NGRIP_d18O = capron_onsets_NGRIP_d18O$`t1 (50%)`
-capron_onsets_NGRIP_dust = read_excel("inst/Examples/Paper_results/data/Capron_onsets.xls",
-                                sheet="Ca2+",n_max=24)
+# capron_onsets_NGRIP_dust = read_excel("inst/Examples/Paper_results/data/Capron_onsets.xls",
+#                                 sheet="Ca2+",n_max=24)
 capron_ages_NGRIP_dust = capron_onsets_NGRIP_dust$`t1 (50%)`
 capind = numeric(29); buiind = numeric(29)
 capind = c(NA,2,3, 4,5,6,NA,NA,7,8,NA,9,10,11,NA,NA,NA,NA,NA,12,13,14,NA,NA,15,NA,NA,16,17)
@@ -288,7 +288,7 @@ for(eventnumber in 1:29){
   age.reference = event_intervals$GICC_age.yb2k[eventnumber]
   
   control.linramp = list(proxy=proxy,interval=interval_d18O,interval.unit="index",
-                         depth.ref=depth.reference, imp.fit=imp.fits[eventnumber],
+                         depth.ref=depth.reference, #imp.fit=imp.fits[eventnumber],
                          h=steplengths[eventnumber],
                          opt.params=opt.params,
                          priorparams=priorparams,
@@ -297,7 +297,7 @@ for(eventnumber in 1:29){
                          )
   
   control.linramp_dust = list(proxy=logdust,interval=interval_dust,interval.unit="index",
-                         depth.ref=depth.reference, imp.fit=imp.fits[eventnumber],
+                         depth.ref=depth.reference, #imp.fit=imp.fits[eventnumber],
                          h=steplengths[eventnumber],
                          opt.params=opt.params,
                          priorparams=priorparams,

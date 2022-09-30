@@ -37,6 +37,8 @@ linear ramp model fitting procedure for a given transition. The list contains th
    For \code{rgeneric} models which are used here, stability can sometimes be
    improved if the number of cores is set to \code{1}, which is why it is the
    default here.
+   \item \code{silent} If equal to \code{TRUE} or \code{1L}, then \code{inla} will run in "silent" mode,
+   If equal to \code{2L} then error messages will also be suppressed.
    \item \code{verbose} Boolean stating whether or not the \code{inla}-program should
    run in verbose mode. Default \code{FALSE}.
 }

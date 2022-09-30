@@ -108,7 +108,8 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
     age=data$age
   }else if("y" %in% colnames(data)){
     age=data$y
-    colnames(data$y)="age"
+    #colnames(data$y)="age"
+    colnames(data)[which("y"==colnames(data))]="age"
   }else{
     stop("Could not find 'age' in data.frame. Stopping!")
   }
@@ -136,9 +137,12 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
       eventindexes = which.index (events$locations, z)
     }else if(tolower(events$locations_unit) %in% c("age","time","y")){
       eventindexes = which.index (events$locations, y)
+    }else{
+      eventindexes = events$locations
     }
-    eventindexes = unique(c(1,eventindexes[!is.na(eventindexes)]))
-    nevents = length(eventindexes)
+    #eventindexes = unique(c(1,eventindexes[!is.na(eventindexes)]))
+    eventindexes = unique(c(1,eventindexes[!is.na(eventindexes)],length(y)))
+    nevents = length(eventindexes)-1
   }else{
     nevents=0
     eventindexes=NULL
@@ -177,6 +181,7 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
           ev2[ eventindexes[i-1]:(eventindexes[i]-1) ] = z[eventindexes[i-1]:(eventindexes[i]-1)]^2
           data_obj[[paste0("psi2_",i-1)]] = ev2
         }
+      }
 
         konst = numeric(n-1)
         konst[eventindexes[nevents]:(n-1)] = 1
@@ -193,7 +198,6 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
           data_obj[[paste0("psi2_",nevents)]] = ev2
 
       }
-    }
     }
   }
 
