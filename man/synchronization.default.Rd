@@ -30,6 +30,9 @@ tie-points used for synchronization. The list contains the following arguments:
   filled out accordingly.
   \item \code{x.ref} Numeric giving a reference for the x-axis (given by \code{locations_unit})
   that will be included in future \code{plot}.
+  \item \code{params} List object containing parameters for parametric tie-point distributions.
+  for \code{method="gauss"} the list has two numeric objects called \code{mean} and \code{sd}
+  representing the mean and standard deviation for each tie point, respectively.
 }
 }
 \seealso{

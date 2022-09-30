@@ -245,7 +245,7 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
                     synchronization=synchronization,
                     control.fit=control.fit,
                     control.sim=control.sim,
-                    control.linramps=control.linramp,
+                    control.linramp=control.linramp,
                     control.transition_dating=control.transition_dating,
                     control.bias=control.bias)
 

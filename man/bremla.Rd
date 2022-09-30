@@ -73,7 +73,7 @@ a_lintrend <- 0.3; a_proxy = 0.8
 dy_noise <- as.numeric(arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2)))
 lintrend <- seq(from=10,to=15,length.out=n)
 
-proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))
+proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))*5
 dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
 
 y0 = 11700;z0=1200
@@ -87,12 +87,16 @@ data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z
 
 events=list(locations=c(1210,1220,1240))
 control.fit = list(ncores=2,noise="ar1")
-synchronization=list(method="gauss")
+synchronization=list(locations=depth[c(100,400,700)],method="gauss",
+                           params=list(mean=c(age[c(100,400,700)]+c(30,-100,50)),
+                                       sd=c(50,20,100)
+                                       )
+                     )
 control.sim=list(synchronized=2,
                  summary=list(compute=TRUE))
 
 #simulate transition:
-prox = rnorm(n,mean=c(rep(0,400),seq(0,4,length.out=20),rep(4,580)),sd=1)
+prox = rnorm(n,mean=c(rep(0,400),seq(0,4,length.out=20),rep(4,580)),sd=1)-45
 window = 330:500
 control.linramp = list(label="Simulated",proxy=prox,interval=window,interval.unit="index",
     depth.ref=depth[401])

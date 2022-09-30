@@ -16,39 +16,75 @@
 #' @examples
 #' \donttest{
 #' set.seed(1)
-#' n=500
-#' timepoints = 1:n/n #should be scaled so that timepoints is between 0 and 1
+#' n=300
+#' timepoints = 1:n #should be scaled so that timepoints is between 0 and 1
 #'                    #(you can always transform back later, but this helps
 #'                    #avoiding to tune priors)
 #' require(stats)
 #' require(INLA)
 #' sigma=1
-#' noise = stats::arima.sim(model=list(ar=c(0.8)),n=n,sd=sqrt(1-0.8^2))*sigma
+#' noise = stats::arima.sim(model=list(ar=c(0.2)),n=n,sd=sqrt(1-0.2^2))*sigma
 #'
-#' t0 = 150/n
-#' dt = 100/n
-#' y0 = 0
-#' dy = 5
+#' t0 = 90
+#' dt = 30
+#' y0 = 5
+#' dy = 10
 #'
 #' linvek = linramp(timepoints,t0=t0,dt=dt,y0=y0,dy=dy)
 #' y = linvek+noise
 #'
+#' ## perform optimization to find good starting values for INLA
+#' minfun.grad = function(param, args = NULL){
+#' return (grad(minfun, param, args=args, method.args = list(r=6)))
+#' }
+#' minfun = function(param, args = NULL){
+#'   yhat = linramp(timepoints,t0=param[1],dt=param[2],y0=param[3],dy=param[4])
+#'   mse = sum((args$y-yhat)^2)
+#'   return(sqrt(mse))
+#' }
+#'
+#' param=optparams
+#' args=list(y=y)
+#' fit = optim(param,
+#'             fn = minfun,
+#'             gr = minfun.grad,
+#'             method = "BFGS",
+#'             control = list(
+#'               abstol = 0,
+#'               maxit = 100000,
+#'               reltol = 1e-11),
+#'             args = args)
+#'
+#'muvek = linramp(timepoints,t0=fit$par[1],dt=fit$par[2],y0=fit$par[3],dy=fit$par[4])
+#' init = c(fit$par[1],log(fit$par[2]),fit$par[3],fit$par[4],0,0)
+#'
+#'
 #' model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,
-#'                    n=n,tstart=timepoints[1],tslutt=timepoints[n],ystart=y[1],
+#'                    n=n,
+#'                    tstart=timepoints[1],
+#'                    tslutt=timepoints[n],
+#'                    ystart=y[1],
 #'                    timepoints = timepoints)
 #' formula = y ~ -1+ f(idx, model=model.rgeneric)
 #'
 #' result = inla(formula,family="gaussian", data=data.frame(y=y,idx=as.integer(1:n)),
+#' #result = inla(formula,family="gaussian", data=data.frame(y=df0$y,idx=as.integer(df0$time)),
 #'          num.threads = 1,
-#'          control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))) )
+#'          control.mode=list(theta=init,
+#'                   restart=TRUE),
+#'          control.inla=list(h=0.01),
+#' control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))) )#, num.threads = 1)
 #' summary(result)
+#'
 #' t0.mean = inla.emarginal(function(x)x,result$marginals.hyperpar$`Theta1 for idx`)
 #' dt.mean = inla.emarginal(function(x)exp(x),result$marginals.hyperpar$`Theta2 for idx`)
 #' y0.mean = inla.emarginal(function(x)x,result$marginals.hyperpar$`Theta3 for idx`)
 #' dy.mean = inla.emarginal(function(x)x,result$marginals.hyperpar$`Theta4 for idx`)
 #' sd.mean = inla.emarginal(function(x)1/sqrt(exp(x)),result$marginals.hyperpar$`Theta6 for idx`)
 #' tau.mean = inla.emarginal(function(x)exp(x),result$marginals.hyperpar$`Theta5 for idx`)
-#' ##rho=exp(tau*(time_k-time_(k-1)))
+#' plot(timepoints,y,type="l",col="gray",xlab="Time",ylab="Observation")
+#' lines(timepoints,linramp(timepoints,t0=t0.mean,dt=dt.mean,y0=y0.mean,dy=dy.mean))
+#'
 #'}
 #'
 #'

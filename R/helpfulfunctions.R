@@ -485,7 +485,11 @@ adolphi_tiepoint_simmer = function(nsims=10000,tieshifts = numeric(5), plotdens=
 #' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
 #'
 #' events=list(locations=c(1210,1220,1240))
-#' synchronization=list(locations=depth[c(100,400,700)],method="gauss")
+#' synchronization=list(locations=depth[c(100,400,700)],method="gauss",
+#'                            params=list(mean=c(age[c(100,400,700)]+c(30,-100,50)),
+#'                                        sd=c(50,20,100)
+#'                                        )
+#'                        )
 #' object = bremla_prepare(formula,data,nsims=5000,
 #'                         reference.label="simulated timescale",
 #'                         events = events,
@@ -533,18 +537,29 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
       samples = adolphi_tiepoint_simmer(nsims=synchronization$nsims,
                                         tieshifts=tieshifts,...)
     }else if(synchronization$method %in% c("normal","gaussian","gauss")){
-      synchronization$locations = object$data$depth[c(100,400,700)]
+
+      if(tolower(synchronization$locations_unit) %in% c("depth","z")){
+        locations_indexes = which.index(synchronization$locations,object$data$depth)
+      }else if(tolower(synchronization$locations_unit) %in% c("age","time","y")){
+        locations_indexes = which.index(synchronization$locations,object$data$age)
+      }else{
+        locations_indexes = synchronization$locations
+      }
 
       ntie = length(synchronization$locations)
-      ## temporary
+      if(is.null(synchronization$params)){
+        synchronization$params = list(mean=object$data$age[locations_indexes],
+                      sd = rep(1,ntie))
+        object$.args$synchronization=synchronization
+      }
+
       samples = matrix(NA,nrow=synchronization$nsims,ncol=ntie)
-      loc.ind = which.index(synchronization$locations,object$data$depth)
-      meanvek = object$data$age[loc.ind]+c(1,-100,300)
-      sdvek = object$data$age[loc.ind]/meanvek[1]*(1:3)*50
+
+      meanvek = synchronization$params$mean
+      sdvek = synchronization$params$sd
       for(i in 1:ntie){
         samples[,i] = rnorm(synchronization$nsims,mean=meanvek[i],sd=sdvek[i])
       }
-      locations_indexes=loc.ind
     }
 
 

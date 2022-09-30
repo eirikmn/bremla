@@ -132,6 +132,9 @@ control.sim.default <- function(){
 #'   filled out accordingly.
 #'   \item \code{x.ref} Numeric giving a reference for the x-axis (given by \code{locations_unit})
 #'   that will be included in future \code{plot}.
+#'   \item \code{params} List object containing parameters for parametric tie-point distributions.
+#'   for \code{method="gauss"} the list has two numeric objects called \code{mean} and \code{sd}
+#'   representing the mean and standard deviation for each tie point, respectively.
 #' }
 #' @return Returns a list including default values for all variables in
 #' \code{synchronization}.
@@ -148,7 +151,8 @@ synchronization.default <- function(){
       samples=NULL,
       nsims=10000,
       method="adolphis",
-      x.ref = NULL
+      x.ref = NULL,
+      params=NULL
     )
   )
 }
@@ -207,7 +211,7 @@ control.linramp.default <- function(){
       opt.params=NULL, #function will recognize this
       compute.t1=TRUE,
       nsims=30000,
-      rescale.y.factor=FALSE,
+      rescale.y.factor=1,
       imp.fit=TRUE,
       h=0.01,
       ncores=1,
