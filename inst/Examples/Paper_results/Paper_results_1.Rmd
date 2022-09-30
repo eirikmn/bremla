@@ -249,7 +249,7 @@ agesimmatrix_dust = matrix(NA,29,nsims)
 agesimmatrix_d18O = matrix(NA,29,nsims)
 depthlist_dust = c()
 depthlist_d18O = c()
-do.plot.rampfit = FALSE
+do.plot.rampfit = TRUE
 do.plot.agehist = FALSE
 depthstats = as.data.frame(matrix(NA,7,29))
 colnames(depthstats) = c("true", "mean", "CIL","CIU","dustmean","dustCIL","dustCIU")
@@ -312,48 +312,89 @@ for(eventnumber in 1:29){
   temp_d18O = linrampfitter(results,control.linramp_d18O)
   if(do.plot.rampfit){
     {
+      ybottom = min(temp_d18O$linramp$data$y)
+      ytop = min(temp_d18O$linramp$linrampfit$q0.025)
+      epsilon = (ytop-ybottom)*0.3
+      
+      margt0=temp_d18O$linramp$param$t0$marg.t0
+      normt0.y = (margt0[,2]-min(margt0[,2]))/diff(range(margt0[,2]))*(ytop-ybottom)+ybottom-epsilon
+      margt1 = temp_d18O$linramp$param$t1$marginal
+      normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom-epsilon
+      
+      yrange = range(temp_d18O$linramp$data$y,temp_d18O$linramp$linrampfit$q0.025,
+                     temp_d18O$linramp$linrampfit$q0.975,
+                     normt0.y,normt1.y)
+      
       plot(depth[interval_d18O],proxy[interval_d18O],type="l",col="gray",
           xlim=rev(range(depth[interval_d18O])), xlab="Depth (m)",ylab=expression(paste(delta^18,"O (permil)")),
-          main=paste0(eventnumber," (d18O): ", event_intervals[eventnumber,2]))
+          main=paste0(eventnumber," (d18O): ", event_intervals[eventnumber,2]),
+          ylim=yrange)
       lines(temp_d18O$linramp$data$x,temp_d18O$linramp$linrampfit$mean)
       lines(temp_d18O$linramp$data$x,temp_d18O$linramp$linrampfit$q0.025,col="red")
       lines(temp_d18O$linramp$data$x,temp_d18O$linramp$linrampfit$q0.975,col="red")
       abline(v=rasmussen_depths[eventnumber],lty=3)
       
-      ybottom = min(temp_d18O$linramp$data$y)
-      ytop = min(temp_d18O$linramp$linrampfit$q0.025)
-      margt0=temp_d18O$linramp$param$t0$marg.t0
-      normt0.y = margt0[,2]/diff(range(margt0[,2]))*(ytop-ybottom)-min(margt0[,2])+ybottom
       lines(x=margt0[,1],y=normt0.y,col="blue",lwd=2)
-      ybottom = min(temp_d18O$linramp$data$y)
-      ytop = min(temp_d18O$linramp$linrampfit$q0.025)
-      margt1 = temp_d18O$linramp$param$t1$marginal
-      normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom
       lines(x=margt1[,1],y=normt1.y,col="blue",lwd=2,lty=3)
+      # ybottom = min(temp_d18O$linramp$data$y)
+      # ytop = min(temp_d18O$linramp$linrampfit$q0.025)
+      # margt0=temp_d18O$linramp$param$t0$marg.t0
+      # normt0.y = margt0[,2]/diff(range(margt0[,2]))*(ytop-ybottom)-min(margt0[,2])+ybottom
+      # lines(x=margt0[,1],y=normt0.y,col="blue",lwd=2)
+      # ybottom = min(temp_d18O$linramp$data$y)
+      # ytop = min(temp_d18O$linramp$linrampfit$q0.025)
+      # margt1 = temp_d18O$linramp$param$t1$marginal
+      # normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom
+      # lines(x=margt1[,1],y=normt1.y,col="blue",lwd=2,lty=3)
     }
   }
   temp_dust = linrampfitter(results_dust,control.linramp_dust)
   if(do.plot.rampfit){
     {
-      plot(temp_dust$linramp$data$x,temp_dust$linramp$data$y,type="l",col="gray",xlim=rev(range(depth[interval_dust])), xlab="Depth (m)",ylab=expression(paste("log(Ca)","")),
-          main=paste0(eventnumber," (logdust): ", event_intervals[eventnumber,2]))
-      # plot(depth[interval_d18O],logdust[interval_d18O],type="l",col="gray",xlim=rev(range(depth[interval_dust])), xlab="Depth (m)",ylab=expression(paste("log(Ca)","")),
-      #     main=paste0(eventnumber," (logdust): ", event_intervals[eventnumber,2]))
-      lines(temp_dust$linramp$data$x,temp_dust$linramp$linrampfit$mean)
-      lines(temp_dust$linramp$data$x,temp_dust$linramp$linrampfit$q0.025,col="red")
-      lines(temp_dust$linramp$data$x,temp_dust$linramp$linrampfit$q0.975,col="red")
+      ybottom = min(temp_dust$linramp$data$y)
+      ytop = min(temp_dust$linramp$linrampfit$q0.025)
+      epsilon = (ytop-ybottom)*0.3
+      
+      margt0=temp_dust$linramp$param$t0$marg.t0
+      normt0.y = (margt0[,2]-min(margt0[,2]))/diff(range(margt0[,2]))*(ytop-ybottom)+ybottom-epsilon
+      margt1 = temp_dust$linramp$param$t1$marginal
+      normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom-epsilon
+      
+      yrange = range(temp_dust$linramp$data$y,temp_dust$linramp$linrampfit$q0.025,
+                     temp_dust$linramp$linrampfit$q0.975,
+                     normt0.y,normt1.y)
+      
+      plot(temp_dust$linramp$data$x,temp_dust$linramp$data$y,type="l",col="gray",
+          xlim=rev(range(depth[interval_dust])), xlab="Depth (m)",ylab=expression(paste("log(Ca)","")),
+          main=paste0(eventnumber," (logdust): ", event_intervals[eventnumber,2]),
+          ylim=yrange)
+      lines(temp_d18O$linramp$data$x,temp_dust$linramp$linrampfit$mean)
+      lines(temp_d18O$linramp$data$x,temp_dust$linramp$linrampfit$q0.025,col="red")
+      lines(temp_d18O$linramp$data$x,temp_dust$linramp$linrampfit$q0.975,col="red")
       abline(v=rasmussen_depths[eventnumber],lty=3)
       
-      ybottom = min(temp_dust$linramp$data$y)
-      ytop = min(temp_dust$linramp$linrampfit$q0.025)
-      margt0=temp_dust$linramp$param$t0$marg.t0
-      normt0.y = margt0[,2]/diff(range(margt0[,2]))*(ytop-ybottom)-min(margt0[,2])+ybottom
       lines(x=margt0[,1],y=normt0.y,col="blue",lwd=2)
-      ybottom = min(temp_dust$linramp$data$y)
-      ytop = min(temp_dust$linramp$linrampfit$q0.025)
-      margt1 = temp_dust$linramp$param$t1$marginal
-      normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom
       lines(x=margt1[,1],y=normt1.y,col="blue",lwd=2,lty=3)
+       
+      # plot(temp_dust$linramp$data$x,temp_dust$linramp$data$y,type="l",col="gray",xlim=rev(range(depth[interval_dust])), xlab="Depth (m)",ylab=expression(paste("log(Ca)","")),
+      #     main=paste0(eventnumber," (logdust): ", event_intervals[eventnumber,2]))
+      # # plot(depth[interval_d18O],logdust[interval_d18O],type="l",col="gray",xlim=rev(range(depth[interval_dust])), xlab="Depth (m)",ylab=expression(paste("log(Ca)","")),
+      # #     main=paste0(eventnumber," (logdust): ", event_intervals[eventnumber,2]))
+      # lines(temp_dust$linramp$data$x,temp_dust$linramp$linrampfit$mean)
+      # lines(temp_dust$linramp$data$x,temp_dust$linramp$linrampfit$q0.025,col="red")
+      # lines(temp_dust$linramp$data$x,temp_dust$linramp$linrampfit$q0.975,col="red")
+      # abline(v=rasmussen_depths[eventnumber],lty=3)
+      # 
+      # ybottom = min(temp_dust$linramp$data$y)
+      # ytop = min(temp_dust$linramp$linrampfit$q0.025)
+      # margt0=temp_dust$linramp$param$t0$marg.t0
+      # normt0.y = margt0[,2]/diff(range(margt0[,2]))*(ytop-ybottom)-min(margt0[,2])+ybottom
+      # lines(x=margt0[,1],y=normt0.y,col="blue",lwd=2)
+      # ybottom = min(temp_dust$linramp$data$y)
+      # ytop = min(temp_dust$linramp$linrampfit$q0.025)
+      # margt1 = temp_dust$linramp$param$t1$marginal
+      # normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom
+      # lines(x=margt1[,1],y=normt1.y,col="blue",lwd=2,lty=3)
     }
   }
   
@@ -397,10 +438,6 @@ for(eventnumber in 1:29){
   agestats[5,eventnumber] = mean(agesimmatrix_dust[eventnumber])
   agestats[6,eventnumber] = zage1$quant0.025
   agestats[7,eventnumber] = zage1$quant0.975
-  
-  
-  
-  
   
 }
 ```

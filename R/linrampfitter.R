@@ -410,15 +410,13 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
                         yy=rev(control.linramp$proxy[interval])) #reverse: Want depth axis representing old->new
 
   ## default initial values for optim function
-  if(is.null(control.linramp$opt.params)){
-    optparams = c(round(length(interval)/2),round(length(interval)/10),df_event$yy[1],df_event$yy[length(interval)]-df_event$yy[1])
+  optparams = c(round(length(interval)/2),round(length(interval)/10),df_event$yy[1],df_event$yy[length(interval)]-df_event$yy[1])
+  if(!is.null(control.linramp$opt.params)){
     for(i in 1:4){
-      if(!is.null(control.linramp$opt.params[i])){
+      if(!is.na(control.linramp$opt.params[i])){
         optparams[i] = control.linramp$opt.params[i]
       }
     }
-  }else{
-    optparams = control.linramp$opt.params
   }
 
   n=length(interval)
