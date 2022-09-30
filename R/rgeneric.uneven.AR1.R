@@ -153,6 +153,7 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
       tslutt=get("tslutt",envir)
       tstart=get("tstart",envir)
       ystart=get("ystart",envir)
+      # rescale.y=get("rescale.y",envir)
     }
     params = interpret.theta()
 
@@ -160,10 +161,17 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
 
     lprior = dnorm(theta[1],mean=round(0.5*(tslutt+tstart)),sd=50,log=TRUE) #t0
     lprior = lprior + dgamma(exp(theta[2]),shape=1.0,rate=0.02,log=TRUE) + theta[2] #dt
-    lprior = lprior + dnorm(theta[3],mean=ystart,sd=5,log=TRUE) #y0
-    lprior = lprior + dnorm(theta[4],mean=0,sd=10.0,log=TRUE) #dy
-    lprior = lprior + dgamma(exp(theta[5]),2.5,rate = 0.15,log=TRUE) + theta[6] #tau/rho
-    lprior = lprior + dgamma(exp(theta[6]),2,rate = 0.15,log=TRUE) + theta[6] #sigma/kappa
+    # if(rescale.y){
+    #   lprior = lprior + dnorm(theta[3],mean=ystart,sd=0.025,log=TRUE) #y0
+    #   lprior = lprior + dnorm(theta[4],mean=1-ystart,sd=0.01,log=TRUE) #dy
+    #   lprior = lprior + dgamma(exp(theta[5]),1,rate = 3,log=TRUE) + theta[6] #tau/rho
+    #   lprior = lprior + dgamma(exp(theta[6]),0.1,rate = 1,log=TRUE) + theta[6] #sigma/kappa
+    # }else{
+      lprior = lprior + dnorm(theta[3],mean=ystart,sd=5,log=TRUE) #y0
+      lprior = lprior + dnorm(theta[4],mean=0,sd=10.0,log=TRUE) #dy
+      lprior = lprior + dgamma(exp(theta[5]),2.5,rate = 0.15,log=TRUE) + theta[6] #tau/rho
+      lprior = lprior + dgamma(exp(theta[6]),2,rate = 0.15,log=TRUE) + theta[6] #sigma/kappa
+    # }
     return (lprior)
   }
 

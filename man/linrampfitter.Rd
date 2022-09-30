@@ -5,6 +5,8 @@
 \title{Linear ramp fit}
 \usage{
 linrampfitter(object, control.linramp, print.progress = FALSE)
+
+linrampfitter(object, control.linramp, print.progress = FALSE)
 }
 \arguments{
 \item{object}{List object which is the output of function \code{\link{bremla_chronology_simulation}}}
@@ -18,8 +20,12 @@ the rest can be set to default values. See \code{\link{control.linramp.default}}
 }
 \value{
 Returns the same \code{object} list from the input, but appends another list of results from the linear ramp fit, including posterior marginal distributions of the hyperparameters, summary statistics, and simulations of linear ramp and transition end point (if any).
+
+Returns the same \code{object} list from the input, but appends another list of results from the linear ramp fit, including posterior marginal distributions of the hyperparameters, summary statistics, and simulations of linear ramp and transition end point (if any).
 }
 \description{
+Fits the linear ramp described by Erhardt et al. (2019) to proxy values using INLA.
+
 Fits the linear ramp described by Erhardt et al. (2019) to proxy values using INLA.
 }
 \examples{
@@ -71,11 +77,63 @@ plot(object)
 
 }
 
+\donttest{
+require(stats)
+set.seed(1)
+n <- 1000
+phi <- 0.8
+sigma <- 1.2
+a_lintrend <- 0.3; a_proxy = 0.8
+dy_noise <- as.numeric(arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2)))
+lintrend <- seq(from=10,to=15,length.out=n)
+
+proxy <- as.numeric(arima.sim(model=list(ar=c(0.9)),n=n,sd=sqrt(1-0.9^2)))
+dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
+
+y0 = 11700;z0=1200
+age = y0+cumsum(dy)
+depth = 1200 + 1:n*0.05
+
+
+formula = dy~-1+depth2 + proxy
+data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
+
+events=list(locations=c(1210,1220,1240))
+control.fit = list(ncores=2,noise="ar1")
+synchronization=list(method="gauss")
+control.sim=list(synchronized=TRUE,
+                 summary=list(compute=TRUE))
+
+#simulate transition:
+prox = rnorm(n,mean=c(rep(0,400),seq(0,4,length.out=20),rep(4,580)),sd=1)
+window = 330:500
+control.linramp = list(label="Simulated",proxy=prox,interval=window,interval.unit="index",
+    depth.ref=depth[401])
+object = bremla_prepare(formula,data,nsims=5000,reference.label="simulated timescale",
+                        events = events,
+                        synchronization=synchronization,
+                        control.fit=control.fit,
+                        control.sim=control.sim,
+                        control.linramp=control.linramp)
+object = bremla_modelfitter(object)
+object = tiepointsimmer(object)
+object = bremla_synchronized_simulation(object)
+object = linrampfitter(object,print.progress=TRUE)
+summary(object)
+plot(object)
+
+}
+
 }
 \references{
 Erhardt et al. (2019)
+
+Erhardt et al. (2019)
 }
 \seealso{
+\code{\link{bremla_chronology_simulation},\link{events_depth_to_age}}
+
 \code{\link{bremla_chronology_simulation},\link{events_depth_to_age}}
 }
 \author{

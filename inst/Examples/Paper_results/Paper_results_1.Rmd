@@ -287,11 +287,13 @@ for(eventnumber in 1:29){
   depth.reference = event_intervals$NGRIP_depth_m[eventnumber]
   age.reference = event_intervals$GICC_age.yb2k[eventnumber]
   
-  control.linramp = list(proxy=proxy,interval=interval_d18O,interval.unit="index",
+  control.linramp_d18O = list(proxy=proxy,interval=interval_d18O,interval.unit="index",
                          depth.ref=depth.reference, #imp.fit=imp.fits[eventnumber],
                          h=steplengths[eventnumber],
                          opt.params=opt.params,
                          priorparams=priorparams,
+                         rescale.y.factor=1,
+                         imp.fit=TRUE,
                          silent=2L,
                          label=paste0(eventnumber," (d18O):", event_intervals[eventnumber,2])
                          )
@@ -301,11 +303,13 @@ for(eventnumber in 1:29){
                          h=steplengths[eventnumber],
                          opt.params=opt.params,
                          priorparams=priorparams,
+                         rescale.y.factor=-20,
+                         imp.fit=TRUE,
                          silent=2L,
                          label=paste0(eventnumber," (logCa):", event_intervals[eventnumber,2])
                          )
   
-  temp_d18O = linrampfitter(results,control.linramp)
+  temp_d18O = linrampfitter(results,control.linramp_d18O)
   if(do.plot.rampfit){
     {
       plot(depth[interval_d18O],proxy[interval_d18O],type="l",col="gray",
@@ -353,7 +357,7 @@ for(eventnumber in 1:29){
     }
   }
   
-  control.transition_dating=list(label="d18O")
+  control.transition_dating=list(label="d18O",sync=FALSE)
   agetemp_d18O = events_depth_to_age(temp_d18O,control.transition_dating)
   
   
@@ -362,7 +366,7 @@ for(eventnumber in 1:29){
     hist(agesimmatrix_d18O[eventnumber,],freq=0,breaks=50,col="orange",main=paste0("d18O: ",eventnumber),xlab="Age (yb2k)")
     abline(v=age.reference,col="blue")
   }
-  control.transition_dating_dust=list(label="dust")
+  control.transition_dating_dust=list(label="dust",sync=FALSE)
   agetemp_dust = events_depth_to_age(temp_d18O,control.transition_dating_dust)
   agesimmatrix_dust[eventnumber,] = agetemp_dust$event_dating$samples
    if(do.plot.agehist){

@@ -176,6 +176,9 @@ synchronization.default <- function(){
 #'    should be computed. Default \code{TRUE}.
 #'    \item \code{nsims} Integer giving how many Monte Carlo samples should be used to
 #'    compute transition end point \code{t1} if \code{compute.t1} is \code{TRUE}.
+#'    \item \code{rescale.y.factor} If proxies (y-axis) should be rescaled, this can be done using
+#'    this command. \code{y_new = y_old*rescale.y.factor}.
+#'    \item \code{imp.fit} Boolean indicaating whether initial values for \code{inla} be computed using \code{optim}.
 #'    \item \code{h} Step length of optimization procedure in the \code{inla}-program.
 #'    Default value is \code{0.01}.
 #'    \item \code{ncores} Integer giving the number of cores used in the \code{inla}-program.
@@ -204,6 +207,8 @@ control.linramp.default <- function(){
       opt.params=NULL, #function will recognize this
       compute.t1=TRUE,
       nsims=30000,
+      rescale.y.factor=FALSE,
+      imp.fit=TRUE,
       h=0.01,
       ncores=1,
       silent=FALSE,

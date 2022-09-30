@@ -480,25 +480,31 @@ plot.bremla = function(x,
     }else{
       plot.label=x$linramp$.args$label
     }
-    plot(xval,x$linramp$data$y,type="l",lwd=1.25,col="gray",xlim=xlim,ylim=yrange,xlab="Depth (m)",ylab=expression(paste(delta^18, "O (permil)")),main=plot.label)
+
+    ybottom = min(x$linramp$data$y)
+    ytop = min(x$linramp$linrampfit$q0.025)
+    epsilon = (ytop-ybottom)*0.3
+    if(plot.linramp$show.t0 && !is.null(x$linramp$param)){
+
+      margt0=x$linramp$param$t0$marg.t0
+      #normt0.y = margt0[,2]/diff(range(margt0[,2]))*(ytop-ybottom)-min(margt0[,2])+ybottom
+      normt0.y = (margt0[,2]-min(margt0[,2]))/diff(range(margt0[,2]))*(ytop-ybottom)+ybottom-epsilon
+    }
+    if(plot.linramp$show.t0 && !is.null(x$linramp$param$t1)){
+      # ybottom = min(x$linramp$data$y)
+      # ytop = min(x$linramp$linrampfit$q0.025)
+      margt1 = x$linramp$param$t1$marginal
+      normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom-epsilon
+    }
+    yrange2=range(yrange,normt0.y,normt1.y)
+    plot(xval,x$linramp$data$y,type="l",lwd=1.25,col="gray",xlim=xlim,ylim=yrange2,xlab="Depth (m)",
+         ylab=expression(paste(delta^18, "O (permil)")),main=plot.label)
     lines(xval,x$linramp$linrampfit$q0.025,col="red",lwd=2)
     lines(xval,x$linramp$linrampfit$q0.975,col="red",lwd=2)
     lines(xval,x$linramp$linrampfit$mean,col="black",lwd=2)
 
-    if(plot.linramp$show.t0 && !is.null(x$linramp$param)){
-      ybottom = min(x$linramp$data$y)
-      ytop = min(x$linramp$linrampfit$q0.025)
-      margt0=x$linramp$param$t0$marg.t0
-      normt0.y = margt0[,2]/diff(range(margt0[,2]))*(ytop-ybottom)-min(margt0[,2])+ybottom
-      lines(x=margt0[,1],y=normt0.y,col="blue",lwd=2)
-    }
-    if(plot.linramp$show.t0 && !is.null(x$linramp$param$t1)){
-      ybottom = min(x$linramp$data$y)
-      ytop = min(x$linramp$linrampfit$q0.025)
-      margt1 = x$linramp$param$t1$marginal
-      normt1.y = margt1[,2]/diff(range(margt1[,2]))*(ytop-ybottom)-min(margt1[,2])+ybottom
-      lines(x=margt1[,1],y=normt1.y,col="blue",lwd=2,lty=3)
-    }
+    lines(x=margt0[,1],y=normt0.y,col="blue",lwd=2)
+    lines(x=margt1[,1],y=normt1.y,col="blue",lwd=2,lty=3)
 
     if(!is.null(plot.event_depth$depth.reference)){
       abline(v=plot.event_age$age.reference,lwd=2,lty=3)
