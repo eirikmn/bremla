@@ -17,11 +17,10 @@
 #' \donttest{
 #' set.seed(1)
 #' n=300
-#' timepoints = 1:n #should be scaled so that timepoints is between 0 and 1
-#'                    #(you can always transform back later, but this helps
-#'                    #avoiding to tune priors)
+#' timepoints = 1:n
 #' require(stats)
 #' require(INLA)
+#' require(numDeriv)
 #' sigma=1
 #' noise = stats::arima.sim(model=list(ar=c(0.2)),n=n,sd=sqrt(1-0.2^2))*sigma
 #'
@@ -43,7 +42,7 @@
 #'   return(sqrt(mse))
 #' }
 #'
-#' param=optparams
+#' param=c(round(n/2),round(n/10),y[1],y[n]-y[1])
 #' args=list(y=y)
 #' fit = optim(param,
 #'             fn = minfun,
@@ -92,6 +91,8 @@
 #' @import Matrix
 #' @importFrom stats dgamma dnorm
 #' @importFrom Matrix sparseMatrix
+#' @importFrom stats
+
 rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to define the linear ramp model
   cmd = c("graph", "Q","mu", "initial", "log.norm.const", "log.prior", "quit"),
   theta = NULL)

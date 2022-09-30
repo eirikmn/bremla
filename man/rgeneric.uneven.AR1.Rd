@@ -27,11 +27,10 @@ This is intended for internal use only, but the documentation is included here i
 \donttest{
 set.seed(1)
 n=300
-timepoints = 1:n #should be scaled so that timepoints is between 0 and 1
-                   #(you can always transform back later, but this helps
-                   #avoiding to tune priors)
+timepoints = 1:n
 require(stats)
 require(INLA)
+require(numDeriv)
 sigma=1
 noise = stats::arima.sim(model=list(ar=c(0.2)),n=n,sd=sqrt(1-0.2^2))*sigma
 
@@ -53,7 +52,7 @@ minfun = function(param, args = NULL){
   return(sqrt(mse))
 }
 
-param=optparams
+param=c(round(n/2),round(n/10),y[1],y[n]-y[1])
 args=list(y=y)
 fit = optim(param,
             fn = minfun,
