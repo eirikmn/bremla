@@ -18,6 +18,7 @@ Prints summary.bremla S3 class.
 }
 \examples{
 \donttest{
+if(inlaloader()){
 require(stats)
 set.seed(1)
 n <- 1000
@@ -52,6 +53,7 @@ object = bremla_modelfitter(object)
 object = bremla_chronology_simulation(object, print.progress=TRUE)
 summary_object = summary(object)
 print(summary_object)
+}
 }
 
 }

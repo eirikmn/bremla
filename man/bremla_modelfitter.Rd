@@ -24,6 +24,7 @@ Fits the bremla linear regression model to observations.
 }
 \examples{
 \donttest{
+if(inlaloader()){
 require(stats)
 set.seed(1)
 n <- 1000
@@ -53,6 +54,7 @@ object = bremla_prepare(formula,data,nsims=5000,reference.label="simulated times
 object = bremla_modelfitter(object, print.progress=TRUE)
 summary(object)
 plot(object)
+}
 }
 }
 \seealso{

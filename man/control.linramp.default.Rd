@@ -33,7 +33,11 @@ linear ramp model fitting procedure for a given transition. The list contains th
    compute transition end point \code{t1} if \code{compute.t1} is \code{TRUE}.
    \item \code{rescale.y.factor} If proxies (y-axis) should be rescaled, this can be done using
    this command. \code{y_new = y_old*rescale.y.factor}.
-   \item \code{imp.fit} Boolean indicaating whether initial values for \code{inla} be computed using \code{optim}.
+   \item \code{imp.fit} Boolean indicating whether initial values for \code{inla} be computed using \code{optim}.
+  \item{\code{log.theta.prior}}{Function argument which returns the logarithmic value of the joint
+  prior of the rescaled hyperparameters \code{theta} used in the linear ramp model.
+  If \code{NULL} (default) then default priors  will be assumed (see code in
+  \code{rgeneric.r} file).}
    \item \code{h} Step length of optimization procedure in the \code{inla}-program.
    Default value is \code{0.01}.
    \item \code{ncores} Integer giving the number of cores used in the \code{inla}-program.

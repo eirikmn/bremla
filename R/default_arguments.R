@@ -64,6 +64,7 @@ control.fit.default <- function(){
     noise="ar1",
     method="inla",
     verbose=FALSE,
+    log.theta.prior=NULL,
     ncores=1,
     transform="identity"
     )
@@ -77,8 +78,8 @@ control.fit.default <- function(){
 #'   \item{\code{synchronized} }{Boolean indicating whether or not synchronization is to be performed.
 #'   Default value is \code{TRUE}, but this is set to \code{FALSE} if supplied tie-points are not found.}
 #'   \item{\code{nsims} }{Integer giving how many simulations should be generated. Default value is \code{10000}.}
-#'   \item{\code{ncores} }{Integer which sets the number of cores to be used in \code{\link{inla.posterior.sample}.}
-#'   Default value is \code{2}.}
+#'   \item{\code{ncores} }{Integer which sets the number of cores to be used to sample from
+#'   the joint posterior obtained by INLA. Default value is \code{2}.}
 #'   \item{\code{store.everything} }{Boolean indicating whether or not to store superfluous information
 #'   such as the simulated mean vectors (from fixed effects). Default \code{FALSE}.}
 #'   \item{\code{summary} }{List object with two items
@@ -182,7 +183,11 @@ synchronization.default <- function(){
 #'    compute transition end point \code{t1} if \code{compute.t1} is \code{TRUE}.
 #'    \item \code{rescale.y.factor} If proxies (y-axis) should be rescaled, this can be done using
 #'    this command. \code{y_new = y_old*rescale.y.factor}.
-#'    \item \code{imp.fit} Boolean indicaating whether initial values for \code{inla} be computed using \code{optim}.
+#'    \item \code{imp.fit} Boolean indicating whether initial values for \code{inla} be computed using \code{optim}.
+#'   \item{\code{log.theta.prior}}{Function argument which returns the logarithmic value of the joint
+#'   prior of the rescaled hyperparameters \code{theta} used in the linear ramp model.
+#'   If \code{NULL} (default) then default priors  will be assumed (see code in
+#'   \code{rgeneric.r} file).}
 #'    \item \code{h} Step length of optimization procedure in the \code{inla}-program.
 #'    Default value is \code{0.01}.
 #'    \item \code{ncores} Integer giving the number of cores used in the \code{inla}-program.
@@ -213,6 +218,7 @@ control.linramp.default <- function(){
       nsims=30000,
       rescale.y.factor=1,
       imp.fit=TRUE,
+      log.theta.prior=NULL,
       h=0.01,
       ncores=1,
       silent=FALSE,

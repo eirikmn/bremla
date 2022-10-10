@@ -32,6 +32,7 @@
 #' @keywords bremla
 #' @examples
 #' \donttest{
+#' if(inlaloader()){
 #' ## Simulation example
 #' require(stats)
 #' set.seed(1)
@@ -83,8 +84,8 @@
 #' summary(object)
 #' plot(object)
 #'
-#'
-#'
+#' }
+#' if(inlaloader()){
 #' ### Real data example ###
 #' require(stringr)
 #' data("event_intervals")
@@ -132,6 +133,7 @@
 #'                    print.progress=TRUE )
 #'   summary(object)
 #'   plot(object)
+#'   }
 #' }
 #' @export
 #' @import matrixStats

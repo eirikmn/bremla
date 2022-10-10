@@ -26,6 +26,7 @@ Produces simulations from the synchronized time scale given tie-point samples.
 }
 \examples{
 \donttest{
+if(inlaloader()){
 require(stats)
 set.seed(1)
 n <- 1000
@@ -67,6 +68,7 @@ object = tiepointsimmer(object)
 object = bremla_synchronized_simulation(object, print.progress=TRUE)
 summary(object)
 plot(object)
+}
 }
 }
 \seealso{

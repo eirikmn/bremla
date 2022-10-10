@@ -6,9 +6,9 @@
 \usage{
 \method{plot}{bremla}(
   x,
-  plot.ls = list(fitted = TRUE, legend = NULL, residuals = TRUE, histogram = TRUE,
-    qqplot = FALSE, acf = TRUE, xrev = FALSE, label.fit = NULL, label.res = NULL,
-    label.hist = NULL, label.qq = NULL, label.acf = NULL, merge = TRUE),
+  plot.ls = list(fitted = TRUE, legend = NULL, residuals = TRUE, histogram = TRUE, qqplot
+    = FALSE, acf = TRUE, xrev = FALSE, label.fit = NULL, label.res = NULL, label.hist =
+    NULL, label.qq = NULL, label.acf = NULL, merge = TRUE),
   plot.inla.posterior = list(posteriors = TRUE, label = NULL),
   plot.inlasims = list(plotsims = 0, legend = NULL, xrev = FALSE, label = NULL),
   plot.syncsims = list(plotsims = 0, legend = NULL, xrev = FALSE, label = NULL),
@@ -61,6 +61,7 @@ Plots results from bremla S3 class.
 }
 \examples{
 \donttest{
+if(inlaloader()){
 require(stats)
 set.seed(1)
 n <- 1000
@@ -95,7 +96,7 @@ object = bremla_modelfitter(object)
 object = bremla_chronology_simulation(object, print.progress=TRUE)
 summary(object)
 plot(object)
-
+}
 }
 
 }

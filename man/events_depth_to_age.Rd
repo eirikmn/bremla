@@ -23,6 +23,7 @@ of abrupt warming transitions events using Monte Carlo simulation.
 }
 \examples{
 \donttest{
+if(inlaloader()){
 require(stats)
 set.seed(1)
 n <- 1000
@@ -74,7 +75,7 @@ object = linrampfitter(object)
 object = events_depth_to_age(object,print.progress=TRUE)
 summary(object)
 plot(object)
-
+}
 }
 }
 \seealso{

@@ -63,6 +63,7 @@ Fits a regression model to the data and produces chronology simulations.
 }
 \examples{
 \donttest{
+if(inlaloader()){
 ## Simulation example
 require(stats)
 set.seed(1)
@@ -114,8 +115,8 @@ object = bremla(formula,data,nsims=5000,reference.label="simulated timescale",
 summary(object)
 plot(object)
 
-
-
+}
+if(inlaloader()){
 ### Real data example ###
 require(stringr)
 data("event_intervals")
@@ -163,6 +164,7 @@ object = bremla(formula,data,reference.label="GICC05",
                    print.progress=TRUE )
   summary(object)
   plot(object)
+  }
 }
 }
 \seealso{

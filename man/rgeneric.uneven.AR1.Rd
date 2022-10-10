@@ -25,12 +25,13 @@ This is intended for internal use only, but the documentation is included here i
 }
 \examples{
 \donttest{
+if(inlaloader()){
 set.seed(1)
 n=300
 timepoints = 1:n
 require(stats)
-require(INLA)
 require(numDeriv)
+require(INLA)
 sigma=1
 noise = stats::arima.sim(model=list(ar=c(0.2)),n=n,sd=sqrt(1-0.2^2))*sigma
 
@@ -73,7 +74,8 @@ model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,
                    tstart=timepoints[1],
                    tslutt=timepoints[n],
                    ystart=y[1],
-                   timepoints = timepoints)
+                   timepoints = timepoints,
+                   log.theta.prior=NULL)
 formula = y ~ -1+ f(idx, model=model.rgeneric)
 
 result = inla(formula,family="gaussian", data=data.frame(y=y,idx=as.integer(1:n)),
@@ -93,13 +95,13 @@ sd.mean = inla.emarginal(function(x)1/sqrt(exp(x)),result$marginals.hyperpar$`Th
 tau.mean = inla.emarginal(function(x)exp(x),result$marginals.hyperpar$`Theta5 for idx`)
 plot(timepoints,y,type="l",col="gray",xlab="Time",ylab="Observation")
 lines(timepoints,linramp(timepoints,t0=t0.mean,dt=dt.mean,y0=y0.mean,dy=dy.mean))
-
+}
 }
 
 
 }
 \seealso{
-\code{\link{inla},\link{linrampfitter}}
+\code{\link{linrampfitter}}
 }
 \author{
 Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}

@@ -12,6 +12,7 @@
 #'
 #' @examples
 #' \donttest{
+#' if(inlaloader()){
 #' require(stats)
 #' set.seed(1)
 #' n <- 1000
@@ -47,7 +48,7 @@
 #' summary(object)
 #' plot(object)
 #' }
-#'
+#'}
 #' @export
 #' @method summary bremla
 summary.bremla = function(object,
@@ -268,6 +269,7 @@ return(ut)
 #'
 #' @examples
 #' \donttest{
+#' if(inlaloader()){
 #' require(stats)
 #' set.seed(1)
 #' n <- 1000
@@ -302,6 +304,7 @@ return(ut)
 #' object = bremla_chronology_simulation(object, print.progress=TRUE)
 #' summary_object = summary(object)
 #' print(summary_object)
+#' }
 #' }
 #'
 #' @export

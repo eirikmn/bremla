@@ -24,6 +24,7 @@ Fits the linear ramp described by Erhardt et al. (2019) to proxy values using IN
 }
 \examples{
 \donttest{
+if(inlaloader()){
 require(stats)
 set.seed(1)
 n <- 1000
@@ -72,7 +73,7 @@ object = bremla_synchronized_simulation(object)
 object = linrampfitter(object,print.progress=TRUE)
 summary(object)
 plot(object)
-
+}
 }
 
 }

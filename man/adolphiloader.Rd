@@ -22,8 +22,10 @@ Load Adolphi tie-point distributions
 Returns the probability distributions for the tie-points given by Adolphi et al. (2018) and Muscheler et al. (2020)
 }
 \examples{
+if(inlaloader()){
 adolphipdfs = adolphiloader(tieshifts=c(11050,12050,13050,22050,42050))
 plot(adolphipdfs$tie1,type="l",xlab="Time (yb2k)",ylab="Density",main="Tie-point #1")
+}
 }
 \references{
 Adolphi, F., Bronk Ramsey, C., Erhardt, T., Edwards, R. L., Cheng, H., Turney, C. S. M., Cooper, A., Svensson, A., Rasmussen, S. O., Fischer, H., and Muscheler, R. (2018).

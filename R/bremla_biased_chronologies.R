@@ -15,6 +15,7 @@
 #' @keywords bremla bias
 #' @examples
 #' \donttest{
+#' if(inlaloader()){
 #' require(stats)
 #' set.seed(1)
 #' n <- 1000
@@ -51,6 +52,7 @@
 #'              print.progress=TRUE)
 #' summary(object)
 #' plot(object)
+#' }
 #' }
 #' @export
 #' @importFrom stats runif

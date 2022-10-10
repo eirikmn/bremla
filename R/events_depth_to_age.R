@@ -14,6 +14,7 @@
 #' @keywords bremla dating transition
 #' @examples
 #' \donttest{
+#' if(inlaloader()){
 #' require(stats)
 #' set.seed(1)
 #' n <- 1000
@@ -65,11 +66,9 @@
 #' object = events_depth_to_age(object,print.progress=TRUE)
 #' summary(object)
 #' plot(object)
-#'
+#'}
 #' }
 #' @export
-#' @import INLA
-#' @importFrom INLA inla.rgeneric.define inla.emarginal inla.smarginal
 #' @importFrom stats optim
 #'
 events_depth_to_age = function(object, control.transition_dating,print.progress=FALSE){
@@ -125,7 +124,7 @@ events_depth_to_age = function(object, control.transition_dating,print.progress=
               object$.args$synchronization$nsims)
   if(nsims > ncol(object$simulation$age))
     stop(paste0("Not enough samples from age-depth model (",ncol(object$simulation$age),", ",nsims, "needed)"))
-  z.sample = inla.rmarginal(nsims,object$linramp$param$t0$marg.t0)
+  z.sample = INLA::inla.rmarginal(nsims,object$linramp$param$t0$marg.t0)
 
   if(is.null(object$simulation)){
     warning("Cannot find simulations from age-depth model in 'agedepthmodel'!")
@@ -161,8 +160,8 @@ events_depth_to_age = function(object, control.transition_dating,print.progress=
 
 
 
-  dens = density(ysamps); Y0marg= cbind(dens$x,dens$y); colnames(Y0marg) = c("x","y"); Y0marg = inla.smarginal(Y0marg)
-  z.Y0 = inla.zmarginal(Y0marg,silent=TRUE)
+  dens = density(ysamps); Y0marg= cbind(dens$x,dens$y); colnames(Y0marg) = c("x","y"); Y0marg = INLA::inla.smarginal(Y0marg)
+  z.Y0 = INLA::inla.zmarginal(Y0marg,silent=TRUE)
 
   object$event_dating = list(samples = ysamps, mean = z.Y0$mean,sd=z.Y0$sd,q0.025=z.Y0$quant0.025,q0.5=z.Y0$quant0.5,q0.975=z.Y0$quant0.975)
 

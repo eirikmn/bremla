@@ -25,6 +25,7 @@
 #'
 #' @examples
 #' \donttest{
+#' if(inlaloader()){
 #' require(stats)
 #' set.seed(1)
 #' n <- 1000
@@ -59,11 +60,10 @@
 #' object = bremla_chronology_simulation(object, print.progress=TRUE)
 #' summary(object)
 #' plot(object)
-#'
+#'}
 #' }
 #'
 #' @export
-#' @importFrom INLA inla inla.tmarginal inla.zmarginal inla.ar.pacf2phi
 #' @importFrom grDevices dev.cur dev.new dev.off
 #' @importFrom graphics abline hist legend lines par
 #' @importFrom stats qqline qqnorm

@@ -16,6 +16,7 @@
 #' @keywords bremla linear_ramp
 #' @examples
 #'\donttest{
+#'if(inlaloader()){
 #' require(stats)
 #' set.seed(1)
 #' n <- 1000
@@ -64,12 +65,11 @@
 #' object = linrampfitter(object,print.progress=TRUE)
 #' summary(object)
 #' plot(object)
-#'
+#'}
 #'}
 #'
 #' @export
-#' @import INLA numDeriv
-#' @importFrom INLA inla.rgeneric.define inla.emarginal inla.smarginal
+#' @import numDeriv
 #' @importFrom stats optim
 #' @importFrom numDeriv grad
 #'
@@ -176,10 +176,15 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
   if(print.progress) cat("Fitting linear ramp model in INLA using rgeneric model specification...\n",sep="")
   ## creating linear ramp INLA model using rgeneric framework. Requires further specification, see "rgeneric.uneven" function
   time.startinla = Sys.time()
-  model.rgeneric = inla.rgeneric.define(rgeneric.uneven.AR1,n=n,tstart=timepoints[1],tslutt=timepoints[n],ystart=y[1],timepoints = timepoints)
+  model.rgeneric = INLA::inla.rgeneric.define(rgeneric.uneven.AR1,n=n,
+                                              tstart=timepoints[1],
+                                              tslutt=timepoints[n],
+                                              ystart=y[1],
+                                              timepoints = timepoints,
+                                              log.theta.prior=control.linramp$log.theta.prior)
   formula = y ~ -1+ f(idx, model=model.rgeneric)
 
-  r = inla(formula,family="gaussian", data=data.frame(y=df0$y,idx=as.integer(df0$time)),
+  r = INLA::inla(formula,family="gaussian", data=data.frame(y=df0$y,idx=as.integer(df0$time)),
            control.mode=list(theta=init,
                              restart=TRUE),
            num.threads = control.linramp$ncores,
@@ -194,37 +199,37 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
   object$linramp = list(timepoints=timepoints,data=df0,inlafit=r)
 
   ## compute posterior marginals and posterior marginal means of z^* = t0 (transition onset), dt (transition duration), y0 (initial ramp level), dy (change in ramp level) sigma (amplitude of AR(1) noise) and tau (parameter for correlation of AR(1) noise)
-  t0=inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta1 for idx`); dt=inla.emarginal(function(x)exp(x),r$marginals.hyperpar$`Theta2 for idx`);y0=inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta3 for idx`); dy=inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta4 for idx`);rho = inla.emarginal(function(x)2/(1+exp(-x))-1,r$marginals.hyperpar$`Theta5 for idx`); sigma = inla.emarginal(function(x)1/sqrt(exp(x)),r$marginals.hyperpar$`Theta6 for idx`)
+  t0=INLA::inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta1 for idx`); dt=INLA::inla.emarginal(function(x)exp(x),r$marginals.hyperpar$`Theta2 for idx`);y0=INLA::inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta3 for idx`); dy=INLA::inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta4 for idx`);rho = INLA::inla.emarginal(function(x)2/(1+exp(-x))-1,r$marginals.hyperpar$`Theta5 for idx`); sigma = INLA::inla.emarginal(function(x)1/sqrt(exp(x)),r$marginals.hyperpar$`Theta6 for idx`)
   muvek = linramp(timepoints,t0=t0,dt=dt,y0=y0,dy=dy)
 
   t0mean = r$summary.hyperpar$mean[1]; t0lower = r$summary.hyperpar$`0.025quant`[1];t0upper = r$summary.hyperpar$`0.975quant`[1]
   #margt0 = inla.tmarginal(function(x)df$age[1]+x/(n-1)*(df$age[n]-df$age[1]),r$marginals.hyperpar$`Theta1 for idx`);
-  margt0 = inla.tmarginal(function(x)df0$x[1]+x/(n-1)*(df0$x[n]-df0$x[1]),r$marginals.hyperpar$`Theta1 for idx`);
-  z.t0 = inla.zmarginal(margt0,silent=TRUE)
+  margt0 = INLA::inla.tmarginal(function(x)df0$x[1]+x/(n-1)*(df0$x[n]-df0$x[1]),r$marginals.hyperpar$`Theta1 for idx`);
+  z.t0 = INLA::inla.zmarginal(margt0,silent=TRUE)
 
   object$linramp$param$t0 = list(marg.t0=margt0,mean=z.t0$mean,sd=z.t0$sd,q0.025=z.t0$quant0.025,q0.5=z.t0$quant0.5,q0.975=z.t0$quant0.975)
   if((abs(r$summary.hyperpar$mean[2])>1000) || (r$summary.hyperpar$sd[2]>1000)){
     margdt=NA
     margdtpos=NA
   }else{
-    margdt = inla.tmarginal(function(x)exp(x)/(n-1)*(df0$x[n]-df0$x[1]),inla.smarginal(r$marginals.hyperpar$`Theta2 for idx`))
+    margdt = INLA::inla.tmarginal(function(x)exp(x)/(n-1)*(df0$x[n]-df0$x[1]),INLA::inla.smarginal(r$marginals.hyperpar$`Theta2 for idx`))
     margdtpos = data.frame(x=-margdt$x,y=margdt$y)
-    z.dt = inla.zmarginal(margdt,silent=TRUE)
-    z.dtpos = inla.zmarginal(margdtpos,silent=TRUE)
+    z.dt = INLA::inla.zmarginal(margdt,silent=TRUE)
+    z.dtpos = INLA::inla.zmarginal(margdtpos,silent=TRUE)
     object$linramp$param$dt = list(marg.dt=margdt,mean=z.dt$mean,sd=z.dt$sd,q0.025=z.dt$quant0.025,q0.5=z.dt$quant0.5,q0.975=z.dt$quant0.975)
     object$linramp$param$dtpos = list(marg.dtpos=margdtpos,mean=z.dtpos$mean,sd=z.dtpos$sd,q0.025=z.dtpos$quant0.025,q0.5=z.dtpos$quant0.5,q0.975=z.dtpos$quant0.975)
   }
-  margy0 = inla.tmarginal(function(x)x,inla.smarginal(r$marginals.hyperpar$`Theta3 for idx`))
-  margdy = inla.tmarginal(function(x)x,inla.smarginal(r$marginals.hyperpar$`Theta4 for idx`))
-  z.y0 = inla.zmarginal(margy0,silent=TRUE)
-  z.dy = inla.zmarginal(margdy,silent=TRUE)
+  margy0 = INLA::inla.tmarginal(function(x)x,INLA::inla.smarginal(r$marginals.hyperpar$`Theta3 for idx`))
+  margdy = INLA::inla.tmarginal(function(x)x,INLA::inla.smarginal(r$marginals.hyperpar$`Theta4 for idx`))
+  z.y0 = INLA::inla.zmarginal(margy0,silent=TRUE)
+  z.dy = INLA::inla.zmarginal(margdy,silent=TRUE)
   object$linramp$param$y0 = list(marg.y0=margy0,mean=z.y0$mean,sd=z.y0$sd,q0.025=z.y0$quant0.025,q0.5=z.y0$quant0.5,q0.975=z.y0$quant0.975)
   object$linramp$param$dy = list(marg.dy=margdy,mean=z.dy$mean,sd=z.dy$sd,q0.025=z.dy$quant0.025,q0.5=z.dy$quant0.5,q0.975=z.dy$quant0.975)
 
-  margsigma = inla.tmarginal(function(x)1/sqrt(exp(x)),inla.smarginal(r$marginals.hyperpar$`Theta5 for idx`))
-  margtau = inla.tmarginal(function(x)exp(x),inla.smarginal(r$marginals.hyperpar$`Theta6 for idx`))
-  z.sigma = inla.zmarginal(margsigma,silent=TRUE)
-  z.tau = inla.zmarginal(margtau,silent=TRUE)
+  margsigma = INLA::inla.tmarginal(function(x)1/sqrt(exp(x)),INLA::inla.smarginal(r$marginals.hyperpar$`Theta5 for idx`))
+  margtau = INLA::inla.tmarginal(function(x)exp(x),INLA::inla.smarginal(r$marginals.hyperpar$`Theta6 for idx`))
+  z.sigma = INLA::inla.zmarginal(margsigma,silent=TRUE)
+  z.tau = INLA::inla.zmarginal(margtau,silent=TRUE)
   object$linramp$param$sigma = list(marg.sigma=margsigma,mean=z.sigma$mean,sd=z.sigma$sd,q0.025=z.sigma$quant0.025,q0.5=z.sigma$quant0.5,q0.975=z.sigma$quant0.975)
   object$linramp$param$tau = list(marg.sigma=margtau,mean=z.tau$mean,sd=z.tau$sd,q0.025=z.tau$quant0.025,q0.5=z.tau$quant0.5,q0.975=z.tau$quant0.975)
 
@@ -237,7 +242,7 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
 
   if(control.linramp$nsims>0 || control.linramp$nsims>0){
     nsims = max(control.linramp$nsims,control.linramp$nsims)
-    samps=inla.hyperpar.sample(nsims,object$linramp$inlafit)
+    samps=INLA::inla.hyperpar.sample(nsims,object$linramp$inlafit)
 
     hpars = matrix(NA,nrow = nsims,ncol=5)
     hpars[,1:2]=samps[,3:4] #y0,dy
@@ -259,7 +264,7 @@ linrampfitter = function(object,control.linramp,print.progress=FALSE){
 
     t1dens = density(t1sims)
     margt1 = cbind(t1dens$x,t1dens$y); colnames(margt1) = c("x","y")
-    z.t1 = inla.zmarginal(margt1,silent=TRUE)
+    z.t1 = INLA::inla.zmarginal(margt1,silent=TRUE)
     object$linramp$param$t1 = list(marginal=margt1,samples = t1sims,mean=z.t1$mean,sd=z.t1$sd,q0.025=z.t1$quant0.025,q0.5=z.t1$quant0.5,q0.975=z.t1$quant0.975)
   }
   if(control.linramp$nsims>0){

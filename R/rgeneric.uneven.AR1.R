@@ -10,17 +10,18 @@
 #'
 #' @return When used an an input argument for \code{inla.rgeneric.define} this will return a model eligible to be used within the R-INLA framework (see example).
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
-#' @seealso \code{\link{inla},\link{linrampfitter}}
+#' @seealso \code{\link{linrampfitter}}
 #' @keywords bremla rgeneric inla
 #'
 #' @examples
 #' \donttest{
+#' if(inlaloader()){
 #' set.seed(1)
 #' n=300
 #' timepoints = 1:n
 #' require(stats)
-#' require(INLA)
 #' require(numDeriv)
+#' require(INLA)
 #' sigma=1
 #' noise = stats::arima.sim(model=list(ar=c(0.2)),n=n,sd=sqrt(1-0.2^2))*sigma
 #'
@@ -63,7 +64,8 @@
 #'                    tstart=timepoints[1],
 #'                    tslutt=timepoints[n],
 #'                    ystart=y[1],
-#'                    timepoints = timepoints)
+#'                    timepoints = timepoints,
+#'                    log.theta.prior=NULL)
 #' formula = y ~ -1+ f(idx, model=model.rgeneric)
 #'
 #' result = inla(formula,family="gaussian", data=data.frame(y=y,idx=as.integer(1:n)),
@@ -83,7 +85,7 @@
 #' tau.mean = inla.emarginal(function(x)exp(x),result$marginals.hyperpar$`Theta5 for idx`)
 #' plot(timepoints,y,type="l",col="gray",xlab="Time",ylab="Observation")
 #' lines(timepoints,linramp(timepoints,t0=t0.mean,dt=dt.mean,y0=y0.mean,dy=dy.mean))
-#'
+#'}
 #'}
 #'
 #'
@@ -91,7 +93,6 @@
 #' @import Matrix
 #' @importFrom stats dgamma dnorm
 #' @importFrom Matrix sparseMatrix
-#' @importFrom stats
 
 rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to define the linear ramp model
   cmd = c("graph", "Q","mu", "initial", "log.norm.const", "log.prior", "quit"),
@@ -190,25 +191,32 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
       tslutt=get("tslutt",envir)
       tstart=get("tstart",envir)
       ystart=get("ystart",envir)
+      log.theta.prior=get("log.theta.prior",envir)
       # rescale.y=get("rescale.y",envir)
     }
-    params = interpret.theta()
 
-    #log-priors are given for internal parametrisation using the change of variables theorem
+    if(!is.null(log.theta.prior)){
+      lprior = log.theta.prior(theta)
+    }else{
+      params = interpret.theta()
 
-    lprior = dnorm(theta[1],mean=round(0.5*(tslutt+tstart)),sd=50,log=TRUE) #t0
-    lprior = lprior + dgamma(exp(theta[2]),shape=1.0,rate=0.02,log=TRUE) + theta[2] #dt
-    # if(rescale.y){
-    #   lprior = lprior + dnorm(theta[3],mean=ystart,sd=0.025,log=TRUE) #y0
-    #   lprior = lprior + dnorm(theta[4],mean=1-ystart,sd=0.01,log=TRUE) #dy
-    #   lprior = lprior + dgamma(exp(theta[5]),1,rate = 3,log=TRUE) + theta[6] #tau/rho
-    #   lprior = lprior + dgamma(exp(theta[6]),0.1,rate = 1,log=TRUE) + theta[6] #sigma/kappa
-    # }else{
+      #log-priors are given for internal parametrisation using the change of variables theorem
+
+      lprior = dnorm(theta[1],mean=round(0.5*(tslutt+tstart)),sd=50,log=TRUE) #t0
+      lprior = lprior + dgamma(exp(theta[2]),shape=1.0,rate=0.02,log=TRUE) + theta[2] #dt
+      # if(rescale.y){
+      #   lprior = lprior + dnorm(theta[3],mean=ystart,sd=0.025,log=TRUE) #y0
+      #   lprior = lprior + dnorm(theta[4],mean=1-ystart,sd=0.01,log=TRUE) #dy
+      #   lprior = lprior + dgamma(exp(theta[5]),1,rate = 3,log=TRUE) + theta[6] #tau/rho
+      #   lprior = lprior + dgamma(exp(theta[6]),0.1,rate = 1,log=TRUE) + theta[6] #sigma/kappa
+      # }else{
       lprior = lprior + dnorm(theta[3],mean=ystart,sd=5,log=TRUE) #y0
       lprior = lprior + dnorm(theta[4],mean=0,sd=10.0,log=TRUE) #dy
       lprior = lprior + dgamma(exp(theta[5]),2.5,rate = 0.15,log=TRUE) + theta[6] #tau/rho
       lprior = lprior + dgamma(exp(theta[6]),2,rate = 0.15,log=TRUE) + theta[6] #sigma/kappa
-    # }
+      # }
+    }
+
     return (lprior)
   }
 

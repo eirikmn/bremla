@@ -21,6 +21,7 @@ Computes posterior marginal mean and uncertainty intervals from simulations.
 }
 \examples{
 \donttest{
+if(inlaloader()){
 require(stats)
 set.seed(1)
 n <- 1000
@@ -56,7 +57,7 @@ object = bremla_chronology_simulation(object)
 object = bremla_simulationsummarizer(object,sync=FALSE,print.progress=TRUE)
 summary(object)
 plot(object)
-
+}
 }
 }
 \seealso{

@@ -16,6 +16,7 @@
 #'
 #' @examples
 #' \donttest{
+#' if(inlaloader()){
 #' require(stats)
 #' set.seed(1)
 #' n <- 1000
@@ -50,11 +51,10 @@
 #' object = bremla_chronology_simulation(object, print.progress=TRUE)
 #' summary(object)
 #' plot(object)
+#' }
 #'}
 #'
 #' @export
-#' @import INLA
-#' @importFrom INLA inla.hyperpar.sample inla.tmarginal inla.zmarginal inla.ar.pacf2phi
 #' @importFrom stats acf arima arima.sim as.formula rnorm
 #' @importFrom parallel detectCores
 bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE){
@@ -92,18 +92,18 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
 
 
     if(tolower(noise) %in% c(0,"ar(0)","ar0","iid","independent")){
-      hypersamples = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
       object$simulation = list(sigma = 1/sqrt(hypersamples[,1]))
     }else if (tolower(noise) %in% c(1,"ar1","ar(1)")){
-      hypersamples = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
       object$simulation = list(sigma = 1/sqrt(hypersamples[,1]), phi=hypersamples[,2])
 
     }else if (tolower(noise) %in% c(2,"ar2","ar(2)")){
-      hypersamples = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
       p=2
-      hypersamplesar2 = inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+      hypersamplesar2 = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
       phii = hypersamplesar2[, 2L:(2L+(p-1L))]
-      phis = apply(phii, 1L, inla.ar.pacf2phi)
+      phis = apply(phii, 1L, INLA::inla.ar.pacf2phi)
       object$simulation = list(sigma = 1/sqrt(hypersamples[,1]),phi1=phis[1,],phi2=phis[2,])
     }
 
@@ -132,7 +132,7 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
     # }
     #latentsamples = inla.posterior.sample(nsims,object$fitting$fit,selection=latentselection,verbose=FALSE,add.names=FALSE)
     ncores_postsamp = max(1,object$.args$control.sim$ncores)
-    latentsamples = inla.posterior.sample(nsims,object$fitting$inla$fit,
+    latentsamples = INLA::inla.posterior.sample(nsims,object$fitting$inla$fit,
                                           selection=latentselection,verbose=FALSE,
                                           add.names=FALSE,num.threads = ncores_postsamp)
 

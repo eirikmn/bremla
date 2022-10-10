@@ -15,6 +15,7 @@
 #' @keywords bremla fitting
 #' @examples
 #' \donttest{
+#' if(inlaloader()){
 #' require(stats)
 #' set.seed(1)
 #' n <- 1000
@@ -45,8 +46,8 @@
 #' summary(object)
 #' plot(object)
 #' }
+#' }
 #' @export
-#' @importFrom INLA inla inla.tmarginal inla.zmarginal inla.ar.pacf2phi
 #' @importFrom stats acf arima density lm sd
 
 bremla_modelfitter = function(object, control.fit,
@@ -162,7 +163,7 @@ bremla_modelfitter = function(object, control.fit,
     my.control.fixed$prec=1
 
     ## fit using INLA
-    inlafit = inla(object$formula, family="gaussian",data=object$data,
+    inlafit = INLA::inla(object$formula, family="gaussian",data=object$data,
                    control.family=list(hyper=list(prec=list(initial=12, fixed=TRUE))) ,
                    #control.fixed=my.control.fixed,
                    num.threads = object$.args$control.fit$ncores,
@@ -185,22 +186,22 @@ bremla_modelfitter = function(object, control.fit,
     }
 
     ## extract posteriors for hyperparameters
-    posterior_sigma = inla.tmarginal(function(x)1/sqrt(x),inlafit$marginals.hyperpar$`Precision for idy`); zmarg_sigma=inla.zmarginal(posterior_sigma,silent=TRUE)
+    posterior_sigma = INLA::inla.tmarginal(function(x)1/sqrt(x),inlafit$marginals.hyperpar$`Precision for idy`); zmarg_sigma=INLA::inla.zmarginal(posterior_sigma,silent=TRUE)
     object$fitting$inla$hyperparameters = list(posteriors=list(sigma_epsilon=posterior_sigma))
     object$fitting$inla$hyperparameters$results$sigma_epsilon = zmarg_sigma
     if(tolower(object$.args$control.fit$noise)%in% c(1,"ar1","ar(1)") ){
-      posterior_phi = inlafit$marginals.hyperpar$`Rho for idy`; zmarg_phi = inla.zmarginal(posterior_phi,silent=TRUE)
+      posterior_phi = inlafit$marginals.hyperpar$`Rho for idy`; zmarg_phi = INLA::inla.zmarginal(posterior_phi,silent=TRUE)
       object$fitting$inla$hyperparameters$posteriors$phi = posterior_phi
       object$fitting$inla$hyperparameters$results$phi = zmarg_phi
 
     }else if(object$.args$control.fit$noise %in% c(2,"ar2","ar(2)") ){
-      hypersamples = inla.hyperpar.sample(50000,inlafit)
+      hypersamples = INLA::inla.hyperpar.sample(50000,inlafit)
 
       p=2
       phii = hypersamples[, 2L:(2L+(p-1L))]
-      phis = apply(phii, 1L, inla.ar.pacf2phi)
-      posterior_phi1 = cbind(density(phis[1,])$x,density(phis[1,])$y);colnames(posterior_phi1)=c("x","y"); zmarg_phi1 = inla.zmarginal(posterior_phi1,silent=TRUE)
-      posterior_phi2 = cbind(density(phis[2,])$x,density(phis[2,])$y);colnames(posterior_phi2)=c("x","y"); zmarg_phi2=inla.zmarginal(posterior_phi2,silent=TRUE)
+      phis = apply(phii, 1L, INLA::inla.ar.pacf2phi)
+      posterior_phi1 = cbind(density(phis[1,])$x,density(phis[1,])$y);colnames(posterior_phi1)=c("x","y"); zmarg_phi1 = INLA::inla.zmarginal(posterior_phi1,silent=TRUE)
+      posterior_phi2 = cbind(density(phis[2,])$x,density(phis[2,])$y);colnames(posterior_phi2)=c("x","y"); zmarg_phi2=INLA::inla.zmarginal(posterior_phi2,silent=TRUE)
       object$fitting$inla$hyperparameters$posteriors$phi1 = posterior_phi1
       object$fitting$inla$hyperparameters$results$phi1 = zmarg_phi1
       object$fitting$inla$hyperparameters$posteriors$phi2 = posterior_phi2

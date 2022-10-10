@@ -127,6 +127,7 @@ which.index = function(events, record,suppress=TRUE){ ## Finds which indices of 
 #'
 #' @examples
 #' \donttest{
+#' if(inlaloader()){
 #' require(stats)
 #' set.seed(1)
 #' n <- 1000
@@ -162,11 +163,10 @@ which.index = function(events, record,suppress=TRUE){ ## Finds which indices of 
 #' object = bremla_simulationsummarizer(object,sync=FALSE,print.progress=TRUE)
 #' summary(object)
 #' plot(object)
-#'
+#' }
 #' }
 #' @export
-#' @importFrom matrixStats rowMeans2 rowSds rowMedians
-#' @importFrom INLA inla.hpdmarginal
+
 #' @importFrom stats median
 bremla_simulationsummarizer = function(object,sync=TRUE,print.progress=FALSE){
 
@@ -204,8 +204,8 @@ bremla_simulationsummarizer = function(object,sync=TRUE,print.progress=FALSE){
         dens = density(samples[i,])
 
 
-        lower[i] = inla.hpdmarginal(0.95,dens)[1]
-        upper[i] = inla.hpdmarginal(0.95,dens)[2]
+        lower[i] = INLA::inla.hpdmarginal(0.95,dens)[1]
+        upper[i] = INLA::inla.hpdmarginal(0.95,dens)[2]
       }
     }
   }else{
@@ -343,8 +343,10 @@ skewsampler = function(n,mode=0,sdL=1,sdU=1,log=FALSE,plothist=list(compute=FALS
 #' @param x.ref numeric. Gives reference value on the x-axis when distributions are plotted.
 #' @return returns a list containing the pdfs for each tie-point.
 #' @examples
+#' if(inlaloader()){
 #' adolphipdfs = adolphiloader(tieshifts=c(11050,12050,13050,22050,42050))
 #' plot(adolphipdfs$tie1,type="l",xlab="Time (yb2k)",ylab="Density",main="Tie-point #1")
+#' }
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @references Adolphi, F., Bronk Ramsey, C., Erhardt, T., Edwards, R. L., Cheng, H., Turney, C. S. M., Cooper, A., Svensson, A., Rasmussen, S. O., Fischer, H., and Muscheler, R. (2018).
 #' Connecting the Greenland ice-core and U/Th timescales via cosmogenic radionuclides: testing the synchroneity of Dansgaard-Oeschger events,
@@ -380,7 +382,7 @@ adolphiloader = function(tieshifts=numeric(5), plotdens=FALSE, x.ref=NULL){
     }
     for(i in 1:5){
       plot(returlist[[i]],type="l",main=paste0("Tie-point ",i),xlab=xlab,ylab="Density")
-      zmarg = inla.zmarginal(returlist[[i]],silent=TRUE)
+      zmarg = INLA::inla.zmarginal(returlist[[i]],silent=TRUE)
       abline(v=zmarg$mean)
       abline(v=zmarg$quant0.025,col="gray")
       abline(v=zmarg$quant0.975,col="gray")
@@ -403,9 +405,11 @@ adolphiloader = function(tieshifts=numeric(5), plotdens=FALSE, x.ref=NULL){
 #' @param plothist list object describing if and how histogram of samples should be plotted
 #' @return returns a list containing the pdfs for each tie-point.
 #' @examples
+#' if(inlaloader()){
 #' tieshifts= c(11050,12050,13050,22050,42050)
 #' samples = adolphi_tiepoint_simmer(nsims=2000,tieshifts=tieshifts)
 #' hist(samples[,3],col="orange",freq=0,breaks=50,main="Tie-point 3",xlab="Age (yb2k)")
+#' }
 #' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
 #' @keywords adolphi tiepoint pdf
 #' @export
@@ -419,7 +423,7 @@ adolphi_tiepoint_simmer = function(nsims=10000,tieshifts = numeric(5), plotdens=
   tie_samples = matrix(NA,nrow=nsims,ncol=5)
 
   for(i in 1:5){
-    sims = inla.rmarginal(nsims,tie_pdfs[[i]])
+    sims = INLA::inla.rmarginal(nsims,tie_pdfs[[i]])
     tie_samples[,i] = sims
   }
 
@@ -683,3 +687,30 @@ Qymaker = function(Qx){
   S = sparseMatrix(i=ii,j=jj,x=xx)
   return(t(S)%*%Qx%*%S)
 }
+
+
+
+
+#' Load INLA safely
+#' Wrapper function that loads the INLA package for use in tests.
+#'
+#' @return Boolean. \code{TRUE} if INLA was loaded successfully, \code{FALSE} otherwise.
+#'
+#' @examples
+#' \dontrun{
+#' if(inlaloader()){
+#'     #Code that depend on INLA
+#'   }
+#' }
+#' @author Eirik Myrvoll-Nilsen, \email{eirikmn91@gmail.com}
+#' @export
+inlaloader = function(){
+  if(requireNamespace("INLA",quietly=TRUE)){
+    return(TRUE)
+  }else{
+    FALSE
+  }
+}
+
+
+

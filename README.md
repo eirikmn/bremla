@@ -6,6 +6,8 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/eirikmn/bremla/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/eirikmn/bremla/actions/workflows/R-CMD-check.yaml)
+[![License: GPL
+v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 <!-- badges: end -->
 
 This Repository contains the Bremla package for uncertainty
@@ -36,9 +38,10 @@ To get started, see the documentation ‘?bremla’ and the associated
 example.
 
 The package includes the NGRIP/GICC05 data set ‘NGRIP_d18O_and_dust_5cm’
-downloaded from [Centre for Ice and Climate](iceandclimate.nbi.ku.dk) at
-the Niels Bohr Institute of the University of Copenhagen, Denmark, and
-the table of stadial-interstadial events presented by [Rasmussen et
+downloaded from [Centre for Ice and
+Climate](https://www.iceandclimate.nbi.ku.dk) at the Niels Bohr
+Institute of the University of Copenhagen, Denmark, and the table of
+stadial-interstadial events presented by [Rasmussen et
 al. (2014)](https://www.sciencedirect.com/science/article/pii/S0277379114003485).
 Also includes the tie-point presented in [Adolphi et
 al. (2018)](https://cp.copernicus.org/articles/14/1755/2018/) and
@@ -80,19 +83,14 @@ results = bremla(formula,data,reference.label="GICC05",
                 synchronization=list(method="adolphi"),
                 control.fit=list(method="inla"),
                 control.sim=list(synchronized=TRUE) )
-#> Synchronous age simulation 1000/5000. Elapsed time: 21.6635 seconds...
-#> Synchronous age simulation 2000/5000. Elapsed time: 38.06496 seconds...
-#> Synchronous age simulation 3000/5000. Elapsed time: 55.62301 seconds...
-#> Synchronous age simulation 4000/5000. Elapsed time: 71.59768 seconds...
-#> Synchronous age simulation 5000/5000. Elapsed time: 89.39685 seconds...
 summary(results)
 #> 
 #> Call:
-#> render("README.Rmd")
+#> rmarkdown::render("README.Rmd")
 #> 
 #> Time used:
 #>   Model fitting Chron. sampling           Total 
-#>         29.8432        124.3164        157.2629 
+#>         17.8735        135.2335        156.3269 
 #> 
 #> The fixed component is explained by linear predictor: 
 #> dy ~ -1 + depth2 + psi_fill(degree=1, n_events=69)
@@ -101,8 +99,8 @@ summary(results)
 #> 
 #> The model is fitted using INLA, with following estimates for the hyperparameters:
 #>                 mean     sd quant0.025 quant0.25 quant0.5 quant0.75 quant0.975
-#> sigma_epsilon 0.4348 0.0025     0.4298    0.4330   0.4347    0.4365     0.4397
-#> phi           0.2159 0.0067     0.2027    0.2113   0.2159    0.2204     0.2289
+#> sigma_epsilon 0.4341 0.0024     0.4294    0.4325   0.4341    0.4357     0.4388
+#> phi           0.2157 0.0070     0.2019    0.2110   0.2158    0.2204     0.2292
 #> 
 #> Simulating 5000 chronologies, using GICC05 as reference.
 #> 
