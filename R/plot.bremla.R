@@ -258,10 +258,23 @@ plot.bremla = function(x,
         fullpd = data.frame(depth = x$data$depth)
       }
 
+      if(!is.null(x$.args$x.label)){
+        x.label = x$.args$x.label
+      }else{
+        x.label="Depth"
+      }
+
+      if(!is.null(x$.args$y.label)){
+        y.label = x$.args$y.label
+      }else{
+        y.label="Age - original time scale"
+      }
+
       gg2 = ggplot(data=fullpd,aes(x=.data$depth)) +
         geom_line(aes(y=0),color="blue",linetype="dotted",size=0.2)+
-        theme_bw()+ylab("Estimated age - reference (years)")+
-        xlab("NGRIP depth (m)")
+        theme_bw()+
+        ylab(y.label)+
+        xlab(x.label)
 
       if(!is.null(x$simulation$summary)){
         gg2 = gg2 +
@@ -374,10 +387,23 @@ plot.bremla = function(x,
         fullpd = data.frame(depth = x$data$depth[free_indexes])
       }
 
+      if(!is.null(x$.args$x.label)){
+        x.label = x$.args$x.label
+      }else{
+        x.label="Depth"
+      }
+
+      if(!is.null(x$.args$y.label)){
+        y.label = x$.args$y.label
+      }else{
+        y.label="Age - original time scale"
+      }
+
       gg2 = ggplot(data=fullpd,aes(x=.data$depth)) +
         geom_line(aes(y=0),color="blue",linetype="dotted",size=0.2)+
-        theme_bw()+ylab("Estimated age - reference (years)")+
-        xlab("NGRIP depth (m)")
+        theme_bw()+
+        ylab(y.label)+
+        xlab(x.label)
 
       if(!is.null(x$simulation$summary_sync)){
         gg2 = gg2+geom_line(aes(y=.data$medians))+
@@ -394,7 +420,7 @@ plot.bremla = function(x,
                                    col="magenta")
         }else{
           gg2 = gg2 + geom_point(data=data.frame(tiedepths = x$data$depth[tie_indexes],
-                                                 tiemid = x$simulation$summary_sync$median),
+                                                 tiemid = x$simulation$summary_sync$median[tie_indexes]-ageref_tie),
                                  aes(x=.data$tiedepths,y=.data$tiemid),
                                  color="magenta")
         }

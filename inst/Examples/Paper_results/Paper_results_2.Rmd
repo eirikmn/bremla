@@ -471,6 +471,119 @@ The package includes the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm' downloa
 
 Warning: The provided real data example generates several thousand simulated chronologies with individual lengths exceeding 18,000. More if synchronized chronologies is also computed. This will require a significant amount of memory. If needed, reduce the number of samples generated or free up memory before use.
 
+## Illustration example
+
+The data used to generate the illustrative examples in the paper is as follows.
+
+```{r illustrationexample}
+rm(list=ls())
+require(stats)
+library(ggplot2)
+set.seed(123)
+n=800
+y0 = 0
+z0 = 0
+phi=0.8; sigma=1.2
+depth = z0+seq(from=1,to=n,length.out=n)
+
+covariate = arima.sim(model=list(ar=c(0.99)),n=n)
+noise = sigma*arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2))
+
+dy = 10 + depth*5/n+covariate+noise
+y = y0+cumsum(dy)
+
+data=data.frame(age=c(y0,y),depth=c(z0,depth),dy=c(0,as.numeric(dy)),covariate=c(0,covariate))
+#data=rbind(c(y0,z0,0,0),df)
+formula=dy~ 1 + depth + covariate 
+nsims = 10000
+
+# Unsynchronized
+res = bremla(formula,data,reference.label="simulated time scale",nsims=nsims,
+             control.fit=list(noise="ar1"),
+             x.label="Depth",
+             y.label="Ensemble age - observed age",
+             control.sim = list(synchronized=FALSE,
+                                nsims=nsims))
+
+library(ggplot2)
+orichron = res$data$age
+ggd = data.frame(depth=res$data$depth,
+                 mean = res$simulation$summary$mean-orichron,
+                 lower = res$simulation$summary$lower-orichron,
+                 upper = res$simulation$summary$upper-orichron)
+ggp = ggplot(data=ggd,aes(depth))+theme_bw()+xlab("Depth")+ylab("Ensemble age - observed age")+
+  geom_ribbon(aes(ymin=lower,ymax=upper),col="red",fill="red",alpha=0.3,size=0.7)+
+  geom_line(aes(y=mean),col="blue",size=0.7)
+# plot(res)
+#ggsave("illustrative-unsync.eps",device=cairo_ps,width=4800,height=2000,units="px")
+
+# Fixed tie-points
+ntie = 3
+tiesims = matrix(NA,nrow=nsims,ncol=ntie)
+tiedepths = c(100,300,600)
+tieoffset = c(-50,0,100)
+#tieage = c(450,3000,8500)
+tieage = y[tiedepths]+tieoffset
+
+for(i in 1:ntie){
+  tiesims[,i] = rep(tieage[i],nsims)
+}
+
+res2 = tiepointsimmer(res,synchronization = list(locations=tiedepths,locations_unit="depth",
+                       samples = tiesims)
+               )
+
+res2 = bremla_synchronized_simulation(res2,control.sim=list(synchronized=TRUE))
+
+ggd = data.frame(depth=res2$data$depth,
+                 mean = res2$simulation$summary_sync$mean-orichron,
+                 lower = res2$simulation$summary_sync$lower-orichron,
+                 upper = res2$simulation$summary_sync$upper-orichron)
+
+oritie = orichron[tiedepths]
+ggd2 = data.frame(depth=res2$tie_points$locations,
+                  mean=res2$simulation$summary_sync$mean[tiedepths]-oritie)
+
+ggp = ggplot(data=ggd,aes(depth))+theme_bw()+xlab("Depth")+ylab("Ensemble age - observed age")+
+  geom_ribbon(aes(ymin=lower,ymax=upper),col="red",fill="red",alpha=0.3,size=0.7)+
+  geom_line(aes(y=mean),col="blue",size=0.7)+
+  geom_point(data=ggd2,mapping=aes(x=depth,y=mean),col="magenta",size=1.2)
+#plot(res)
+#ggsave("illustrative-fixedsync.eps",device=cairo_ps,width=4800,height=2000,units="px")
+
+tieoffset = c(-50,0,100)
+tiemeans = y[tiedepths]+tieoffset
+#tiemeans = c(450,3000,8500)
+tiesds = c(10,20,30)
+res3 = tiepointsimmer(res,synchronization = list(locations=tiedepths,
+                                                locations_unit="depth",
+                                                method="normal",
+                                                params=list(mean=tiemeans,
+                                                            sd=tiesds))
+               )
+res3 = bremla_synchronized_simulation(res3,control.sim=list(synchronized=TRUE))
+ggd = data.frame(depth=res3$data$depth,
+                 mean = res3$simulation$summary_sync$mean-orichron,
+                 lower = res3$simulation$summary_sync$lower-orichron,
+                 upper = res3$simulation$summary_sync$upper-orichron)
+
+oritie = orichron[tiedepths]
+ggd2 = data.frame(depth=res3$tie_points$locations,
+                  lower=res3$simulation$summary_sync$lower[tiedepths]-oritie,
+                  upper=res3$simulation$summary_sync$upper[tiedepths]-oritie)
+
+ggp = ggplot(data=ggd,aes(depth))+theme_bw()+xlab("Depth")+ylab("Ensemble age - observed age")+
+  geom_ribbon(aes(ymin=lower,ymax=upper),col="red",fill="red",alpha=0.3,size=0.7)+
+  geom_line(aes(y=mean),col="blue",size=0.7)+
+  geom_segment(data=ggd2,mapping=aes(x=depth,xend=depth,y=lower,yend=upper), 
+               col="magenta",size=0.7)
+  
+#plot(res3)
+#ggsave("illustrative-sync.eps",device=cairo_ps,width=4800,height=2000,units="px")
+
+```
+
+
 ## Simulation example
 
 To verify our model we can test it on simulated data where the true parameters are known.
@@ -607,6 +720,9 @@ gg2 = gg2 + geom_segment(data=data.frame(depth=results$data$depth[tie_indexes], 
                    col="magenta")
 print(gg2)
 ```   
+
+
+
 
 ## Attribution
 

@@ -8,6 +8,8 @@ bremla(
   formula,
   data,
   reference.label = NULL,
+  x.label = NULL,
+  y.label = NULL,
   nsims = 10000,
   events = NULL,
   synchronization = NULL,
@@ -28,6 +30,10 @@ The first row is used for initializing 'age' and 'depth', hence the rest can be 
 Covariates related to the events (psi) can be filled in automatically by specifying the degree and events in \code{events} argument.}
 
 \item{reference.label}{Character label of reference timescale. Used in \code{\link{plot},\link{summary}}.}
+
+\item{x.label}{Character label for the x-axis (depth).}
+
+\item{y.label}{Character label for the y-axis (age).}
 
 \item{nsims}{Number of chronologies to be simulated.}
 

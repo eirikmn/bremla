@@ -20,7 +20,7 @@ meanmaker = function(coefs,reg.model,data){
   fitted = numeric(n)
   for (i in 1:length(coefs)){
     name = names(reg.model)[i]
-    if(name == "`(Intercept)`"){
+    if(name == "`(Intercept)`" || name == "(Intercept)"){
       fitted = fitted + coefs[i]
     }else{
       fitted = fitted + coefs[i]*data[[name]]
@@ -530,11 +530,20 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
     if(ncol(synchronization$samples) != length(synchronization$locations))
       warning("number of columns in 'samples' must correspond to length of 'locations'!")
     samples = synchronization$samples
+    if(tolower(synchronization$locations_unit) %in% c("depth","z")){
+      locations_indexes = which.index(synchronization$locations,object$data$depth)
+    }else if(tolower(synchronization$locations_unit) %in% c("age","time","y")){
+      locations_indexes = which.index(synchronization$locations,object$data$age)
+    }else{
+      locations_indexes = synchronization$locations
+    }
   }else{
     if(synchronization$method=="adolphi"){
       synchronization$locations = c(11050,12050,13050,22050,42050)
       synchronization$locations_unit="age"
       locations_indexes = which.index(synchronization$locations,object$data$age)
+      locations_indexes = locations_indexes[!is.na(locations_indexes)]
+      synchronization$locations = synchronization$locations[!is.na(locations_indexes)]
       tieshifts = synchronization$locations
       synchronization$x.ref=tieshifts
 
@@ -570,6 +579,7 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
 
   }
 
+  n = nrow(object$data)
   object$tie_points = list(samples=samples,
                            locations=synchronization$locations,
                            locations_unit=synchronization$locations_unit,
@@ -577,7 +587,11 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
                            nsims=synchronization$nsims,
                            x.ref=synchronization$x.ref,
                            locations_indexes=locations_indexes,
-                           tie_n=length(synchronization$locations))
+                           tie_indexes = locations_indexes,
+                           free_indexes = (1:n)[-locations_indexes],
+                           free_n=n-length(synchronization$locations),
+                           tie_n=length(synchronization$locations)
+                           )
 
   time.total = difftime(Sys.time(), time.start,units="secs")[[1]]
 

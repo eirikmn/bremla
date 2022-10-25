@@ -68,7 +68,41 @@ bremla_modelfitter = function(object, control.fit,
     }else{
         stop("Could not find 'control.fit'. Stopping.")
     }
+  }else{
+    if(!is.null(control.fit$noise)){
+      if(control.fit$noise != object$.args$control.fit$noise){
+        object = bremla_prepare(formula=object$.args$formula.input,
+                                data=object$.args$data.input,
+                                nsims=object$.args$nsims,
+                                reference.label = object$.args$reference.label,
+                                x.label = object$.args$x.label,
+                                y.label = object$.args$y.label,
+                                events = object$.args$events,
+                                synchronization=object$.args$synchronization,
+                                control.fit=control.fit,
+                                control.sim = object$.args$control.sim,
+                                control.linramp = object$.args$control.linramp,
+                                control.transition_dating = object$.args$control.transition_dating,
+                                control.bias=object$.args$control.bias)
+      }
+    }
+    # }else{
+    #   object = bremla_prepare(formula=object$.args$formula.input,
+    #                           data=object$.args$data.input,
+    #                           nsims=object$.args$nsims,
+    #                           reference.label = object$.args$reference.label,
+    #                           x.label = object$.args$x.label,
+    #                           y.label = object$.args$y.label,
+    #                           events = object$.args$events,
+    #                           synchronization=object$.args$synchronization,
+    #                           control.fit=control.fit,
+    #                           control.sim = object$.args$control.sim,
+    #                           control.linramp = object$.args$control.linramp,
+    #                           control.transition_dating = object$.args$control.transition_dating,
+    #                           control.bias=object$.args$control.bias)
+    # }
   }
+
 
 
 
@@ -85,7 +119,7 @@ bremla_modelfitter = function(object, control.fit,
   time.start = Sys.time()
 
   formula = object$formula
-  if(print.progress) cat("Performing least squares fit...",sep="")
+    if(print.progress) cat("Performing least squares fit...",sep="")
 
   fit = lm(object$.internal$formula.ls,object$data) #fits model using least squares
 

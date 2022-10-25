@@ -8,6 +8,8 @@
 #' The first row is used for initializing 'age' and 'depth', hence the rest can be set to NA.
 #' Covariates related to the events (psi) can be filled in automatically by specifying the degree and events in \code{events} argument.
 #' @param reference.label Character label of reference timescale. Used in \code{\link{plot},\link{summary}}.
+#' @param x.label Character label for the x-axis (depth).
+#' @param y.label Character label for the y-axis (age).
 #' @param nsims Number of chronologies to be simulated.
 #' @param events List object describing locations, degree and other informations about
 #' the specific climatic periods used in the predictor. If used must include at least
@@ -138,6 +140,8 @@
 #' @export
 #' @import matrixStats
 bremla <- function(formula,data,reference.label=NULL,
+                            x.label=NULL,
+                            y.label=NULL,
                             nsims=10000,
                             events=NULL,
                             synchronization=NULL,
@@ -157,6 +161,8 @@ bremla <- function(formula,data,reference.label=NULL,
   #prepare bremla object by formatting dataset, writing formulastrings etc
   object = bremla_prepare(formula, data, ##data must include 'depth' and 'age' in data or input
                           reference.label=reference.label,
+                          x.label = x.label,
+                          y.label = y.label,
                           nsims=nsims,
                           events=events,
                           synchronization=synchronization,
@@ -181,17 +187,19 @@ bremla <- function(formula,data,reference.label=NULL,
 
   }
 
+  if(!is.null(control.sim)){
+    if(nsims>0 && control.sim$synchronized %in% c(FALSE,2)){
+      control.sim$nsims=nsims
+      #produce samples from the chronologies
+      object = bremla_chronology_simulation(object, control.sim=control.sim,
+                                            print.progress=print.progress)
 
-  if(nsims>0 && control.sim$synchronized %in% c(FALSE,2)){
-    control.sim$nsims=nsims
-    #produce samples from the chronologies
-    object = bremla_chronology_simulation(object, control.sim=control.sim,
-                                          print.progress=print.progress)
+      #compute posterior marginal mean, quantiles and other summary statistics
+      #object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=FALSE,print.progress=print.progress)
 
-    #compute posterior marginal mean, quantiles and other summary statistics
-    #object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=FALSE,print.progress=print.progress)
-
+    }
   }
+
   if(!is.null(synchronization)){
     synchronization$nsims=nsims
     ##format and or simulate tie-points
@@ -200,16 +208,18 @@ bremla <- function(formula,data,reference.label=NULL,
 
   }
 
+  if(!is.null(control.sim)){
+    if(nsims>0 && control.sim$synchronized %in% c(TRUE,2)){
+      control.sim$nsims=nsims
+      #produce samples from the chronologies
+      object = bremla_synchronized_simulation(object, control.sim=control.sim,
+                                              print.progress=print.progress)
 
-  if(nsims>0 && control.sim$synchronized %in% c(TRUE,2)){
-    control.sim$nsims=nsims
-    #produce samples from the chronologies
-    object = bremla_synchronized_simulation(object, control.sim=control.sim,
-                                            print.progress=print.progress)
-
-    #compute posterior marginal mean, quantiles and other summary statistics
-    #object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=TRUE,print.progress=print.progress)
+      #compute posterior marginal mean, quantiles and other summary statistics
+      #object = bremla_simulationsummarizer(object,CI.type=CI.type,sync=TRUE,print.progress=print.progress)
+    }
   }
+
 
 
   #if control.transition_dating list object (containing specifications) is included, perform dating estimation

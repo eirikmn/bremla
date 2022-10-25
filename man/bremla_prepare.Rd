@@ -9,6 +9,8 @@ bremla_prepare(
   data,
   nsims = NULL,
   reference.label = NULL,
+  x.label = NULL,
+  y.label = NULL,
   events = NULL,
   synchronization = NULL,
   control.fit = NULL,
@@ -31,6 +33,10 @@ covariates (phi) can be filled out using 'events$fill_data'.}
 \item{nsims}{Number of chronologies to be simulated.}
 
 \item{reference.label}{Character label of reference timescale. Used in \code{\link{plot},\link{summary}}.}
+
+\item{x.label}{Character label for the x-axis (depth).}
+
+\item{y.label}{Character label for the y-axis (age).}
 
 \item{events}{List object describing the specifics of the climate transitions
 used in 'formula'. Must include an item called \code{locations}. See \code{?events.default} for details.}

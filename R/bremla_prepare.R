@@ -11,6 +11,8 @@
 #' covariates (phi) can be filled out using 'events$fill_data'.
 #' @param nsims Number of chronologies to be simulated.
 #' @param reference.label Character label of reference timescale. Used in \code{\link{plot},\link{summary}}.
+#' @param x.label Character label for the x-axis (depth).
+#' @param y.label Character label for the y-axis (age).
 #' @param events List object describing the specifics of the climate transitions
 #' used in 'formula'. Must include an item called \code{locations}. See \code{?events.default} for details.
 #' @param synchronization List object describing specifics related to tie-points
@@ -82,6 +84,7 @@
 #' summary(object)
 #' @export
 bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
+                          x.label=NULL,y.label=NULL,
                           events = NULL,
                           synchronization=NULL,
                           control.fit=NULL,
@@ -143,12 +146,14 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
     #eventindexes = unique(c(1,eventindexes[!is.na(eventindexes)]))
     eventindexes = unique(c(1,eventindexes[!is.na(eventindexes)],length(y)))
     nevents = length(eventindexes)-1
+
+    events$nevents=nevents
+    events$eventindexes=eventindexes
   }else{
     nevents=0
     eventindexes=NULL
   }
-  events$nevents=nevents
-  events$eventindexes=eventindexes
+
 
 
 
@@ -241,6 +246,8 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
                     responsename=responsename,
                     data.input=data,
                     reference.label=reference.label,
+                    x.label=x.label,
+                    y.label=y.label,
                     events=events,
                     synchronization=synchronization,
                     control.fit=control.fit,
