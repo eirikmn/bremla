@@ -34,6 +34,8 @@ devtools::install_github("eirikmn/bremla")
 The data used is the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm', downloaded from [Centre for Ice and Climate](iceandclimate.nbi.ku.dk) at the Niels Bohr Institute of the University of Copenhagen, Denmark, and the table of stadial-interstadial events presented by [Rasmussen et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0277379114003485). These are included in the package and can be imported as follows. 
 ```{r bremla, eval=TRUE}
 library(bremla)
+library(dplyr)
+library(ggplot2)
 data("event_intervals")
 data("events_rasmussen")
 data("NGRIP_5cm")
@@ -44,8 +46,10 @@ n=length(diff(age))
 data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
 events=list(locations = events_rasmussen$depth,
             locations_unit="depth",degree=1)
-plot(depth,proxy,xlab="Age (yb2k)",ylab=expression(paste(d^18,"O (permil)")),type="l",
-     xlim=rev(range(depth)))+abline(v=events$locations,col="gray",lwd=0.7)
+
+
+ plot(depth,proxy,xlab="Age (yb2k)",ylab=expression(paste(d^18,"O (permil)")),type="l",
+      xlim=rev(range(depth)))+abline(v=events$locations,col="gray",lwd=0.7)
 formula = dy~-1+depth2+proxy
 nsims=3000
 results = bremla(formula,data,reference.label="GICC05",
@@ -55,6 +59,8 @@ results = bremla(formula,data,reference.label="GICC05",
                 control.sim=list(synchronized=FALSE) ,
                 print.progress=TRUE
                 )
+
+
 ```
 
 The results from the linear fit can be extracted by running:

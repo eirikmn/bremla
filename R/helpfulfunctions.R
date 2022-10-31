@@ -522,7 +522,7 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
   #if(!is.null(synchronization))
   synchronization = set.options(synchronization,synchronization.default())
 
-  object$.args$synchronization = synchronization
+
 
 
   if(!is.null(synchronization$samples)){
@@ -539,16 +539,18 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
     }
   }else{
     if(synchronization$method=="adolphi"){
-      synchronization$locations = c(11050,12050,13050,22050,42050)
-      synchronization$locations_unit="age"
-      locations_indexes = which.index(synchronization$locations,object$data$age)
-      locations_indexes = locations_indexes[!is.na(locations_indexes)]
-      synchronization$locations = synchronization$locations[!is.na(locations_indexes)]
+      adolphilocs = c(11050,12050,13050,22050,42050)
       tieshifts = synchronization$locations
+      samples = adolphi_tiepoint_simmer(nsims=synchronization$nsims,
+                                        tieshifts=adolphilocs,...)
+      synchronization$locations_unit="age"
+      locations_indexes = which.index(adolphilocs,object$data$age)
+      samples = samples[,!is.na(locations_indexes)]
+      locations_indexes = locations_indexes[!is.na(locations_indexes)]
+      synchronization$locations = object$data$age[locations_indexes]
+      #synchronization$locations = synchronization$locations[!is.na(locations_indexes)]
       synchronization$x.ref=tieshifts
 
-      samples = adolphi_tiepoint_simmer(nsims=synchronization$nsims,
-                                        tieshifts=tieshifts,...)
     }else if(synchronization$method %in% c("normal","gaussian","gauss")){
 
       if(tolower(synchronization$locations_unit) %in% c("depth","z")){
@@ -575,9 +577,8 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
       }
     }
 
-
-
   }
+  object$.args$synchronization = synchronization
 
   n = nrow(object$data)
   object$tie_points = list(samples=samples,
