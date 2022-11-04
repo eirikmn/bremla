@@ -157,7 +157,10 @@ bremla_modelfitter = function(object, control.fit,
     object$fitting$LS$params[["phi2"]] = phi2
     object$fitting$LS$noisefit=noisefit
   }else{
-    stop(paste0("Noise model is set to ",noise,". Only iid, ar1 and ar2 are currently supported!"))
+    if(!(tolower(object$.args$control.fit$noise) %in% c("rgeneric","custom"))){
+      stop(paste0("Noise model is set to ",noise,". Only iid, ar1, ar2 and 'rgeneric' are currently supported!"))
+    }
+
   }
   time.ls=Sys.time()
   if(print.progress) cat(" completed!\n",sep="")
@@ -176,18 +179,27 @@ bremla_modelfitter = function(object, control.fit,
     object$.internal$initial_fixed = my.control.fixed
     resi = object$fitting$LS$fit$residuals
 
-    initialmodes = log(1/object$fitting$LS$params$sigma^2)
+    if(tolower(object$.args$control.fit$noise) %in% c("rgeneric","custom")){
+      warning("rgeneric is experimental. Some irraneous behaviour can be fixed by changing the number of cores in 'control.fit$ncores'")
+      initialmodes = numeric(length(object$.args$control.fit$rgeneric$from.theta))
+      model.rgeneric = object$.args$model.rgeneric
+    }else{
+      initialmodes = log(1/object$fitting$LS$params$sigma^2)
 
-    if(tolower(object$.args$control.fit$noise) %in% c(1,"ar1","ar(1)")){
-      phi.ls = object$fitting$LS$params$phi
-      initialmodes = c(initialmodes, log( (1+phi)/(1-phi) ))
+      if(tolower(object$.args$control.fit$noise) %in% c(1,"ar1","ar(1)")){
+        phi.ls = object$fitting$LS$params$phi
+        initialmodes = c(initialmodes, log( (1+phi)/(1-phi) ))
 
-    }else if(tolower(object$.args$control.fit$noise) %in% c(2,"ar2","ar(2)")){
-      phi1.ls = object$fitting$LS$params$phi1
-      phi2.ls = object$fitting$LS$params$phi2
+      }else if(tolower(object$.args$control.fit$noise) %in% c(2,"ar2","ar(2)")){
+        phi1.ls = object$fitting$LS$params$phi1
+        phi2.ls = object$fitting$LS$params$phi2
 
-      initialmodes=c(initialmodes, log( (1+phi1/(1-phi2))/(1-phi1/(1-phi2)) ), log( (1+phi2)/(1-phi2) ) )
+        initialmodes=c(initialmodes, log( (1+phi1/(1-phi2))/(1-phi1/(1-phi2)) ), log( (1+phi2)/(1-phi2) ) )
+      }
     }
+
+
+
     object$.internal$initial_hyper=initialmodes
 
     num.threads=object$.args$control.fit$ncores #rgeneric can sometimes be more stable ifonly one core is used
@@ -198,8 +210,8 @@ bremla_modelfitter = function(object, control.fit,
 
     ## fit using INLA
     inlafit = INLA::inla(object$formula, family="gaussian",data=object$data,
-                   control.family=list(hyper=list(prec=list(initial=12, fixed=TRUE))) ,
-                   #control.fixed=my.control.fixed,
+                   control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))),
+                   control.fixed=my.control.fixed,
                    num.threads = object$.args$control.fit$ncores,
                    control.compute=list(config=TRUE),
                    #verbose=TRUE,
@@ -220,27 +232,48 @@ bremla_modelfitter = function(object, control.fit,
     }
 
     ## extract posteriors for hyperparameters
-    posterior_sigma = INLA::inla.tmarginal(function(x)1/sqrt(x),inlafit$marginals.hyperpar$`Precision for idy`); zmarg_sigma=INLA::inla.zmarginal(posterior_sigma,silent=TRUE)
-    object$fitting$inla$hyperparameters = list(posteriors=list(sigma_epsilon=posterior_sigma))
-    object$fitting$inla$hyperparameters$results$sigma_epsilon = zmarg_sigma
-    if(tolower(object$.args$control.fit$noise)%in% c(1,"ar1","ar(1)") ){
-      posterior_phi = inlafit$marginals.hyperpar$`Rho for idy`; zmarg_phi = INLA::inla.zmarginal(posterior_phi,silent=TRUE)
-      object$fitting$inla$hyperparameters$posteriors$phi = posterior_phi
-      object$fitting$inla$hyperparameters$results$phi = zmarg_phi
 
-    }else if(object$.args$control.fit$noise %in% c(2,"ar2","ar(2)") ){
-      hypersamples = INLA::inla.hyperpar.sample(50000,inlafit)
+    if(tolower(object$.args$control.fit$noise %in% c("rgeneric","custom"))){
 
-      p=2
-      phii = hypersamples[, 2L:(2L+(p-1L))]
-      phis = apply(phii, 1L, INLA::inla.ar.pacf2phi)
-      posterior_phi1 = cbind(density(phis[1,])$x,density(phis[1,])$y);colnames(posterior_phi1)=c("x","y"); zmarg_phi1 = INLA::inla.zmarginal(posterior_phi1,silent=TRUE)
-      posterior_phi2 = cbind(density(phis[2,])$x,density(phis[2,])$y);colnames(posterior_phi2)=c("x","y"); zmarg_phi2=INLA::inla.zmarginal(posterior_phi2,silent=TRUE)
-      object$fitting$inla$hyperparameters$posteriors$phi1 = posterior_phi1
-      object$fitting$inla$hyperparameters$results$phi1 = zmarg_phi1
-      object$fitting$inla$hyperparameters$posteriors$phi2 = posterior_phi2
-      object$fitting$inla$hyperparameters$results$phi2 = zmarg_phi2
+      param.names = object$.args$control.fit$rgeneric$param.names
+      for(i in 1:length(object$.args$control.fit$rgeneric$from.theta)){
+        posterior = INLA::inla.tmarginal(object$.args$control.fit$rgeneric$from.theta[[i]],
+                                   inlafit$marginals.hyperpar[[i]])
+        zmarg = INLA::inla.zmarginal(posterior,silent=TRUE)
+        if(is.null(param.names[i]) || is.na(param.names[i])){
+          tempname = paste0("hyperparameter",i)
+          object$fitting$inla$hyperparameters$posteriors[[tempname]] = posterior
+          object$fitting$inla$hyperparameters$results[[tempname]] = zmarg
+        }else{
+          object$fitting$inla$hyperparameters$posteriors[[param.names[i] ]] = posterior
+          object$fitting$inla$hyperparameters$results[[param.names[i] ]] = zmarg
+        }
+      }
+    }else{
+      posterior_sigma = INLA::inla.tmarginal(function(x)1/sqrt(x),inlafit$marginals.hyperpar$`Precision for idy`); zmarg_sigma=INLA::inla.zmarginal(posterior_sigma,silent=TRUE)
+      object$fitting$inla$hyperparameters = list(posteriors=list(sigma_epsilon=posterior_sigma))
+      object$fitting$inla$hyperparameters$results$sigma_epsilon = zmarg_sigma
+      if(tolower(object$.args$control.fit$noise)%in% c(1,"ar1","ar(1)") ){
+        posterior_phi = inlafit$marginals.hyperpar$`Rho for idy`; zmarg_phi = INLA::inla.zmarginal(posterior_phi,silent=TRUE)
+        object$fitting$inla$hyperparameters$posteriors$phi = posterior_phi
+        object$fitting$inla$hyperparameters$results$phi = zmarg_phi
+
+      }else if(object$.args$control.fit$noise %in% c(2,"ar2","ar(2)") ){
+        hypersamples = INLA::inla.hyperpar.sample(50000,inlafit)
+
+        p=2
+        phii = hypersamples[, 2L:(2L+(p-1L))]
+        phis = apply(phii, 1L, INLA::inla.ar.pacf2phi)
+        posterior_phi1 = cbind(density(phis[1,])$x,density(phis[1,])$y);colnames(posterior_phi1)=c("x","y"); zmarg_phi1 = INLA::inla.zmarginal(posterior_phi1,silent=TRUE)
+        posterior_phi2 = cbind(density(phis[2,])$x,density(phis[2,])$y);colnames(posterior_phi2)=c("x","y"); zmarg_phi2=INLA::inla.zmarginal(posterior_phi2,silent=TRUE)
+        object$fitting$inla$hyperparameters$posteriors$phi1 = posterior_phi1
+        object$fitting$inla$hyperparameters$results$phi1 = zmarg_phi1
+        object$fitting$inla$hyperparameters$posteriors$phi2 = posterior_phi2
+        object$fitting$inla$hyperparameters$results$phi2 = zmarg_phi2
+      }
     }
+
+
 
 
     time.inla=Sys.time()

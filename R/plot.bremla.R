@@ -193,38 +193,74 @@ plot.bremla = function(x,
   if(!is.null(plot.inla.posterior) && !is.null(x$fitting$fit)){
     figure.count <- new.plot(postscript,pdf,prefix,figure.count,...) +1
     if(plot.inla.posterior$posteriors){
-      if(length(plot.inla.posterior$label)<=1){
-        plot.label1 = plot.inla.posterior$label
-        plot.label2 = plot.inla.posterior$label
-        plot.label3 = plot.inla.posterior$label
+
+      if(tolower(x$.args$control.fit$noise) %in% c("rgeneric","custom")){
+        ntheta = length(x$fitting$inla$hyperparameters$results)
+        if(length(plot.inla.posterior$label) == 1){
+          defaultlabel= plot.inla.posterior$label
+        }else{
+          defaultlabel = NULL
+        }
+        for(i in 1:ntheta){
+          if(!is.null(plot.inla.posterior$label[i]) && !is.na(plot.inla.posterior$label[i])){
+            mainlab = plot.inla.posterior$label[i]
+          }else{
+            if(!is.null(defaultlabel)){
+              mainlab=defaultlabel
+            }else{
+              mainlab=""
+            }
+          }
+          xlab = names(x$fitting$inla$hyperparameters$posteriors)[i]
+          plot(x$fitting$inla$hyperparameters$posteriors[[i]],type="l",xlab=xlab,
+               main = mainlab, ylab="Density",lwd=2,)
+          abline(v=x$fitting$inla$hyperparameters$results[[i]]$mean)
+          abline(v=c(x$fitting$inla$hyperparameters$results[[i]]$quant0.025,x$fitting$inla$hyperparameters$results[[i]]$quant0.975),col="gray")
+        }
       }else{
-        plot.label1 = plot.inla.posterior$label[1]
-      }
-      plot(x$fitting$inla$hyperparameters$posteriors$sigma_epsilon,type="l",xlab=expression(paste(sigma[epsilon])),ylab="Density",lwd=2,main=plot.label1)
-      abline(v=x$fitting$inla$hyperparameters$results$sigma_epsilon$mean)
-      abline(v=c(x$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.025,x$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.975),col="gray")
 
-      if(tolower(x$.args$control.fit$noise) %in% c(1,"ar1","ar(1)")){
-        if(length(plot.inla.posterior$label)>=2){
-          plot.label2 = plot.inla.posterior$label[2]
-        }
-        plot(x$fitting$inla$hyperparameters$posteriors$phi,xlab=expression(paste(phi)),ylab="Density",lwd=2,type="l",main=plot.label2)
-        abline(v=x$fitting$inla$hyperparameters$results$phi$mean)
-        abline(v=c(x$fitting$inla$hyperparameters$results$phi$quant0.025,x$fitting$inla$hyperparameters$results$phi$quant0.975),col="gray")
-      }else if(tolower(x$.args$control.fit$noise) %in% c(2,"ar2","ar(2)")){
-        if(length(plot.inla.posterior$label)>=3){
-          plot.label2 = plot.inla.posterior$label[2]
-          plot.label3 = plot.inla.posterior$label[3]
-        }
-        plot(x$fitting$inla$hyperparameters$posteriors$phi1,xlab=expression(paste(phi[1])),ylab="Density",lwd=2,type="l",main=plot.label2)
-        abline(v=x$fitting$inla$hyperparameters$results$phi1$mean)
-        abline(v=c(x$fitting$inla$hyperparameters$results$phi1$quant0.025,x$fitting$inla$hyperparameters$results$phi1$quant0.975),col="gray")
 
-        plot(x$fitting$inla$hyperparameters$posteriors$phi2,xlab=expression(paste(phi[2])),ylab="Density",lwd=2,type="l",main=plot.label3)
-        abline(v=x$fitting$inla$hyperparameters$results$phi2$mean)
-        abline(v=c(x$fitting$inla$hyperparameters$results$phi2$quant0.025,x$fitting$inla$hyperparameters$results$phi2$quant0.975),col="gray")
+        if(length(plot.inla.posterior$label)<=1){
+          plot.label1 = plot.inla.posterior$label
+          plot.label2 = plot.inla.posterior$label
+          plot.label3 = plot.inla.posterior$label
+        }else{
+          plot.label1 = plot.inla.posterior$label[1]
+        }
+
+
+
+        plot(x$fitting$inla$hyperparameters$posteriors$sigma_epsilon,type="l",xlab=expression(paste(sigma[epsilon])),ylab="Density",lwd=2,main=plot.label1)
+        abline(v=x$fitting$inla$hyperparameters$results$sigma_epsilon$mean)
+        abline(v=c(x$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.025,x$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.975),col="gray")
+
+        if(tolower(x$.args$control.fit$noise) %in% c(1,"ar1","ar(1)")){
+          if(length(plot.inla.posterior$label)>=2){
+            plot.label2 = plot.inla.posterior$label[2]
+          }
+          plot(x$fitting$inla$hyperparameters$posteriors$phi,xlab=expression(paste(phi)),ylab="Density",lwd=2,type="l",main=plot.label2)
+          abline(v=x$fitting$inla$hyperparameters$results$phi$mean)
+          abline(v=c(x$fitting$inla$hyperparameters$results$phi$quant0.025,x$fitting$inla$hyperparameters$results$phi$quant0.975),col="gray")
+        }else if(tolower(x$.args$control.fit$noise) %in% c(2,"ar2","ar(2)")){
+          if(length(plot.inla.posterior$label)>=3){
+            plot.label2 = plot.inla.posterior$label[2]
+            plot.label3 = plot.inla.posterior$label[3]
+          }
+          plot(x$fitting$inla$hyperparameters$posteriors$phi1,xlab=expression(paste(phi[1])),ylab="Density",lwd=2,type="l",main=plot.label2)
+          abline(v=x$fitting$inla$hyperparameters$results$phi1$mean)
+          abline(v=c(x$fitting$inla$hyperparameters$results$phi1$quant0.025,x$fitting$inla$hyperparameters$results$phi1$quant0.975),col="gray")
+
+          plot(x$fitting$inla$hyperparameters$posteriors$phi2,xlab=expression(paste(phi[2])),ylab="Density",lwd=2,type="l",main=plot.label3)
+          abline(v=x$fitting$inla$hyperparameters$results$phi2$mean)
+          abline(v=c(x$fitting$inla$hyperparameters$results$phi2$quant0.025,x$fitting$inla$hyperparameters$results$phi2$quant0.975),col="gray")
+        }
       }
-    }
+
+      }
+
+
+
+
     if(postscript || pdf){
       if (names(dev.cur()) != "null device") {
         dev.off()

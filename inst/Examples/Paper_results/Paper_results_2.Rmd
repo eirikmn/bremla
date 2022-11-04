@@ -144,6 +144,18 @@ ggp = ggp + geom_vline(xintercept = agestarts,col="black",size=0.15)
 print(ggp)
 # ggsave("proxyplot-4800x2000.eps", device=cairo_ps,width=4800,height=2000,units="px",dpi=500,limitsize=FALSE)
 
+ggd = data.frame(age=data$age,depth=data$depth,proxy=data$proxy)
+ggdr = data.frame(depths=events_rasmussen$depth[events_rasmussen$depth>1492.45 & events_rasmussen$depth<2426],ages=events_rasmussen$age[events_rasmussen$age>11703.07 & events_rasmussen$age < 59944.50])
+library(ggplot2)
+ggp2 = ggplot(data=ggd) + theme_bw()+
+  geom_line(aes(x=age,y=proxy),col="black",size=0.5)+
+  geom_vline(data=ggdr,mapping=aes(xintercept=ages),col="gray",size=0.5)+
+  xlab("GICC05 age (yb2k)") + ylab(expression(paste(delta^18,"O (permil)")))
+  
+# ggsave("proxyplot-bw-4800x2000.eps", device=cairo_ps,width=4800,height=2000,units="px",dpi=500,limitsize=FALSE)
+
+# ggplot(data=ggd)+geom_line(aes(x=depth,y=age))
+
 ```
 
 The fitted model to the layer increments and the simulated chronologies (as compared to the GICC05 time scale) can be plotted as follows.

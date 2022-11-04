@@ -98,7 +98,12 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
   if(!is.null(events)) events = set.options(events,events.default())
   if(!is.null(synchronization)) synchronization = set.options(synchronization,
                                                               synchronization.default())
-  if(!is.null(control.fit)) control.fit = set.options(control.fit,control.fit.default())
+  if(is.null(control.fit)) {
+    control.fit=list(noise="ar1")
+
+  }
+  control.fit = set.options(control.fit,control.fit.default())
+
   if(!is.null(control.sim)) control.sim = set.options(control.sim,control.sim.default())
   if(!is.null(control.linramp)) control.linramp = set.options(
                   control.linramp,control.linramp.default())
@@ -216,20 +221,38 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
 
   if(!is.null(control.fit)){ #add random effect to formula string for use in INLA
     if(tolower(control.fit$method) %in% "inla" ){
-      if(tolower(control.fit$noise) %in% c("iid","independent","ar(0)")){
-        formulastring_inla = paste0(formulastring, " + f(idy,model=\"iid\")")
-      }else if(tolower(control.fit$noise) %in% c("ar1","ar(1)")){
-        formulastring_inla = paste0(formulastring, " + f(idy,model=\"ar1\")")
-      }else if(tolower(control.fit$noise) %in% c("ar2","ar(2)")){
-        formulastring_inla = paste0(formulastring, " + f(idy,model=\"ar\",order=2)")
+      if(!is.null(control.fit$rgeneric)){ #rgeneric model is specified
+        control.fit$noise = "rgeneric"
+
+        ntheta = length(control.fit$rgeneric$from.theta)
+
+        model.rgeneric = INLA::inla.rgeneric.define(rgeneric.fitting, n=n-1,
+                                              ntheta=ntheta,
+                                              Q = control.fit$rgeneric$Q,
+                                              log.prior=control.fit$rgeneric$log.prior)
+
+        formulastring_inla = paste0(formulastring, " + f(idy,model=model.rgeneric)")
+
+        # formula=dy ~ -1 + depth + f(idy,model=model.rgeneric)
+
+
+      }else{
+        if(tolower(control.fit$noise) %in% c("iid","independent","ar(0)")){
+          formulastring_inla = paste0(formulastring, " + f(idy,model=\"iid\")")
+        }else if(tolower(control.fit$noise) %in% c("ar1","ar(1)")){
+          formulastring_inla = paste0(formulastring, " + f(idy,model=\"ar1\")")
+        }else if(tolower(control.fit$noise) %in% c("ar2","ar(2)")){
+          formulastring_inla = paste0(formulastring, " + f(idy,model=\"ar\",order=2)")
+        }
+        model.rgeneric=NULL
       }
     }
-    formula=as.formula(formulastring_inla)
+    formula_inla=as.formula(formulastring_inla)
   }else{
-    formula=as.formula(formulastring)
+    formula_inla=as.formula(formulastring)
   }
 
-  object= list(data=data_obj,formula=formula,
+  object= list(data=data_obj,formula=formula_inla,
                initials=initials,
                original.chron = data.frame(depth=depth,age=age))
   if(!is.null(events)) object$events=events
@@ -245,6 +268,7 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
                     formula.input=formula.input,
                     responsename=responsename,
                     data.input=data,
+                    # model.rgeneric=model.rgeneric,
                     reference.label=reference.label,
                     x.label=x.label,
                     y.label=y.label,
@@ -256,7 +280,9 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
                     control.transition_dating=control.transition_dating,
                     control.bias=control.bias)
 
-
+if(tolower(control.fit$noise) %in% c("rgeneric","custom")){
+  object$.args$model.rgeneric
+}
   class(object) = "bremla"
 
   return(object)

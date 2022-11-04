@@ -1,7 +1,7 @@
 Package: bremla
 Type: Package
 Title: Bayesian Regression Modeling of Layer-Counted Archives
-Version: 0.3.1.9000
+Version: 0.4.0.9000
 Authors@R: c(
     person("Eirik", "Myrvoll-Nilsen", email = "eirikmn91@gmail.com",
            role = c("aut","cre","cph"),

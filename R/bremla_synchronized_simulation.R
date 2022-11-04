@@ -92,7 +92,11 @@ time.start = Sys.time()
     tie_locations=object$tie_points$locations
     tie_locations_unit=object$tie_points$locations_unit
     tiepointsims = object$tie_points$samples
-    if(object$tie_points$nsims != nsims) stop("Number of samples given does not correspond to 'nsims'...")
+    if(object$tie_points$nsims < nsims){
+      stop("Number of samples to be produced (nsims) exceeds the number of tie-point samples available. Run 'tiepointsimmer' again...")
+    }else{
+      tiepointsims = tiepointsims[1:nsims,]
+    }
   }else{
     object$tie_points = list(samples=tiepointsims,locations=tie_locations,
                              locations.type=tie_locations_unit,method="precomputed",nsims=nsims)
@@ -126,8 +130,20 @@ time.start = Sys.time()
 
     if(print.progress) cat("Simulating ",nsims, " hyperparameters from INLA posterior...",sep="")
 
+    if(tolower(noise) %in% c("rgeneric","custom")){
+      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+      param.names = object$.args$control.fit$rgeneric$param.names
+      for(i in 1:length(object$.args$control.fit$rgeneric$from.theta)){
+        paramsamp = object$.args$control.fit$rgeneric$from.theta[[i]](hypersamples[,i])
+        if(is.null(param.names[i]) || is.na(param.names[i])){
+          tempname = paste0("hyperparameter",i)
+          object$simulation[[tempname]] = paramsamp
+        }else{
+          object$simulation[[param.names[i] ]] = paramsamp
 
-    if(tolower(noise) %in% c(0,"ar(0)","ar0","iid","independent")){
+        }
+      }
+    }else if(tolower(noise) %in% c(0,"ar(0)","ar0","iid","independent")){
       hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
       object$simulation = list(sigma = 1/sqrt(hypersamples[,1]))
     }else if (tolower(noise) %in% c(1,"ar1","ar(1)")){
@@ -174,22 +190,35 @@ time.start = Sys.time()
   if(print.progress) cat("Simulating synchronized chronologies...\n",sep="")
   timeage.start = Sys.time()
   for(r in 1:nsims){
-    sigma_sample = object$simulation$sigma[r]
-    phi_sample = object$simulation$phi[r]
 
-    if(object$.args$control.fit$noise=="ar1"){
-      Qfull = Qmaker_ar1cum(n,sigma_sample,phi_sample)
+    if(tolower(noise) %in% c("rgeneric","custom")){
+
+      theta = hypersamples[r,]
+
+      Qx = object$.args$control.fit$rgeneric$Q(theta,n,ntheta=length(theta))
+
+      Qfull = Qymaker(Qx)
+
+    }else if(tolower(noise) %in% c(1,"ar1","ar(1)")){
+      sigma_sample = object$simulation$sigma[r]
+      phi_sample = object$simulation$phi[r]
+
+      if(object$.args$control.fit$noise=="ar1"){
+        Qfull = Qmaker_ar1cum(n,sigma_sample,phi_sample)
+      }else{
+        # 'noise' is the precision matrix of the layer differences Q_x
+        Qfull = Qymaker(object$.args$control.fit$noise)
+      }
+
+
     }else{
-      # 'noise' is the precision matrix of the layer differences Q_x
-      Qfull = Qymaker(object$.args$control.fit$noise)
+      stop("Currently, only the 'ar1' noise model is implemented. Other models can be specified via the 'rgeneric' model, see '?rgeneric.fitting' for details.")
     }
-
     Qa = Qfull[-tie_indexes,-tie_indexes]
     Qab = Qfull[-tie_indexes,tie_indexes]
     if(m==1){
       Qab = as.matrix(Qab,ncol=1)
     }
-
 
     coefs = latentsamples[[r]]$latent
     dmeansim = meanmaker( coefs, latentselection,data = object$data )

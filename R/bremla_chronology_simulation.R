@@ -90,8 +90,21 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
 
     if(print.progress) cat("Simulating ",nsims, " hyperparameters from INLA posterior...",sep="")
 
+    if(tolower(noise) %in% c("rgeneric","custom")){
+      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+      param.names = object$.args$control.fit$rgeneric$param.names
+      for(i in 1:length(object$.args$control.fit$rgeneric$from.theta)){
+        paramsamp = object$.args$control.fit$rgeneric$from.theta[[i]](hypersamples[,i])
+        if(is.null(param.names[i]) || is.na(param.names[i])){
+          tempname = paste0("hyperparameter",i)
+          object$simulation[[tempname]] = paramsamp
+        }else{
+          object$simulation[[param.names[i] ]] = paramsamp
 
-    if(tolower(noise) %in% c(0,"ar(0)","ar0","iid","independent")){
+        }
+      }
+
+    }else if(tolower(noise) %in% c(0,"ar(0)","ar0","iid","independent")){
       hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
       object$simulation = list(sigma = 1/sqrt(hypersamples[,1]))
     }else if (tolower(noise) %in% c(1,"ar1","ar(1)")){
@@ -162,7 +175,14 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
       if(control.sim$store.everything) object$simulation$dmean[,i] = dmeansim #store mean if we want
 
       ##sample noise component
-      if(tolower(noise) %in% c(0,"iid","independent","ar0","ar(0)")){
+      if(tolower(noise) %in% c("rgeneric","custom")){
+        theta = hypersamples[i,]
+
+        Q = object$.args$control.fit$rgeneric$Q(theta,n,ntheta=length(theta))
+        muvek = numeric(n)
+        noisesim = Qsimmer(1, Q, muvek)
+
+      }else if(tolower(noise) %in% c(0,"iid","independent","ar0","ar(0)")){
         noisesim = rnorm(n,mean=0,sd=object$simulation$sigma[i])
 
       }else if(tolower(noise) %in% c(1,"ar1","ar(1)")){

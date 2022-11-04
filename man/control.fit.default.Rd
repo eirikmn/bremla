@@ -26,6 +26,24 @@ fitting procedure. The list contains the following arguments:
   the observations. Can be \code{"log"} or \code{"identity"}. If synchronization is
   intended then only \code{"identity"} is currently supported, which is also the
   default value here.}
+  \item{\code{rgeneric}} List containing necessary arguments for specifying a custom
+  model for the noise component of the layer increments using the \code{rgeneric}
+  framework of \code{INLA}. Note that this alternative generally performs less well
+  than using already implemented model components in \code{INLA} used when \code{noise}
+  is specified. Must include
+  \itemize{
+      \item{\code{from.theta} List of function specifying transformation from internal to original
+      parameter scaling. Function of \code{theta} (internal parameters). \code{length(from.theta)}
+      must correspond to \code{length(theta)}. This is only
+      used for transforming the parameters and can not be used in the functions below.}
+      \item{\code{param.names} Vector of names for parameters (optional).}
+      \item{\code{Q} Function that computes the precision matrix of the noise model. Must be
+      a function of \code{theta}, \code{n} and \code{ntheta}, and must return a
+      sparse matrix.}
+      \item{\code{log.prior} Function that computes the logarithm of the prior of the internal
+      parameter \code{theta}. Must be a function of \code{theta}, \code{n} and \code{ntheta}
+      (even if they are not used).}
+  }
 }
 }
 \seealso{

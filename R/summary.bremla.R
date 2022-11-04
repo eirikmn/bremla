@@ -94,7 +94,9 @@ summary.bremla = function(object,
   }
 
   if(!is.null(object$.args$control.fit$noise)){
-    if(tolower(object$.args$control.fit$noise) %in% c(0,"iid","independent")){
+    if(tolower(object$.args$control.fit$noise) %in% c("rgeneric","custom")){
+      noise = "rgeneric"
+    }else if(tolower(object$.args$control.fit$noise) %in% c(0,"iid","independent")){
       noise = "iid"
     }else if(tolower(object$.args$control.fit$noise) %in% c(1,"ar1","ar(1)")){
       noise = "ar1"
@@ -105,7 +107,23 @@ summary.bremla = function(object,
 
 
   if(!is.null(object$fitting)){
-    if(noise == "iid"){
+    if(noise == "rgeneric"){
+      ntheta = length(object$fitting$inla$hyperparameters$posteriors)
+      hypers = matrix(NA,nrow=ntheta,ncol=7)
+      colnames = c("mean","sd","quant0.025","quant0.25","quant0.5","quant0.75","quant0.975")
+      rownames = names(object$fitting$inla$hyperparameters$results)
+      for(i in 1:ntheta){
+        for(j in 1:7){
+          hypers[i,j] = round(object$fitting$inla$hyperparameters$results[[i]][[j]]
+                             ,digits=digits)
+        }
+
+      }
+      hypers = as.data.frame(hypers)
+      colnames(hypers) = colnames
+      rownames(hypers) = rownames
+
+    }else if(noise == "iid"){
 
       hypers = matrix(round(as.numeric(object$fitting$inla$hyperparameters$results$sigma_epsilon),digits=digits),nrow=1)
       #hypers = matrix( round(as.numeric(object$fitting$hyperparameters$results$sigma_epsilon),digits=digits),ncol=mm )
