@@ -539,14 +539,14 @@ for(eventnumber in 1:29){
    # guides(color = guide_legend(override.aes = list(alpha=1, size = 1.3)))+ # showing the point in the legend
     scale_color_manual(values=c("Synchronized onset posterior"="black",
                                 "Unsynchronized onset posterior"="gray",
-                                "Rasmussen onset"="blue",
-                                "Buizert onset"="green",
-                                "Capron onset"="red"),
+                                "Rasmussen et al. (2014)"="blue",
+                                "Buizert et al. (2015)"="green",
+                                "Capron et al. (2021)"="red"),
                        labels=c("Synchronized onset posterior",
                                 "Unsynchronized onset posterior",
-                                "Rasmussen onset",
-                                "Buizert onset",
-                                "Capron onset"))+
+                                "Rasmussen et al. (2014)",
+                                "Buizert et al. (2015)",
+                                "Capron et al. (2021)"))+
   theme(axis.title = element_blank(),
         axis.text = element_blank(),
         axis.ticks = element_blank(),

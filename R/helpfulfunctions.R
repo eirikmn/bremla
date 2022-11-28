@@ -204,8 +204,8 @@ bremla_simulationsummarizer = function(object,sync=TRUE,print.progress=FALSE){
         dens = density(samples[i,])
 
 
-        lower[i] = INLA::inla.hpdmarginal(0.95,dens)[1]
-        upper[i] = INLA::inla.hpdmarginal(0.95,dens)[2]
+        lower[i] = suppressWarnings(INLA::inla.hpdmarginal(0.95,dens)[1])
+        upper[i] = suppressWarnings(INLA::inla.hpdmarginal(0.95,dens)[2])
       }
     }
   }else{
