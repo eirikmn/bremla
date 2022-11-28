@@ -62,14 +62,19 @@ results = bremla(formula,data,reference.label="GICC05",
                 synchronization=list(method="adolphi"),
                 control.fit=list(method="inla"),
                 control.sim=list(synchronized=TRUE) )
+#> Error in readBin(fp, integer(), configs$nz) : vector size cannot be NA
+#> 
+#>  *** inla.core.safe:  inla.program has crashed: rerun to get better initial values. try=1/2 
+#> 
+#>  *** inla.core.safe:  rerun with improved initial values
 summary(results)
 #> 
 #> Call:
-#> knit(input = "README.rmd", output = "README.md")
+#> knit(input = "readme.rmd", output = "readme.md")
 #> 
 #> Time used:
 #>   Model fitting Chron. sampling           Total 
-#>         13.5089         96.0258        112.1846 
+#>         22.7956         80.7535        106.4205 
 #> 
 #> The fixed component is explained by linear predictor: 
 #> dy ~ -1 + depth2 + psi_fill(degree=1, n_events=69)
@@ -77,18 +82,18 @@ summary(results)
 #> The noise component is explained by an ar1 process.
 #> 
 #> The model is fitted using INLA, with following estimates for the hyperparameters:
-#>                 mean     sd quant0.025 quant0.25 quant0.5 quant0.75 quant0.975
-#> sigma_epsilon 0.4341 0.0024     0.4294    0.4325   0.4341    0.4357     0.4388
-#> phi           0.2157 0.0070     0.2019    0.2110   0.2158    0.2204     0.2292
+#>                 mean    sd quant0.025 quant0.25 quant0.5 quant0.75 quant0.975
+#> sigma_epsilon 0.4253 4e-04     0.4246    0.4250   0.4253    0.4256     0.4262
+#> phi           0.1566 1e-03     0.1546    0.1559   0.1565    0.1573     0.1587
 #> 
 #> Simulating 5000 chronologies, using GICC05 as reference.
 #> 
 #> 5000 synchronized chronologies sampled using 4 tie-point distributions (Adolphi).
 #> Tie-points are fixed at GICC05 ages (yb2k):
-#> 11050, 12050, 13050, 22050, 42050.
+#> 12050.3, 13050.62, 22050, 42049.59.
 ```
 
-<img src="man/figures/README-plot-1.png" title="plot of chunk plot" alt="plot of chunk plot" width="80%" />
+<img src="man/figures/README-plot-1.png" title="plot of chunk plot" alt="plot of chunk plot" width="90%" />
 
 ## Attribution
 

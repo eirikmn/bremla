@@ -216,10 +216,15 @@ bremla_modelfitter = function(object, control.fit,
                    control.compute=list(config=TRUE),
                    #verbose=TRUE,
                    verbose=object$.args$control.fit$verbose,
-                   control.inla=list(restart=TRUE,h=0.005,dz=0.75,
+                   control.inla=list(restart=TRUE,h=0.005,dz=0.75,#cmin=0
                                      int.strategy="auto"),
                    control.mode=list(theta=initialmodes,restart=TRUE)
                    )
+
+    # inla.fit = INLA::inla(formula=dy~-1+depth2+proxy+f(idy,model="ar1"),
+    #                       data=object$data)
+    # inla.fit = INLA::inla(formula=dy~-1+depth2+proxy+f(idy,model="ar1"),
+    #                       data=object$data)
 
     if(print.progress){
       cat(" completed.\n",sep="")
