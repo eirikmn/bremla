@@ -228,9 +228,7 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
   quit = function(){
     return ()
   }
-  if(is.null(theta)){
-    theta = initial()
-  }
+  if (!length(theta)) theta = initial()
 
   cmd = match.arg(cmd)
   val = do.call(cmd, args = list())

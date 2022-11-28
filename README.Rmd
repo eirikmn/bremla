@@ -56,10 +56,10 @@ data("NGRIP_5cm")
 
 age = NGRIP_5cm$age
 depth = NGRIP_5cm$depth
-proxy = NGRIP_5cm$d18O
+d18O = NGRIP_5cm$d18O
 
-data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
-formula = dy~-1+depth2
+data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,d18O=d18O)
+formula = dy~-1+depth2+d18O
 
 events=list(locations = events_rasmussen$depth,
             locations_unit="depth",degree=1)

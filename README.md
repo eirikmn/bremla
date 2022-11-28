@@ -48,10 +48,10 @@ data("NGRIP_5cm")
 
 age = NGRIP_5cm$age
 depth = NGRIP_5cm$depth
-proxy = NGRIP_5cm$d18O
+d18O = NGRIP_5cm$d18O
 
-data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
-formula = dy~-1+depth2
+data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,d18O=d18O)
+formula = dy~-1+depth2+d18O
 
 events=list(locations = events_rasmussen$depth,
             locations_unit="depth",degree=1)
@@ -62,29 +62,24 @@ results = bremla(formula,data,reference.label="GICC05",
                 synchronization=list(method="adolphi"),
                 control.fit=list(method="inla"),
                 control.sim=list(synchronized=TRUE) )
-#> Error in readBin(fp, integer(), configs$nz) : vector size cannot be NA
-#> 
-#>  *** inla.core.safe:  inla.program has crashed: rerun to get better initial values. try=1/2 
-#> 
-#>  *** inla.core.safe:  rerun with improved initial values
 summary(results)
 #> 
 #> Call:
-#> knit(input = "readme.rmd", output = "readme.md")
+#> knitr::knit("README.Rmd", "README.md")
 #> 
 #> Time used:
 #>   Model fitting Chron. sampling           Total 
-#>         22.7956         80.7535        106.4205 
+#>         14.3554         98.1266        115.1245 
 #> 
 #> The fixed component is explained by linear predictor: 
-#> dy ~ -1 + depth2 + psi_fill(degree=1, n_events=69)
+#> dy ~ -1 + depth2 + d18O + psi_fill(degree=1, n_events=69)
 #> 
 #> The noise component is explained by an ar1 process.
 #> 
 #> The model is fitted using INLA, with following estimates for the hyperparameters:
-#>                 mean    sd quant0.025 quant0.25 quant0.5 quant0.75 quant0.975
-#> sigma_epsilon 0.4253 4e-04     0.4246    0.4250   0.4253    0.4256     0.4262
-#> phi           0.1566 1e-03     0.1546    0.1559   0.1565    0.1573     0.1587
+#>                 mean     sd quant0.025 quant0.25 quant0.5 quant0.75 quant0.975
+#> sigma_epsilon 0.4239 0.0021     0.4201    0.4224   0.4238    0.4253     0.4283
+#> phi           0.1860 0.0074     0.1706    0.1810   0.1863    0.1911     0.1997
 #> 
 #> Simulating 5000 chronologies, using GICC05 as reference.
 #> 
