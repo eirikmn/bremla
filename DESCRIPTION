@@ -30,7 +30,7 @@ Imports:
 Depends: 
     R (>= 4.1),
     stats
-Additional_repositories: https://inla.inla-r-download.org/R/testing
+Additional_repositories: https://inla.inla-r-download.org/R/stable
 Suggests: 
     INLA (>= 21.08.31),
     sn,
