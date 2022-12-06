@@ -1,5 +1,6 @@
 ---
-output: github_document
+output: github_document:
+  html_preview: false
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -66,11 +67,11 @@ results = bremla(formula,data,reference.label="GICC05",
 summary(results)
 #> 
 #> Call:
-#> knit("README.Rmd", "README.md")
+#> knitr::knit("README.Rmd", "README.md")
 #> 
 #> Time used:
 #>   Model fitting Chron. sampling           Total 
-#>          9.4651       2644.0796       2656.2009 
+#>          8.9553         92.7286        104.5943 
 #> 
 #> The fixed component is explained by linear predictor: 
 #> dy ~ -1 + depth2 + d18O + psi_fill(degree=1, n_events=69)
@@ -79,8 +80,8 @@ summary(results)
 #> 
 #> The model is fitted using INLA, with following estimates for the hyperparameters:
 #>                 mean     sd quant0.025 quant0.25 quant0.5 quant0.75 quant0.975
-#> sigma_epsilon 0.4444 0.0025     0.4396    0.4428   0.4444    0.4461     0.4493
-#> phi           0.2639 0.0072     0.2498    0.2590   0.2639    0.2687     0.2779
+#> sigma_epsilon 0.4445 0.0025     0.4396    0.4428   0.4444    0.4461     0.4493
+#> phi           0.2639 0.0072     0.2498    0.2591   0.2639    0.2687     0.2779
 #> 
 #> Simulating 5000 chronologies, using GICC05 as reference.
 #> 
@@ -89,7 +90,7 @@ summary(results)
 #> 12050.3, 13050.62, 22050, 42049.59.
 ```
 
-<img src="man/figures/README-plot-1.png" title="plot of chunk plot" alt="plot of chunk plot" width="90%" />
+<img src="man/figures/README-plot-1.png" title="plot of chunk plot" alt="plot of chunk plot" width="100%" />
 
 ## Attribution
 
