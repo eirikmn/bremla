@@ -791,7 +791,7 @@ ggp2 = ggplot(data=ggd2,aes(x=depth)) + theme_bw()+
   xlab("Depth (m)") + ylab("Deviation from simulated reference (years)")+
   ggtitle("(b) Simulated chronologies")
 library(gridExtra)
-ggsave("fitdiffsim-5500x4000.eps", device=cairo_ps,width=5500,height=4000,units="px",dpi=500,limitsize=FALSE,arrangeGrob(ggp,ggp2))
+# ggsave("fitdiffsim-5500x4000.eps", device=cairo_ps,width=5500,height=4000,units="px",dpi=500,limitsize=FALSE,arrangeGrob(ggp,ggp2))
 str = ""
 for(i in 1:length(res$fitting$inla$fit$summary.fixed$mean)){
   str=paste0(str," & & ",format(res$fitting$inla$fit$summary.fixed$mean[i],digits=7,scientific=FALSE), " & (",

@@ -109,7 +109,6 @@ object = bremla(formula,data,nsims=5000,
                      control.fit=control.fit,
                      control.sim=control.sim,
                      synchronization=synchronization)
-#,print.progress=TRUE)
 summary(object)
 plot(object)
 

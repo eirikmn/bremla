@@ -1,6 +1,5 @@
 ---
-output: github_document:
-  html_preview: false
+output: github_document
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -32,12 +31,12 @@ and
 
 Myrvoll-Nilsen, E., Riechers, K. & Boers, N. (202x). Tie-point paper (title TBD)
 
-## installation
+## Installation
 
 The simplest way to install the package is to install the remotes package and run
 ```{r install, eval=FALSE}
-#install.packages("devtools")
-devtools::install_github("eirikmn/bremla")
+#install.packages("remotes")
+remotes::install_github("eirikmn/bremla")
 ```
 
 To get started, see the documentation '?bremla' and the associated example.

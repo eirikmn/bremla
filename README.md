@@ -1,6 +1,5 @@
 ---
-output: github_document:
-  html_preview: false
+output: github_document
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -67,11 +66,11 @@ results = bremla(formula,data,reference.label="GICC05",
 summary(results)
 #> 
 #> Call:
-#> knitr::knit("README.Rmd", "README.md")
+#> knit("README.Rmd", "README.md")
 #> 
 #> Time used:
 #>   Model fitting Chron. sampling           Total 
-#>          8.9553         92.7286        104.5943 
+#>          9.5028         99.2515        111.3837 
 #> 
 #> The fixed component is explained by linear predictor: 
 #> dy ~ -1 + depth2 + d18O + psi_fill(degree=1, n_events=69)
