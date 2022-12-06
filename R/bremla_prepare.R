@@ -57,7 +57,9 @@
 #'
 #'
 #' formula = dy~-1+depth2 + proxy
-#' data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+#' depth2 = depth^2/depth[1]^2 #normalize for stability
+#'
+#' data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth2)
 #' data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
 #'
 #' events=list(locations=c(1210,1220,1240))

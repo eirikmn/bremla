@@ -48,9 +48,10 @@ data("NGRIP_5cm")
 
 age = NGRIP_5cm$age
 depth = NGRIP_5cm$depth
+depth2 = depth^2/depth[1]^2 #normalize for stability
 d18O = NGRIP_5cm$d18O
 
-data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,d18O=d18O)
+data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth2,d18O=d18O)
 formula = dy~-1+depth2+d18O
 
 events=list(locations = events_rasmussen$depth,
@@ -65,11 +66,11 @@ results = bremla(formula,data,reference.label="GICC05",
 summary(results)
 #> 
 #> Call:
-#> knitr::knit("README.Rmd", "README.md")
+#> knit("README.Rmd", "README.md")
 #> 
 #> Time used:
 #>   Model fitting Chron. sampling           Total 
-#>         14.3554         98.1266        115.1245 
+#>          9.4651       2644.0796       2656.2009 
 #> 
 #> The fixed component is explained by linear predictor: 
 #> dy ~ -1 + depth2 + d18O + psi_fill(degree=1, n_events=69)
@@ -78,8 +79,8 @@ summary(results)
 #> 
 #> The model is fitted using INLA, with following estimates for the hyperparameters:
 #>                 mean     sd quant0.025 quant0.25 quant0.5 quant0.75 quant0.975
-#> sigma_epsilon 0.4239 0.0021     0.4201    0.4224   0.4238    0.4253     0.4283
-#> phi           0.1860 0.0074     0.1706    0.1810   0.1863    0.1911     0.1997
+#> sigma_epsilon 0.4444 0.0025     0.4396    0.4428   0.4444    0.4461     0.4493
+#> phi           0.2639 0.0072     0.2498    0.2590   0.2639    0.2687     0.2779
 #> 
 #> Simulating 5000 chronologies, using GICC05 as reference.
 #> 

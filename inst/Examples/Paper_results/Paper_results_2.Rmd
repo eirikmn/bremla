@@ -30,9 +30,10 @@ data("events_rasmussen")
 data("NGRIP_5cm")
 age = NGRIP_5cm$age
 depth = NGRIP_5cm$depth
+depth2 = depth^2/depth[1]^2 #normalize for stability
 proxy = NGRIP_5cm$d18O
 n=length(diff(age))
-data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
+data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth2,proxy=proxy)
 events=list(locations = events_rasmussen$depth,
             locations_unit="depth",degree=1)
 # plot(depth,proxy,xlab="Age (yb2k)",ylab=expression(paste(d^18,"O (permil)")),type="l",
@@ -722,6 +723,8 @@ y0 = 1000
 z0 = 1200
 phi=0.8; sigma=1.2
 depth = z0+seq(from=0.5,500,length.out=1000)
+depth2 = depth^2/depth[1]^2 #normalize for stability
+
 dnoise = sigma*arima.sim(n=n,model=list(ar=c(phi)),sd=sqrt(1-phi^2))
 proxy = arima.sim(n=n,model=list(ar=0.9),sd=sqrt(1-0.9^2))
 events=list(locations=c(1,250,750,1000))
@@ -733,7 +736,7 @@ c2 = c(numeric(249),-depth[1:500]/40,numeric(251))
 c3 = c(numeric(749),depth[1:251]/10)
 dy = dnoise + a1+a2+a3+c1+c2+c3 + proxy*0.5
 age = y0+cumsum(dy)
-df=data.frame(age=age,dy=as.numeric(dy),proxy=as.numeric(proxy),depth=depth,depth2=depth^2); data=rbind(c(y0,z0,0,0,0),df)
+df=data.frame(age=age,dy=as.numeric(dy),proxy=as.numeric(proxy),depth=depth,depth2=depth2); data=rbind(c(y0,z0,0,0,0),df)
 formula=dy~-1+proxy#+depth2
 nsims = 10000
 synchronization = list(locations = c(200,400,800),locations_unit="index",method="gauss", nsims=nsims,params=list(mean=c(2200,5600,11500),sd=c(10,50,60)))
@@ -808,8 +811,9 @@ data("events_rasmussen")
 data("NGRIP_5cm")
 age = NGRIP_5cm$age
 depth = NGRIP_5cm$depth
+depth2 = depth^2/depth[1]^2 #normalize for stability
 proxy = NGRIP_5cm$d18O
-data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
+data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth2,proxy=proxy)
 formula = dy~-1+depth2
 events=list(locations = events_rasmussen$depth,
             locations_unit="depth",degree=1)

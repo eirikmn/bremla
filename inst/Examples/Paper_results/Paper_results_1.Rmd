@@ -41,9 +41,10 @@ data("events_rasmussen")
 data("NGRIP_5cm")
 age = NGRIP_5cm$age
 depth = NGRIP_5cm$depth
+depth2 = depth^2/depth[1]^2 #normalize for stability
 proxy = NGRIP_5cm$d18O
 n=length(diff(age))
-data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth^2,proxy=proxy)
+data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth2,proxy=proxy)
 events=list(locations = events_rasmussen$depth,
             locations_unit="depth",degree=1)
 

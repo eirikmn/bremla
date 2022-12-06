@@ -39,10 +39,11 @@ dy <- a_lintrend*lintrend + a_proxy*proxy + sigma*dy_noise
 y0 = 11700;z0=1200
 age = y0+cumsum(dy)
 depth = 1200 + 1:n*0.05
+depth2 = depth^2/depth[1]^2 #normalize for stability
 
 
 formula = dy~-1+depth2 + proxy
-data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth^2)
+data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth2)
 data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
 
 events=list(locations=c(1210,1220,1240))
