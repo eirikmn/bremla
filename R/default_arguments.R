@@ -46,6 +46,9 @@ events.default <- function(){
 #'   Only \code{inla} is currently supported, but more will hopefully come in the future.}
 #'   \item{\code{verbose} }{Boolean telling whether or not the \code{inla}-program should run in
 #'   verbose mode. Default \code{FALSE}.}
+#'   \item{\code{improve.fixed} }{Boolean indicating whether or not the least squares estimate of
+#'   the fixed values should be used as initial values for the optimization procedure in INLA.
+#'   This feature has not been extensively tested so it might be unstable. Default \code{FALSE}}
 #'   \item{\code{ncores} }{Integer used to set the number of cores to be used in the \code{inla} fitting
 #'   procedure. Default value is \code{1}.}
 #'   \item{\code{transform} }{Character indicating which transformation should be applied to
@@ -83,6 +86,7 @@ control.fit.default <- function(){
     method="inla",
     verbose=FALSE,
     log.theta.prior=NULL,
+    improve.fixed=FALSE,
     ncores=1,
     transform="identity",
     rgeneric = NULL

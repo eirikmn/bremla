@@ -123,6 +123,7 @@ summary(object)
 plot(object)
 
 }
+
 if(inlaloader()){
 ### Real data example ###
 require(stringr)
@@ -153,7 +154,7 @@ interval = lowerints[eventnumber]:upperints[eventnumber]
 nsims=5000
 events=list(locations = events_rasmussen$depth,
             locations_unit="depth",degree=1)
-synchronization = list(method="adolphi")
+synchronization = list(method="adolphi", locations = c(FALSE,TRUE,TRUE,TRUE,TRUE))
 control.fit=list(method="inla")
 control.sim=list(synchronized = 2)
 

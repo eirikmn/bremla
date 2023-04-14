@@ -21,18 +21,18 @@ and
 
 Myrvoll-Nilsen, E., Riechers, K. & Boers, N. (202x). Tie-point paper (title TBD)
 
-## installation
+## Installation
 
 The simplest way to install the package is to install the remotes package and run
 
 ```r
-#install.packages("devtools")
-devtools::install_github("eirikmn/bremla")
+#install.packages("remotes")
+remotes::install_github("eirikmn/bremla")
 ```
 
 To get started, see the documentation '?bremla' and the associated example.
 
-The package includes the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm' downloaded from [Centre for Ice and Climate](https://www.iceandclimate.nbi.ku.dk) at the Niels Bohr Institute of the University of Copenhagen, Denmark, and the table of stadial-interstadial events presented by [Rasmussen et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0277379114003485). Also includes the tie-point presented in [Adolphi et al. (2018)](https://cp.copernicus.org/articles/14/1755/2018/) and [Muscheler et al. (2020)](https://www.cambridge.org/core/journals/radiocarbon/article/testing-and-improving-the-intcal20-calibration-curve-with-independent-records/D72D9214C47FE9441B5E730D33DCCE3D). Other data and tie-points should work as well.
+The package includes the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm.xls' downloaded from [Centre for Ice and Climate](https://www.iceandclimate.nbi.ku.dk) at the Niels Bohr Institute of the University of Copenhagen, Denmark, and the table of stadial-interstadial events presented by [Rasmussen et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0277379114003485). Also includes the tie-point presented in [Adolphi et al. (2018)](https://cp.copernicus.org/articles/14/1755/2018/) and [Muscheler et al. (2020)](https://www.cambridge.org/core/journals/radiocarbon/article/testing-and-improving-the-intcal20-calibration-curve-with-independent-records/D72D9214C47FE9441B5E730D33DCCE3D). Other data and tie-points should work as well.
 
 Warning: The provided real data example generates several thousand simulated chronologies with individual lengths exceeding 18,000. More if both synchronized and unsynchronized chronologies computed. This will require a significant amount of memory. If needed, reduce the number of samples generated or free up memory before use.
 
@@ -70,7 +70,7 @@ summary(results)
 #> 
 #> Time used:
 #>   Model fitting Chron. sampling           Total 
-#>          9.5028         99.2515        111.3837 
+#>          9.7505         93.6226        106.2326 
 #> 
 #> The fixed component is explained by linear predictor: 
 #> dy ~ -1 + depth2 + d18O + psi_fill(degree=1, n_events=69)
@@ -79,8 +79,8 @@ summary(results)
 #> 
 #> The model is fitted using INLA, with following estimates for the hyperparameters:
 #>                 mean     sd quant0.025 quant0.25 quant0.5 quant0.75 quant0.975
-#> sigma_epsilon 0.4445 0.0025     0.4396    0.4428   0.4444    0.4461     0.4493
-#> phi           0.2639 0.0072     0.2498    0.2591   0.2639    0.2687     0.2779
+#> sigma_epsilon 0.4444 0.0025     0.4396    0.4428   0.4444    0.4461     0.4493
+#> phi           0.2639 0.0072     0.2498    0.2590   0.2639    0.2687     0.2779
 #> 
 #> Simulating 5000 chronologies, using GICC05 as reference.
 #> 

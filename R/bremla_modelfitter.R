@@ -208,6 +208,10 @@ bremla_modelfitter = function(object, control.fit,
 
     my.control.fixed$prec=1
 
+    if(!object$.args$control.fit$improve.fixed){
+      my.control.fixed = NULL
+    }
+
     ## fit using INLA
     inlafit = INLA::inla(object$formula, family="gaussian",data=object$data,
                    control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))),

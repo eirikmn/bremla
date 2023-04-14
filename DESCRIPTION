@@ -40,4 +40,4 @@ Encoding: UTF-8
 LazyData: true
 URL: https://github.com/eirikmn/bremla
 BugReports: https://github.com/eirikmn/bremla/issues
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3

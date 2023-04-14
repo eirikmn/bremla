@@ -88,6 +88,7 @@
 #' plot(object)
 #'
 #' }
+#'
 #' if(inlaloader()){
 #' ### Real data example ###
 #' require(stringr)
@@ -118,7 +119,7 @@
 #' nsims=5000
 #' events=list(locations = events_rasmussen$depth,
 #'             locations_unit="depth",degree=1)
-#' synchronization = list(method="adolphi")
+#' synchronization = list(method="adolphi", locations = c(FALSE,TRUE,TRUE,TRUE,TRUE))
 #' control.fit=list(method="inla")
 #' control.sim=list(synchronized = 2)
 #'
@@ -141,7 +142,8 @@
 #' }
 #' @export
 #' @import matrixStats
-bremla <- function(formula,data,reference.label=NULL,
+bremla <- function(formula,data,
+                            reference.label=NULL,
                             x.label=NULL,
                             y.label=NULL,
                             nsims=10000,
