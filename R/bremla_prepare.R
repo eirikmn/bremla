@@ -239,13 +239,45 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
 
 
       }else{
-        if(tolower(control.fit$noise) %in% c("iid","independent","ar(0)")){
-          formulastring_inla = paste0(formulastring, " + f(idy,model=\"iid\")")
-        }else if(tolower(control.fit$noise) %in% c("ar1","ar(1)")){
-          formulastring_inla = paste0(formulastring, " + f(idy,model=\"ar1\")")
-        }else if(tolower(control.fit$noise) %in% c("ar2","ar(2)")){
-          formulastring_inla = paste0(formulastring, " + f(idy,model=\"ar\",order=2)")
+        hyperprior = control.fit$hyperprior
+        if(!is.null(hyperprior)){
+
+            hyperstring = paste0(", hyper = list(")
+            hypernames = names(hyperprior)
+            n_hyper = length(hypernames)
+            liststring = paste(hyperprior)
+
+            for( iter in 1:n_hyper){
+              if(iter > 1){
+                hyperstring = paste0(hyperstring, ", ")
+              }
+              itername = hypernames[iter]
+              hyperstring = paste0(hyperstring,itername," = ")
+              hyperstring = paste0(hyperstring,liststring[iter])
+            }
+            hyperstring = paste0(hyperstring,")")
+
+
+          if(tolower(control.fit$noise) %in% c("iid","independent","ar(0)")){
+            formulastring_inla = paste0(formulastring, " + f(idy,model=\"iid\"", hyperstring,")")
+          }else if(tolower(control.fit$noise) %in% c("ar1","ar(1)")){
+            formulastring_inla = paste0(formulastring, " + f(idy,model=\"ar1\"", hyperstring,")")
+          }else if(tolower(control.fit$noise) %in% c("ar2","ar(2)")){
+            formulastring_inla = paste0(formulastring, " + f(idy,model=\"ar\",order=2", hyperstring,")")
+          }
+
+        }else{
+          if(tolower(control.fit$noise) %in% c("iid","independent","ar(0)")){
+            formulastring_inla = paste0(formulastring, " + f(idy,model=\"iid\")")
+          }else if(tolower(control.fit$noise) %in% c("ar1","ar(1)")){
+            formulastring_inla = paste0(formulastring, " + f(idy,model=\"ar1\")")
+          }else if(tolower(control.fit$noise) %in% c("ar2","ar(2)")){
+            formulastring_inla = paste0(formulastring, " + f(idy,model=\"ar\",order=2)")
+          }
         }
+
+
+
         model.rgeneric=NULL
       }
     }

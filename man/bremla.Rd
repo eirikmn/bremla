@@ -94,7 +94,10 @@ data = data.frame(age=age,dy=dy,proxy=proxy,depth=depth,depth2=depth2)
 data = rbind(c(y0,NA,NA,z0,NA),data) #First row is only used to extract y0 and z0.
 
 events=list(locations=c(1210,1220,1240))
-control.fit = list(ncores=2,noise="ar1")
+control.fit = list(noise="ar1", hyperprior = list(
+                                        prec = list(prior="loggamma", param = c(1,0.01)),
+                                        rho = list(prior="normal", param = c(0,0.15)))
+                                        )
 synchronization=list(locations=depth[c(100,400,700)],method="gauss",
                            params=list(mean=c(age[c(100,400,700)]+c(30,-100,50)),
                                        sd=c(50,20,100)
