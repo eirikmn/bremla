@@ -29,7 +29,7 @@ Imports:
     stringr,
     utils
 Depends: 
-    R (>= 4.1),
+    R (>= 3.6),
     stats,
     methods
 Additional_repositories: https://inla.inla-r-download.org/R/testing
