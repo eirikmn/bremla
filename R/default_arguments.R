@@ -246,7 +246,7 @@ control.linramp.default <- function(){
       rescale.y.factor=1,
       imp.fit=TRUE,
       log.theta.prior=NULL,
-      h=0.01,
+      h=0.005,
       ncores=1,
       silent=FALSE,
       verbose=FALSE
