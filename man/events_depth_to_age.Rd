@@ -57,7 +57,7 @@ control.sim=list(synchronized=TRUE,
                  summary=list(compute=TRUE))
 
 #simulate transition:
-prox = rnorm(n,mean=c(rep(0,400),seq(0,4,length.out=20),rep(4,580)),sd=1)
+prox = rnorm(n,mean=c(rep(0,400),seq(0,4,length.out=200),rep(4,400)),sd=1)
 window = 330:500
 control.linramp = list(label="Simulated",proxy=prox,interval=window,interval.unit="index",
     depth.ref=depth[401])

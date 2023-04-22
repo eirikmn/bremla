@@ -103,15 +103,8 @@ synchronization=list(locations=depth[c(100,400,700)],method="gauss",
                                        sd=c(50,20,100)
                                        )
                      )
-control.sim=list(synchronized=2,
+control.sim=list(synchronized=TRUE,
                  summary=list(compute=TRUE))
-
-#simulate transition:
-prox = rnorm(n,mean=c(rep(0,400),seq(0,4,length.out=20),rep(4,580)),sd=1)-45
-window = 330:500
-control.linramp = list(label="Simulated",proxy=prox,interval=window,interval.unit="index",
-    depth.ref=depth[401])
-control.transition_dating=list(label="Simulated transition",dating=list(age.ref=age[401]))
 
 
 object = bremla(formula,data,nsims=5000,reference.label="simulated timescale",
@@ -119,8 +112,6 @@ object = bremla(formula,data,nsims=5000,reference.label="simulated timescale",
                          synchronization=synchronization,
                          control.fit=control.fit,
                          control.sim=control.sim,
-                         control.linramp=control.linramp,
-                         control.transition_dating=control.transition_dating,
                          print.progress=TRUE)
 summary(object)
 plot(object)
