@@ -1,0 +1,828 @@
+---
+output: github_document
+---
+
+<!-- results.md is generated from results.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/reproduce/results/results-",
+  dev = "png",
+  out.width = "100%"
+)
+```
+
+# Extract DO events from Corrick pdf
+
+```{r initialize, eval=TRUE}
+library(pdftools)
+library(data.table)
+library(dplyr)
+library(stringr)
+
+# ttt = pdf_text("inst/reproduce_results/corricktable.pdf")
+# 
+# data = toString(ttt)
+# data <- read.table(text = data, sep = "\n", as.is = TRUE)
+# data <- data[-c(1, 2, 3, 4, 5, 6, 7, 14, 20, 26, 34, 47, 52, 58, 65, 66, 67), ]
+# data <- gsub("[,]", "", data)
+# data <- gsub("[$]", "", data)
+# data <- gsub("\\s+", ",", gsub("^\\s+|\\s+$", "",data))
+# 
+# 
+# 
+# df <- ttt %>% 
+#   read_lines() %>%    # separate lines
+#   grep('^\\s{2}\\w', ., value = TRUE) %>%    # select lines with states, which start with space, space, letter
+#   paste(collapse = '\n') %>%    # recombine
+#   read_fwf(fwf_empty(.)) %>%    # read as fixed-width file
+#   mutate_at(-1, parse_number) %>%    # make numbers numbers
+#   mutate(X1 = sub('*', '', X1, fixed = TRUE))    # get rid of asterisks in state names
+# 
+# df
+
+colnames = c("age", "avg error", "negative error"," positive error",
+             "precision", "country", "region")
+eventnames = c("GI 1e", "GI 3", "GI 4", "GI 5.1", "GI 5.2", "GI 6", "GI 7a",
+               "GI 7c", "GI 8c", "GI 9", "GI 10", "GI 11","GI12c", "GI 13a", 
+               "GI 13c", "GI14c", "GI 15.1", "GI 15.2", "GI 16.1a", "GI 16.1c",
+               "GI 16.2", "GI 17.1a", "GI 17.1c", "GI 17.2", "GI 18", "GI 19.2",
+               "GI 20c", "GI 21.1a", "GI 21.1e", "GI 22g", "GI 23.2", "GI 24.1a",
+               "GI 24.1c", "GI 24.2", "GI 25c") 
+
+fullfile = scan("corrictabletext.txt", what="character",sep="\t")
+findDOlines = gregexpr("GI",fullfile)
+DOlines = numeric(length(eventnames))
+teller=0
+for(i in 1:length(findDOlines)){
+  if(findDOlines[[i]][1] > -1){
+    teller = teller+1
+    DOlines[teller] = i
+  }
+}
+DOlines = c(DOlines, length(fullfile)+1)
+
+dflist = list()
+
+#for(i in 19:19){
+for(i in 2:length(DOlines)){  
+  startline = DOlines[i-1]+1
+  endline = DOlines[i]-1
+  eventname = eventnames[i-1]
+  rownames=c()
+  rows = c()
+  for(iterline in startline:endline){
+    currentline = fullfile[iterline]
+    elements = str_split(currentline," ")[[1]]
+    elemarray = c()
+    for(elem in 1:length(elements)){
+      if(elements[elem] != ""){
+        elemarray=c(elemarray, elements[elem])
+      }
+    }
+    rownames = c(rownames, elemarray[1])
+    rows=rbind(rows, elemarray[-1])
+  }
+  colnames(rows) = colnames
+  rownames(rows) = rownames
+  dflist[[eventname]] = rows
+}
+
+dflist[[1]]
+
+```
+```{r functions}
+
+
+cleanstring = function(str,do.tolower=TRUE){
+  str = gsub("\\s+|\\.|,|_|-", "", str, perl = TRUE)
+  
+  if(do.tolower){
+    return(tolower(str))
+  }else{
+    return(str)
+  }
+}
+
+stringcut = function(str,expr="_",before=TRUE,margin=1){
+  pos <- regexpr(paste0("\\",expr), str)
+  if(pos==-1){
+    return(str)
+  }else{
+    if(before){
+      return(substr(str,1,pos-margin))
+    }else{
+      return(substr(str,pos+margin,nchar(str)))
+    }
+  }
+}
+which.col = function(mat, val){
+  loc=c()
+  for(i in 1:ncol(mat)){
+    ran = range(mat[!is.na(mat[,i]),i])
+    if(ran[1] <= val && ran[2] >= val){
+      loc=c(loc, i)
+    }
+  }
+  if(length(loc)==0){
+    warning("Could not find element in matrix columns!\n")
+  }else if(length(loc)>1){
+    warning("Element found in multiple columns...\n")
+  }
+  return(loc)
+}
+```
+
+```{r dflist_bygroup}
+
+codenames = c()
+for(i in 1:length(dflist)){
+  codenames = c(codenames, rownames(dflist[[i]]) )
+}
+codenames = unique(codenames)
+
+records = c()
+
+for(i in 1:length(codenames)){
+  locstr = stringcut(codenames[i],expr="_",before=FALSE)
+  groupstr = stringcut(codenames[i],expr="_",before=TRUE)
+  groupstr = stringcut(groupstr,expr="(",before=TRUE)
+  
+  records = c(records, paste0(groupstr,"_",locstr))
+}
+records = unique(records)
+nrecords = length(records)
+
+
+fullfile = scan("corrictabletext.txt", what="character",sep="\t")
+
+findDOlines = gregexpr("GI",fullfile)
+DOlines = numeric(length(eventnames))
+
+teller=0
+for(i in 1:length(findDOlines)){
+  if(findDOlines[[i]][1] > -1){
+    teller = teller+1
+    DOlines[teller] = i
+  }
+}
+DOlines = c(DOlines, length(fullfile)+1)
+
+
+
+#for(i in 19:19){
+#for(i in 1:nrecords){  
+  #findeventlines = gregexpr(tolower(records[i]),tolower(fullfile))
+endline = length(fullfile)
+df2list = list()
+for(iterline in 4:endline){
+  currentline = fullfile[iterline]
+  elements = str_split(currentline," ")[[1]]
+  
+  elemarray = c()
+  for(elem in 1:length(elements)){
+    if(elements[elem] != ""){
+      elemarray=c(elemarray, elements[elem])
+    }
+  }
+  if("GI" %in% elemarray[1]){
+  }else{
+    tempdf = data.frame(age=elemarray[2], avgerror=elemarray[3], negerror=elemarray[4],
+                      poserror=elemarray[5],precision=elemarray[6])
+  
+    eventind = max(which(DOlines<iterline))
+    eventstr = eventnames[eventind]
+    rownames(tempdf) = eventstr
+    
+    namestr = elemarray[1]
+    groupstr = stringcut(namestr,"_",before=TRUE)
+    groupstr = stringcut(groupstr,"(",before=TRUE)
+    locstr = stringcut(namestr,"_",before=FALSE)
+    recstring = paste0(groupstr,"_",locstr)
+    
+    df2list[[recstring]] = rbind(df2list[[recstring]],tempdf)
+    
+  }
+  #}
+  
+  
+}
+
+df2list[[1]]
+
+```
+
+
+`
+```{r rgeneric-linramp}
+rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to define the linear ramp model
+  cmd = c("graph", "Q","mu", "initial", "log.norm.const", "log.prior", "quit"),
+  theta = NULL)
+{
+
+  envir = environment(sys.call()[[1]])
+
+  linramp = function(t,t0=0,dt=1,y0=0,dy=1){ #linear ramp function
+    y = numeric(length(t))
+    y = y0 + dy*(t-t0)/dt
+
+    y[t<t0]=y0
+    y[t>t0+dt]=y0+dy
+
+    return(y)
+  }
+
+
+  interpret.theta = function() { #helpful function to transform back from internal parametrization
+    y0 = theta[3]
+    dy = (theta[4])
+    y1 = y0+dy
+    t0 = theta[1]
+    Dt = exp(theta[2])
+    t1=t0+Dt
+
+
+    prec = exp(theta[6])
+    tau = exp(theta[5])
+    return(list(y0=y0,dy=dy,y1=y1,t0=t0,t1=t1,prec=prec,tau=tau,Dt=Dt))
+  }
+
+  mu = function() { #mean vector defined as a linear ramp
+    if(!is.null(envir)){
+      timepoints=get("timepoints",envir)
+
+    }
+    param = interpret.theta()
+    y0=param$y0; dy=param$dy; y1=param$y1; t0=param$t0; t1=param$t1; Dt = param$Dt; dt=Dt
+
+    mvek = linramp(timepoints,t0=t0,dt=dt,y0=y0,dy=dy)
+
+    return(mvek)
+  }
+
+
+  graph = function(){ #graphs of conditional dependence structure. 1 where Q[i,j] != 0, 0 where Q[i,j] = 0
+    G = Q()
+    G[G != 0] = 1
+    return (G)
+  }
+
+  Q = function(){ #inverse covariance matrix: AR(1) that allow for unequal spacing
+    if(!is.null(envir)){
+      n=get("n",envir)
+      timepoints=get("timepoints",envir)
+    }
+    param=interpret.theta()
+    ii = 1:n
+    jj = 1:n
+
+
+    rhos=rep(NA,n)
+    rhos[2:n] = exp(-diff(timepoints)/param$tau)
+    kappa0 = param$prec
+
+    xx = rep(NA,2*n-1)
+    xx[1] = 1+rhos[2]^2/(1-rhos[2]^2)
+    xx[2] = 1/(1-rhos[n]^2)
+    xx[3:n] = 1/(1-rhos[2:(n-1)]^2) + rhos[3:n]^2/(1-rhos[3:n]^2)
+    xx[(n+1):(2*n-1)] = -rhos[2:n]/(1-rhos[2:n]^2)
+
+    xx = kappa0*xx
+
+    i = c(1L, n, 2L:(n - 1L), 1L:(n - 1L))
+    j = c(1L, n, 2L:(n - 1L), 2L:n)
+
+    Q = Matrix::sparseMatrix(
+      i = i,
+      j = j,
+      x = xx,
+      symmetric = TRUE
+    )
+    #diag(Q)=diag(Q)
+
+    return (Q)
+  }
+
+  log.norm.const = function(){ #INLA computes this automatically
+    return(numeric(0))
+  }
+
+  log.prior = function(){
+    if(!is.null(envir)){
+      tslutt=get("tslutt",envir)
+      tstart=get("tstart",envir)
+      ystart=get("ystart",envir)
+      #log.theta.prior=get("log.theta.prior",envir)
+      # rescale.y=get("rescale.y",envir)
+    }
+
+    #if(!is.null(log.theta.prior)){
+    #  lprior = log.theta.prior(theta)
+    #}else{
+      params = interpret.theta()
+
+      #log-priors are given for internal parametrisation using the change of variables theorem
+
+      lprior = dnorm(theta[1],mean=round(0.5*(tslutt+tstart)),sd=50,log=TRUE) #t0
+      lprior = lprior + dgamma(exp(theta[2]),shape=1.0,rate=0.02,log=TRUE) + theta[2] #dt
+      # if(rescale.y){
+      #   lprior = lprior + dnorm(theta[3],mean=ystart,sd=0.025,log=TRUE) #y0
+      #   lprior = lprior + dnorm(theta[4],mean=1-ystart,sd=0.01,log=TRUE) #dy
+      #   lprior = lprior + dgamma(exp(theta[5]),1,rate = 3,log=TRUE) + theta[6] #tau/rho
+      #   lprior = lprior + dgamma(exp(theta[6]),0.1,rate = 1,log=TRUE) + theta[6] #sigma/kappa
+      # }else{
+      lprior = lprior + dnorm(theta[3],mean=ystart,sd=5,log=TRUE) #y0
+      lprior = lprior + dnorm(theta[4],mean=0,sd=10.0,log=TRUE) #dy
+      lprior = lprior + dgamma(exp(theta[5]),2.5,rate = 0.15,log=TRUE) + theta[6] #tau/rho
+      lprior = lprior + dgamma(exp(theta[6]),2,rate = 0.15,log=TRUE) + theta[6] #sigma/kappa
+      # }
+    #}
+
+    return (lprior)
+  }
+
+  initial = function(){
+    ini = c(0,0,0,0,1,2)
+    return (ini)
+  }
+
+  quit = function(){
+    return ()
+  }
+  if (!length(theta)) theta = initial()
+
+  cmd = match.arg(cmd)
+  val = do.call(cmd, args = list())
+  return (val)
+}
+```
+
+```{r linrampfunction}
+
+linrampfunc = function(x,y, steplength=0.005,nsims=0, opt.params=NULL,imp.fit=TRUE, rescale.y.factor=1, print.progress=TRUE){
+  
+  n = length(x)
+  
+  input_x=x
+  input_y=y
+  if(print.progress) cat("Initializing linear ramp fit using INLA.\n",sep="")
+  df_event = data.frame(xx=x, yy=y) 
+
+    #timepoints = input_x
+  timepoints = round((df_event$xx - df_event$xx[1])/(df_event$xx[n]-df_event$xx[1])*(n-1)+1,digits=4)
+
+    
+    ## default initial values for optim function
+  if(is.null(opt.params)){
+    optparams = c(round(length(timepoints)/2),round(length(timepoints)/10),df_event$yy[1],df_event$yy[length(timepoints)]-df_event$yy[1])
+  }else{
+    defoptparams = c(round(length(timepoints)/2),round(length(timepoints)/10),df_event$yy[1],df_event$yy[length(timepoints)]-df_event$yy[1])
+    optparams = control.linramp$opt.params
+    for(i in 1:length(defoptparams)){
+      if(is.na(optparams[i])){
+        optparams[i] = defoptparams[i]
+      }
+    }
+  }
+  
+
+
+  df0=data.frame(y=df_event$yy*rescale.y.factor,
+                 x=df_event$xx)
+
+
+  t_start = df0$time[1];t_end = df0$time[n];y_start = df0$y[1]
+  #library(numDeriv)
+  #library(compiler)
+  y = df0$y
+  if(print.progress) cat("Using 'optim' to find initial positions for hyperparameters in INLA.\n",sep="")
+  ## for stability the x-axis is transformed to values ranging from 1:n.
+
+  df0$time = timepoints
+
+  ## Finding initial values in INLA optimization procedure by first using a simple optimization
+  ## gradient and cost function given here
+
+  if(!is.null(imp.fit)){
+    minfun.grad = function(param, args = NULL){
+      return (grad(minfun, param, args=args, method.args = list(r=6)))
+    }
+    minfun = function(param, args = NULL){
+      yhat = linramp(timepoints,t0=param[1],dt=param[2],y0=param[3],dy=param[4])
+      mse = sum((args$y-yhat)^2)
+      return(sqrt(mse))
+    }
+
+    ## perform optimization to find good starting values for INLA
+    param=optparams
+    args=list(y=y)
+    fit = optim(param,
+                fn = minfun,
+                gr = minfun.grad,
+                method = "BFGS",
+                control = list(
+                  abstol = 0,
+                  maxit = 100000,
+                  reltol = 1e-11),
+                args = args)
+
+
+
+    ### use least squares estimates for fixed effects as initial values in inla
+
+    muvek = linramp(timepoints,t0=fit$par[1],dt=fit$par[2],y0=fit$par[3],dy=fit$par[4])
+    #plot(timepoints,y); lines(timepoints,muvek)
+    init = c(fit$par[1],log(fit$par[2]),fit$par[3],fit$par[4],0,0)
+  }
+    
+  if(print.progress) cat("Fitting linear ramp model in INLA using rgeneric model specification...\n",sep="")
+  ## creating linear ramp INLA model using rgeneric framework. Requires further specification, see "rgeneric.uneven" function
+  time.startinla = Sys.time()
+  model.rgeneric = INLA::inla.rgeneric.define(rgeneric.uneven.AR1,n=n,
+                                              tstart=timepoints[1],
+                                              tslutt=timepoints[n],
+                                              ystart=y[1],
+                                              timepoints = timepoints)#,
+                                              #log.theta.prior=control.linramp$log.theta.prior)
+  formula = y ~ -1+ f(idx, model=model.rgeneric)
+
+  if(!is.null(imp.fit)){
+    r = INLA::inla(formula,family="gaussian", data=data.frame(y=df0$y,idx=1:n),#as.integer(df0$time)),
+                   control.mode=list(theta=init,
+                                     restart=TRUE),
+                   num.threads = 1,
+                   verbose=FALSE,
+                   silent=FALSE,
+                   control.inla=list(h=steplength),
+                   control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))) )#, num.threads = 1)
+
+  }else{
+    r = INLA::inla(formula,family="gaussian", data=data.frame(y=df0$y,idx=1:n),#as.integer(df0$time)),
+                   control.mode=list(restart=TRUE),
+                   num.threads = 1,
+                   verbose=FALSE,
+                   silent=FALSE,
+                   control.inla=list(h=steplength),
+                   control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))) )#, num.threads = 1)
+
+  }
+
+
+  time.endinla = Sys.time()
+  elapsedinla = difftime(time.endinla,time.startinla,units="secs")[[1]]
+  if(print.progress) cat("Completed in ",elapsedinla," seconds.\n",sep="")
+  if(print.progress) cat("Gathering results...\n",sep="")
+  
+  object = list(timepoints=timepoints,data=df0,inlafit=r)
+  object$linramp$data$y = object$linramp$data$y/rescale.y.factor
+
+  ## compute posterior marginals and posterior marginal means of z^* = t0 (transition onset), dt (transition duration), y0 (initial ramp level), dy (change in ramp level) sigma (amplitude of AR(1) noise) and tau (parameter for correlation of AR(1) noise)
+  t0=INLA::inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta1 for idx`); dt=INLA::inla.emarginal(function(x)exp(x),r$marginals.hyperpar$`Theta2 for idx`);y0=INLA::inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta3 for idx`); dy=INLA::inla.emarginal(function(x)x,r$marginals.hyperpar$`Theta4 for idx`);rho = INLA::inla.emarginal(function(x)2/(1+exp(-x))-1,r$marginals.hyperpar$`Theta5 for idx`); sigma = INLA::inla.emarginal(function(x)1/sqrt(exp(x)),r$marginals.hyperpar$`Theta6 for idx`)
+  #muvek = linramp(timepoints,t0=t0,dt=dt,y0=y0,dy=dy)
+
+  t0mean = r$summary.hyperpar$mean[1]; t0lower = r$summary.hyperpar$`0.025quant`[1];t0upper = r$summary.hyperpar$`0.975quant`[1]
+  #margt0 = inla.tmarginal(function(x)df$age[1]+x/(n-1)*(df$age[n]-df$age[1]),r$marginals.hyperpar$`Theta1 for idx`);
+  margt0 = INLA::inla.tmarginal(function(x)df0$x[1]+x/(n-1)*(df0$x[n]-df0$x[1]),r$marginals.hyperpar$`Theta1 for idx`);
+  z.t0 = INLA::inla.zmarginal(margt0,silent=TRUE)
+
+  object$linramp$param$t0 = list(marg.t0=margt0,mean=z.t0$mean,sd=z.t0$sd,q0.025=z.t0$quant0.025,q0.5=z.t0$quant0.5,q0.975=z.t0$quant0.975)
+  if((abs(r$summary.hyperpar$mean[2])>1000) || (r$summary.hyperpar$sd[2]>1000)){
+    margdt=NA
+    margdtpos=NA
+  }else{
+    margdt = INLA::inla.tmarginal(function(x)exp(x)/(n-1)*(df0$x[n]-df0$x[1]),INLA::inla.smarginal(r$marginals.hyperpar$`Theta2 for idx`))
+    margdtpos = data.frame(x=-margdt$x,y=margdt$y)
+    z.dt = INLA::inla.zmarginal(margdt,silent=TRUE)
+    z.dtpos = INLA::inla.zmarginal(margdtpos,silent=TRUE)
+    object$linramp$param$dt = list(marg.dt=margdt,mean=z.dt$mean,sd=z.dt$sd,q0.025=z.dt$quant0.025,q0.5=z.dt$quant0.5,q0.975=z.dt$quant0.975)
+    object$linramp$param$dtpos = list(marg.dtpos=margdtpos,mean=z.dtpos$mean,sd=z.dtpos$sd,q0.025=z.dtpos$quant0.025,q0.5=z.dtpos$quant0.5,q0.975=z.dtpos$quant0.975)
+  }
+  margy0 = INLA::inla.tmarginal(function(x)x/rescale.y.factor,
+                                INLA::inla.smarginal(r$marginals.hyperpar$`Theta3 for idx`))
+  margdy = INLA::inla.tmarginal(function(x)x/rescale.y.factor,
+                                INLA::inla.smarginal(r$marginals.hyperpar$`Theta4 for idx`))
+  z.y0 = INLA::inla.zmarginal(margy0,silent=TRUE)
+  z.dy = INLA::inla.zmarginal(margdy,silent=TRUE)
+  object$linramp$param$y0 = list(marg.y0=margy0,mean=z.y0$mean,sd=z.y0$sd,q0.025=z.y0$quant0.025,q0.5=z.y0$quant0.5,q0.975=z.y0$quant0.975)
+  object$linramp$param$dy = list(marg.dy=margdy,mean=z.dy$mean,sd=z.dy$sd,q0.025=z.dy$quant0.025,q0.5=z.dy$quant0.5,q0.975=z.dy$quant0.975)
+
+  margsigma = INLA::inla.tmarginal(function(x)1/sqrt(exp(x)),INLA::inla.smarginal(r$marginals.hyperpar$`Theta5 for idx`))
+  margtau = INLA::inla.tmarginal(function(x)exp(x),INLA::inla.smarginal(r$marginals.hyperpar$`Theta6 for idx`))
+  z.sigma = INLA::inla.zmarginal(margsigma,silent=TRUE)
+  z.tau = INLA::inla.zmarginal(margtau,silent=TRUE)
+  object$linramp$param$sigma = list(marg.sigma=margsigma,mean=z.sigma$mean,sd=z.sigma$sd,q0.025=z.sigma$quant0.025,q0.5=z.sigma$quant0.5,q0.975=z.sigma$quant0.975)
+  object$linramp$param$tau = list(marg.sigma=margtau,mean=z.tau$mean,sd=z.tau$sd,q0.025=z.tau$quant0.025,q0.5=z.tau$quant0.5,q0.975=z.tau$quant0.975)
+
+#nsims = 30000
+  if(nsims>0 ) time.startbonussample = Sys.time()
+
+  if(nsims>0 && print.progress ) cat("Simulating ensemble of ", nsims, " samples for t1 = t0 + dt..."," and linear ramp\n",sep="")
+  
+
+  if(nsims>0){
+    
+    samps=INLA::inla.hyperpar.sample(nsims,r)
+
+    hpars = matrix(NA,nrow = nsims,ncol=5)
+    hpars[,1:2]=samps[,3:4]/rescale.y.factor #y0,dy
+    n=length(timepoints)
+
+    hpars[,3] = df0$x[1] + (samps[,1]-1)/(n-1)*(df0$x[n]-df0$x[1]) #t0
+    hpars[,4] = exp(samps[,2])/(n-1)*(df0$x[n]-df0$x[1]) #Dt
+  }
+
+  if(nsims>0){
+    t1sims=numeric(nsims)
+    t1mean = mean(t1sims)
+    for(i in 1:nsims){
+      t01 = hpars[i,3]
+      dt1 = hpars[i,4]
+      t1sims[i] = t01+dt1
+
+    }
+
+    t1dens = density(t1sims)
+    margt1 = cbind(t1dens$x,t1dens$y); colnames(margt1) = c("x","y")
+    z.t1 = INLA::inla.zmarginal(margt1,silent=TRUE)
+    object$linramp$param$t1 = list(marginal=margt1,samples = t1sims,mean=z.t1$mean,sd=z.t1$sd,q0.025=z.t1$quant0.025,q0.5=z.t1$quant0.5,q0.975=z.t1$quant0.975)
+  }
+  if(nsims>0){
+    vekmat = matrix(NA,nrow=n,ncol=nsims)
+    for(i in 1:nsims){
+      t01 = hpars[i,3]
+      dt1 = hpars[i,4]
+      vekmat[,i] = bremla::linramprev(object$data$x,t0=t01,dt=dt1,y0=hpars[i,1],dy=hpars[i,2])
+    }
+    vek.quant0.025 = numeric(n)
+    vek.quant0.5 = numeric(n)
+    vek.quant0.975 = numeric(n)
+    vek.mean = numeric(n)
+    for(iter in 1:n){
+      dens = density(vekmat[iter,])
+      vek.quant0.025[iter]=INLA::inla.qmarginal(0.05,dens)
+      vek.quant0.5[iter]=INLA::inla.qmarginal(0.5,dens)
+      vek.mean[iter] = mean(vekmat[iter,])
+      vek.quant0.975[iter]=INLA::inla.qmarginal(0.95,dens)
+    }
+
+    object$linramp$linrampfit = list(mean = vek.mean,q0.025=vek.quant0.025,q0.5=vek.quant0.5,q0.975=vek.quant0.975)
+  }
+  #object$time$linramp = list(inla=elapsedinla)
+  if(nsims>0 ) object$time$t1_and_ramp = difftime(Sys.time(),time.startbonussample,units="secs")[[1]]
+  if((nsims>0 ) && print.progress) cat(" completed in ",object$time$t1_and_ramp," seconds!\n",sep="")
+
+  #time.total = difftime(Sys.time(),time.start,units="secs")[[1]]
+
+  object$linramp$.args = list(nsims=nsims)
+  #object$time$linramp=time.total
+return(object)
+  }
+
+```
+
+```{r linrampplot}
+library(ggplot2)
+linrampplot = function(object,mainlab="",sublab="", ref=NULL){
+  
+  ggd = data.frame(x=object$data$x,y=object$data$y, mean = object$linramp$linrampfit$mean, lower=object$linramp$linrampfit$q0.025,upper=object$linramp$linrampfit$q0.975)
+  
+  ggp = ggplot(data=ggd) + geom_line(aes(x=x,y=y),col="gray")+
+    geom_ribbon(aes(x=x,ymin=lower,ymax=upper),fill="red",alpha=0.3) + geom_line(aes(x=x,y=mean),col="blue") + theme_bw() + xlab("Depth") + ylab("d18O")+
+    labs(title=mainlab, subtitle=sublab) + scale_x_reverse()
+  if(!is.null(ref)){
+    ggref = data.frame(ref=ref)
+    ggp = ggp + geom_vline(data=ggref,aes(xintercept=ref),color="black")
+  }
+  
+  return(ggp)
+}
+```
+
+
+# Fitting linramp model
+
+
+```{r nextblock}
+library(readxl)
+library(bremla)
+library(numDeriv)
+
+finetunenames = function(strings,tolower=FALSE){
+  cstrings = c()
+  for(i in 1:length(strings)){
+    str = strings[i]
+    #if(str_detect(str," ")){
+    str = stringcut(str,expr=" ",before=FALSE)
+  #}
+    if(str_detect(str,"ö")){
+      str <- gsub("ö", "o", str)
+    }
+    cstrings[i] = str
+  }
+  
+  if(tolower) return(tolower(cstrings))
+  return(cstrings)
+}
+
+sheetnames = excel_sheets(path="corricdata.xlsx")[-1]
+sheetnames = finetunenames(sheetnames)
+
+rowskips = rep(2,length(sheetnames))
+rowskips[c(3,8,15,21)] = 3
+rowskips[c(11,38)] = 4
+
+#names(df2list)
+
+errorvec = numeric(length(df2list)) #index represents iterator 'i' below. Value represent which event the error occured
+
+margt0_x = c()
+margt0_y = c()
+recordindices= c()
+recordname = c()
+eventindices = c()
+eventnames = c()
+
+counter = 0
+for(i in 1:length(df2list)){
+  
+  nam = names(df2list)[i]
+  cat("Iteration #",i," of ",length(df2list),": ",nam,"\n\n",sep="")
+  
+  locstring = stringcut(nam,"_",before=FALSE)
+  groupstring = stringcut(nam,"_",before=TRUE)
+  
+  if(locstring %in% sheetnames){
+    sheetid = which(tolower(sheetnames) == tolower(locstring))+1
+  }else{
+    warning(paste0("Could not find correct sheet. ",i,": ",locstring,"\n"))
+  }
+  groupnames = colnames(read_excel("corricdata.xlsx",sheet=sheetid,n_max=1))[-1]
+  groupnames = groupnames[!str_detect(groupnames,"\\.\\.\\.")]
+  if(groupstring %in% groupnames){
+  }else{
+    warning(paste0("Could not find correct group. ",i,": ",locstring," - ",groupstring,"\n"))
+  }
+  
+  dd = read_excel("corricdata.xlsx",sheet=sheetid,skip=rowskips[sheetid-1],trim_ws=TRUE)
+  emptycols = rep(FALSE,length(colnames(dd)))
+  emptycolslist = gregexpr("\\.\\.\\.", colnames(dd))
+  for(j in 1:length(emptycolslist)){
+    if(emptycolslist[[j]][1] == 1)
+      emptycols[j] = TRUE
+  }
+  dd = dd[,!emptycols]
+  cnames = colnames(dd)
+  
+  agevecs = dd[,str_detect(tolower(cnames),"age_1950")]
+  depthvecs = dd[,str_detect(tolower(cnames),"depth")]
+  d18Ovecs = dd[,str_detect(tolower(cnames),"d18o")]
+  
+  inevents = nrow(df2list[[i]])
+  ineventnames = rownames(df2list[[i]])
+  
+  for(eventid in 1:inevents){
+    counter = counter+1
+    ineventname = ineventnames[eventid]
+    cat("\n\n",counter,") event #",eventid," of ",inevents,": ",ineventname,"\n\n",sep="")
+    
+    eventage = as.numeric(df2list[[i]]$age[eventid])
+    colid = which.col(agevecs, eventage)
+    if(length(colid)==0){
+      errorvec[i] = eventid
+      cat("Breaking inner for-loop\n")
+      break
+      cat("Didnt work!\n")
+    }
+    if(length(colid)>1){
+      warning("Onset found in multiple records, choosing the one where event is closest to middle in terms of indices...\n")
+      mincolid = colid[1]
+      bestplacement = Inf
+      for(ci in 1:length(colid)){
+        agve = agevecs[[ colid[ci] ]][!is.na(agevecs[[ colid[ci] ]])]
+        deve = depthvecs[[ colid[ci] ]][!is.na(depthvecs[[ colid[ci] ]])]
+        if(deve[1] > tail(deve,1)){ #choosing depths that are increasing
+        }else{
+          #1/length(agve)*sqrt(sum((eventage-agve)^2))
+          
+        placement = which(sort(unique(c(agve,eventage)))==eventage) / length(agve)
+        
+        offcenter = abs(placement-0.5)
+        
+        if(offcenter < bestplacement){
+          mincolid = colid[ci]
+          bestplacement = offcenter
+        }
+        }
+      }
+      if(bestplacement == Inf){
+        stop("Could not find suitable record (increasing depths\n")
+      }
+      colid = mincolid
+      
+    }
+    
+    depthvec = as.numeric(depthvecs[colid][[1]])
+    d18Ovec = as.numeric(d18Ovecs[colid][[1]])
+    agevec = as.numeric(agevecs[colid][[1]])
+    
+    removeind = c(which(is.na(depthvec)),which(is.na(d18Ovec)),which(is.na(agevec)))
+    removeind = unique(removeind)
+    if(length(removeind)>0){
+      depthvec = depthvec[-removeind]
+      agevec = agevec[-removeind]
+      d18Ovec = d18Ovec[-removeind]
+    }
+    
+    if(depthvec[1]>tail(depthvec,1)){
+      warning("depth is decreasing. Stopping\n")
+      errorvec[i] = colid
+      break
+    }
+    
+    
+    #faultydepths = which(diff(depthvec)<=0)+1
+    #faultydepths = which(abs(diff(depthvec))>1)+1
+    is.true=TRUE
+    while(is.true){
+      faultydepths1 = which(diff(depthvec)<=0)+1
+      #faultydepths2 = which(abs(diff(depthvec))>1)+1
+      #faultydepths = unique(c(faultydepths1,faultydepths2))
+      faultydepths = unique(c(faultydepths1))
+      if(length(faultydepths)>=1){
+        depthvec = depthvec[-faultydepths]
+        agevec = agevec[-faultydepths]
+        d18Ovec = d18Ovec[-faultydepths]
+      }else{
+        is.true=FALSE
+      }
+    }
+    
+    
+    #par(mfrow=c(1,2))
+    #plot(agevec, d18Ovec,type="l", xlim=rev(range(agevec)))
+    #abline(v=eventage)
+      
+    
+    ###
+    ### insert segmentation ###
+    ###
+    
+    n = length(agevec)
+    eventind = which.index(eventage, agevec)
+    upper = min(eventind + round(n/20), n)
+    lower = max(eventind - round(n/10), 1)
+    
+    interval = rev(seq(from=lower,to=upper,by=1))
+    xx = depthvec[interval]
+    yy = d18Ovec[interval]
+    #plot(xx, yy,type="l",xlim=rev(range(xx)))
+    #abline(v=depthvec[eventind],lwd=2,col="blue")
+      
+    
+    ### linramp fitting ###
+    
+    #remember inversion if needed
+    
+    rescale.y.factor = -40/mean(yy)
+    
+    results = linrampfunc(xx,yy, steplength=0.005,nsims=5000, opt.params=NULL,imp.fit=TRUE, rescale.y.factor=1, print.progress=TRUE)
+    
+
+
+
+    ## temporary placed plot here to give the other plot more time
+    plot(agevec, d18Ovec,type="l", xlim=rev(range(agevec)))
+    abline(v=eventage)
+    #####
+    
+    eventname = rownames(df2list[[i]])
+    ggp = linrampplot(results,mainlab=ineventname,sublab=nam,ref=depthvec[eventind])
+    plot(ggp)
+  ### ### ###
+
+    margt0_x = cbind(margt0_x,matrix(results$linramp$param$t0$marg.t0[,1],ncol=1))
+    margt0_y = cbind(margt0_y,matrix(results$linramp$param$t0$marg.t0[,2],ncol=1))
+    
+    
+    recordindices= c(recordindices, i)
+    recordname = c(recordname, nam)
+    eventindices = c(eventindices, eventid)
+    eventnames = c(eventnames, eventname)
+
+    ggsave(filename=file.path("figs",paste0(counter,"_recordnumber",i,"_event",eventid,"_plot-4800x2400.eps")), device=cairo_ps,width=4800,height=2400,units="px",dpi=500,limitsize=FALSE)
+    
+  }
+  
+  plot(margt0_x[,1],margt0_y[,1])
+  
+  
+  
+  
+}
+
+
+```
+
+

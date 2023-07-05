@@ -86,45 +86,6 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
 
   time.start = Sys.time()
 
-  if(tolower(method) == "inla"){ #if INLA is used
-    reg.model = object$.internal$lat.selection
-
-    if(print.progress) cat("Simulating ",nsims, " hyperparameters from INLA posterior...",sep="")
-
-    if(tolower(noise) %in% c("rgeneric","custom")){
-      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
-      param.names = object$.args$control.fit$rgeneric$param.names
-      for(i in 1:length(object$.args$control.fit$rgeneric$from.theta)){
-        paramsamp = object$.args$control.fit$rgeneric$from.theta[[i]](hypersamples[,i])
-        if(is.null(param.names[i]) || is.na(param.names[i])){
-          tempname = paste0("hyperparameter",i)
-          object$simulation[[tempname]] = paramsamp
-        }else{
-          object$simulation[[param.names[i] ]] = paramsamp
-
-        }
-      }
-
-    }else if(tolower(noise) %in% c(0,"ar(0)","ar0","iid","independent")){
-      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
-      object$simulation = list(sigma = 1/sqrt(hypersamples[,1]))
-    }else if (tolower(noise) %in% c(1,"ar1","ar(1)")){
-      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
-      object$simulation = list(sigma = 1/sqrt(hypersamples[,1]), phi=hypersamples[,2])
-
-    }else if (tolower(noise) %in% c(2,"ar2","ar(2)")){
-      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
-      p=2
-      hypersamplesar2 = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
-      phii = hypersamplesar2[, 2L:(2L+(p-1L))]
-      phis = apply(phii, 1L, INLA::inla.ar.pacf2phi)
-      object$simulation = list(sigma = 1/sqrt(hypersamples[,1]),phi1=phis[1,],phi2=phis[2,])
-    }
-
-
-    if(print.progress) cat(" completed!\n",sep="")
-  }
-
 
   ## sample mean ("fixed") vector and ("stochastic") noise component
 
@@ -134,23 +95,22 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
 
     ##sample fixed parameters first
     latentselection = object$.internal$lat.selection
-    # latentselection = list()
-    # if(reg.model$const) latentselection$`(Intercept)`=1
-    # if(reg.model$depth1) latentselection$z=1
-    # if(reg.model$depth2) latentselection$z2=1
-    # if(reg.model$proxy) latentselection$x = 1
+    reg.model = object$.internal$lat.selection
 
-    # for(i in 2:object$.args$nevents){
-    #   if(reg.model$psi0) latentselection[[paste0("a",i-1)]] = 1
-    #   if(reg.model$psi1)latentselection[[paste0("c",i-1)]] = 1
-    # }
-    #latentsamples = inla.posterior.sample(nsims,object$fitting$fit,selection=latentselection,verbose=FALSE,add.names=FALSE)
     ncores_postsamp = max(1,object$.args$control.sim$ncores)
+
+
+
     latentsamples = INLA::inla.posterior.sample(nsims,object$fitting$inla$fit,
                                           selection=latentselection,verbose=FALSE,
                                           add.names=FALSE,num.threads = ncores_postsamp)
 
+    int_hyper = data.frame(matrix(NA, nrow=nsims,ncol=length(latentsamples[[1]]$hyperpar))) #get hyperparameters from joint distribution
+
+    colnames(int_hyper) = names(latentsamples[[1]]$hyperpar)
+
     n=nrow(object$data)
+
     if(object$.args$control.sim$store.everything) object$simulation$dmean = matrix(NA,nrow=n,ncol=nsims)
     time.endmean = Sys.time()
     if(print.progress) cat(" completed in ",difftime(time.endmean,time.startmean,units="secs")[[1]]," seconds!\n",sep="")
@@ -162,12 +122,15 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
 
 
 
+
+
     for(i in 1:nsims){
       if(i %% 1000 == 0 && print.progress){
         cat("Age simulation ",i,"/",nsims,". Elapsed time: ",difftime(Sys.time(),time.startage,units="secs")[[1]]," seconds...","\n",sep="")
       }
       ## from fixed parameters compute fixed model component using 'meanmaker' function
       coefs = latentsamples[[i]]$latent
+      int_hyper = latentsamples[[i]]$hyperpar
 
       dmeansim = meanmaker( coefs, reg.model, data = object$data )
 
@@ -177,25 +140,65 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
 
       ##sample noise component
       if(tolower(noise) %in% c("rgeneric","custom")){
-        theta = hypersamples[i,]
+
+        theta = int_hyper
+        param.names = object$.args$control.fit$rgeneric$param.names
+        hypersamples = int_hyper
+        for(i in 1:length(object$.args$control.fit$rgeneric$from.theta)){
+          paramsamp = object$.args$control.fit$rgeneric$from.theta[[i]](hypersamples[i])
+          if(is.null(param.names[i]) || is.na(param.names[i])){
+            tempname = paste0("hyperparameter",i)
+            object$simulation$params[[tempname]] = paramsamp
+          }else{
+            object$simulation$params[[param.names[i] ]] = paramsamp
+          }
+        }
+
 
         Q = object$.args$control.fit$rgeneric$Q(theta,n,ntheta=length(theta))
         muvek = numeric(n)
         noisesim = Qsimmer(1, Q, muvek)
+        #hypersamples = int_hyper
+      }else{
+        hypersamples = int_hyper
 
-      }else if(tolower(noise) %in% c(0,"iid","independent","ar0","ar(0)")){
-        noisesim = rnorm(n,mean=0,sd=object$simulation$sigma[i])
+        if(tolower(noise) %in% c(0,"iid","independent","ar0","ar(0)")){
+          object$simulation$params$sigma[i] = 1/sqrt(hypersamples[1])
+          #object$simulation$params = list(sigma = 1/sqrt(hypersamples[,1]))
 
-      }else if(tolower(noise) %in% c(1,"ar1","ar(1)")){
-        noisesim = arima.sim(n=n,list(ar=c(object$simulation$phi[i])),
-                             sd = object$simulation$sigma[i]*sqrt(1-object$simulation$phi[i]^2))
+          noisesim = rnorm(n,mean=0,sd=object$simulation$params$sigma[i])
 
-      }else if(tolower(noise) %in% c(2,"ar2","ar(2)")){
-        gamma0 = (1-phis[2,i])/((1+phis[2,i])*(1-phis[1,i]-phis[2,i])*(1+phis[1,i]-phis[2,i]))
 
-        noisesim = arima.sim(n = n, list(ar = c( phis[1,i],phis[2,i])),
-                             sd = object$simulation$sigma[i]*sqrt(1/gamma0))
+        }else if(tolower(noise) %in% c(1,"ar1","ar(1)")){
+          hypersamples = int_hyper
+          object$simulation$params$sigma[i] = 1/sqrt(hypersamples[1])
+          object$simulation$params$phi[i] = hypersamples[2]
+
+          noisesim = arima.sim(n=n,list(ar=c(object$simulation$params$phi[i])),
+                               sd = object$simulation$params$sigma[i]*sqrt(1-object$simulation$params$phi[i]^2))
+
+
+        }else if(tolower(noise) %in% c(2,"ar2","ar(2)")){
+          p=2
+          hypersamplesar2 = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+          phii = hypersamplesar2[, 2L:(2L+(p-1L))]
+          phis = apply(phii, 1L, INLA::inla.ar.pacf2phi)
+          object$simulation$params$sigma[i] = 1/sqrt(hypersamples[1])
+          object$simulation$params$phi1[i] = phis[1]
+          object$simulation$params$phi2[i] = phis[2]
+
+
+          gamma0 = (1-phis[2,i])/((1+phis[2,i])*(1-phis[1,i]-phis[2,i])*(1+phis[1,i]-phis[2,i]))
+
+          noisesim = arima.sim(n = n, list(ar = c( phis[1,i],phis[2,i])),
+                               sd = object$simulation$params$sigma[i]*sqrt(1/gamma0))
+
+
+          #object$simulation$params = list(sigma = 1/sqrt(hypersamples[,1]),phi1=phis[1,],phi2=phis[2,])
+        }
+
       }
+
 
 
       ## Take cumulatives. If log transformation is used, transform back first
@@ -206,6 +209,30 @@ bremla_chronology_simulation = function(object, control.sim,print.progress=FALSE
       }
 
 
+
+    #if(print.progress) cat("Simulating ",nsims, " hyperparameters from INLA posterior...",sep="")
+
+    # if(tolower(noise) %in% c("rgeneric","custom")){
+      #hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+
+
+
+
+    # }else if(tolower(noise) %in% c(0,"ar(0)","ar0","iid","independent")){
+    #   hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+    #   object$simulation = list(sigma = 1/sqrt(hypersamples[,1]))
+    # }else if (tolower(noise) %in% c(1,"ar1","ar(1)")){
+    #   hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+    #   object$simulation = list(sigma = 1/sqrt(hypersamples[,1]), phi=hypersamples[,2])
+    #
+    # }else if (tolower(noise) %in% c(2,"ar2","ar(2)")){
+    #   hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+    #   p=2
+    #   hypersamplesar2 = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+    #   phii = hypersamplesar2[, 2L:(2L+(p-1L))]
+    #   phis = apply(phii, 1L, INLA::inla.ar.pacf2phi)
+    #   object$simulation = list(sigma = 1/sqrt(hypersamples[,1]),phi1=phis[1,],phi2=phis[2,])
+    # }
     }
   }
 

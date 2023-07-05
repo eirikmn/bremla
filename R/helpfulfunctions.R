@@ -552,10 +552,11 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
       samples = adolphi_tiepoint_simmer(nsims=synchronization$nsims,
                                         tieshifts=adolphilocs,...)
       samples = samples[,!is.na(tieinclude)] #only use tie-points where location is not NA
-      adolphilocs = adolphilocs[!is.na(tieinclude)]
+      #adolphilocs = adolphilocs[!is.na(tieinclude)]
+      adolphilocs = adolphilocs[tieinclude]
       synchronization$locations_unit="age"
       locations_indexes = which.index(adolphilocs,object$data$age)
-      samples = samples[,!is.na(locations_indexes)]
+      samples = samples[,tieinclude]
       locations_indexes = locations_indexes[!is.na(locations_indexes)]
       synchronization$locations = object$data$age[locations_indexes]
       #synchronization$locations = synchronization$locations[!is.na(locations_indexes)]

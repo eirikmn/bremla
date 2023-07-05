@@ -125,83 +125,66 @@ time.start = Sys.time()
   free_n = n-m
   free_indexes = (1:n)[-tie_indexes]
 
-  if(tolower(object$.args$control.fit$method) == "inla" && is.null(object$simulation)){ #if INLA is used
+  if(tolower(object$.args$control.fit$method) == "inla"){ # && is.null(object$simulation)){ #if INLA is used
+
     reg.model = object$.internal$lat.selection
-
-    if(print.progress) cat("Simulating ",nsims, " hyperparameters from INLA posterior...",sep="")
-
-    if(tolower(noise) %in% c("rgeneric","custom")){
-      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
-      param.names = object$.args$control.fit$rgeneric$param.names
-      for(i in 1:length(object$.args$control.fit$rgeneric$from.theta)){
-        paramsamp = object$.args$control.fit$rgeneric$from.theta[[i]](hypersamples[,i])
-        if(is.null(param.names[i]) || is.na(param.names[i])){
-          tempname = paste0("hyperparameter",i)
-          object$simulation[[tempname]] = paramsamp
-        }else{
-          object$simulation[[param.names[i] ]] = paramsamp
-
-        }
-      }
-    }else if(tolower(noise) %in% c(0,"ar(0)","ar0","iid","independent")){
-      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
-      object$simulation = list(sigma = 1/sqrt(hypersamples[,1]))
-    }else if (tolower(noise) %in% c(1,"ar1","ar(1)")){
-      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
-      object$simulation = list(sigma = 1/sqrt(hypersamples[,1]), phi=hypersamples[,2])
-
-    }else if (tolower(noise) %in% c(2,"ar2","ar(2)")){
-      hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
-      p=2
-      hypersamplesar2 = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
-      phii = hypersamplesar2[, 2L:(2L+(p-1L))]
-      phis = apply(phii, 1L, INLA::inla.ar.pacf2phi)
-      object$simulation = list(sigma = 1/sqrt(hypersamples[,1]),phi1=phis[1,],phi2=phis[2,])
-    }
+    latentselection = object$.internal$lat.selection
 
 
-    if(print.progress) cat(" completed!\n",sep="")
-  }
+    timecoef.start = Sys.time()
+    ncores_postsamp = max(1,object$.args$control.sim$ncores)
+    latentsamples = INLA::inla.posterior.sample(nsims,object$fitting$inla$fit,
+                                                selection=latentselection,verbose=FALSE,
+                                                add.names=FALSE,num.threads = ncores_postsamp)
+    #int_hyper = latentsamples[[i]]
+
+    #int_hyper = data.frame(matrix(NA, nrow=nsims,ncol=length(latentsamples[[1]]$hyperpar))) #get hyperparameters from joint distribution
+
+    #colnames(int_hyper) = names(latentsamples[[1]]$hyperpar)
+    timecoef.end = Sys.time()
+    if(print.progress) cat(" completed in ",difftime(timecoef.end,timecoef.start,units="secs")[[1]]," seconds.\n",sep="")
+    samples = matrix(NA,nrow=n,ncol=nsims)
+
+
+
 
   if(print.progress) cat("Sampling fixed coefficients...",sep="")
-  latentselection = object$.internal$lat.selection
-  # latentselection = list()
-  # reg.model = object$.args$reg.model
-  # if(reg.model$const) latentselection$`(Intercept)`=1
-  # if(reg.model$depth1) latentselection$z=1
-  # if(reg.model$depth2) latentselection$z2=1
-  # if(reg.model$proxy) latentselection$x = 1
-  #
-  # for(i in 2:object$.args$nevents){
-  #   if(reg.model$psi0) latentselection[[paste0("a",i-1)]] = 1
-  #   if(reg.model$psi1)latentselection[[paste0("c",i-1)]] = 1
-  # }
-  timecoef.start = Sys.time()
-  ncores_postsamp = max(1,object$.args$control.sim$ncores)
-  latentsamples = INLA::inla.posterior.sample(nsims,object$fitting$inla$fit,
-                                        selection=latentselection,verbose=FALSE,
-                                        add.names=FALSE,num.threads = ncores_postsamp)
-
-  timecoef.end = Sys.time()
-  if(print.progress) cat(" completed in ",difftime(timecoef.end,timecoef.start,units="secs")[[1]]," seconds.\n",sep="")
-  samples = matrix(NA,nrow=n,ncol=nsims)
 
 
-  if(print.progress) cat("Simulating synchronized chronologies...\n",sep="")
+  if(print.progress) cat("\nSimulating synchronized chronologies...\n",sep="")
   timeage.start = Sys.time()
   for(r in 1:nsims){
+    hypersamples = latentsamples[[r]]$hyperpar
+    int_hyper = hypersamples
 
     if(tolower(noise) %in% c("rgeneric","custom")){
 
-      theta = hypersamples[r,]
+      param.names = object$.args$control.fit$rgeneric$param.names
+      for(i in 1:length(object$.args$control.fit$rgeneric$from.theta)){
+        paramsamp = object$.args$control.fit$rgeneric$from.theta[[i]](hypersamples[i])
+        if(is.null(param.names[i]) || is.na(param.names[i])){
+          tempname = paste0("hyperparameter",i)
+          object$simulation$params[[tempname]][i] = paramsamp
+        }else{
+          object$simulation$params[[param.names[i] ]][i] = paramsamp
+        }
+      }
+
+      theta = hypersamples
 
       Qx = object$.args$control.fit$rgeneric$Q(theta,n,ntheta=length(theta))
 
       Qfull = Qymaker(Qx)
 
-    }else if(tolower(noise) %in% c(1,"ar1","ar(1)")){
-      sigma_sample = object$simulation$sigma[r]
-      phi_sample = object$simulation$phi[r]
+    }else if( tolower(noise) %in% c(1,"ar1","ar(1)") ){
+
+      hypersamples = int_hyper
+      #hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+      object$simulation$params$sigma[r] = 1/sqrt(hypersamples[1])
+      object$simulation$params$phi[r] = hypersamples[2]
+
+      sigma_sample = object$simulation$params$sigma[r]
+      phi_sample = object$simulation$params$phi[r]
 
       if(object$.args$control.fit$noise=="ar1"){
         Qfull = Qmaker_ar1cum(n,sigma_sample,phi_sample)
@@ -214,6 +197,7 @@ time.start = Sys.time()
     }else{
       stop("Currently, only the 'ar1' noise model is implemented. Other models can be specified via the 'rgeneric' model, see '?rgeneric.fitting' for details.")
     }
+
     Qa = Qfull[-tie_indexes,-tie_indexes]
     Qab = Qfull[-tie_indexes,tie_indexes]
     if(m==1){
@@ -243,6 +227,7 @@ time.start = Sys.time()
     if(print.progress && (r %% 1000) == 0){
       cat("Synchronous age simulation ",r,"/",nsims,". Elapsed time: ",difftime(Sys.time(),timeage.start,units="secs")[[1]]," seconds...","\n",sep="")
     }
+  }
   }
 
   timeage.end = Sys.time()

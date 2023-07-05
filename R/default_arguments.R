@@ -87,9 +87,8 @@ control.fit.default <- function(){
   return(list(
     noise="ar1",
     method="inla",
-    hyperprior = NULL,
     verbose=FALSE,
-    log.theta.prior=NULL,
+    hyperprior = NULL,
     improve.fixed=FALSE,
     ncores=1,
     transform="identity",

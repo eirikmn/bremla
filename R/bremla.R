@@ -95,7 +95,7 @@
 #' depth = NGRIP_5cm$depth
 #' d18O = NGRIP_5cm$d18O
 #' proxy=d18O
-#' formula = dy~-1+depth2
+#' formula = dy~-1+depth2 + proxy
 #' depth2 = depth^2/depth[1]^2 #normalize for stability
 #'
 #' data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth2,proxy=proxy)

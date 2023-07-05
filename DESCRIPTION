@@ -38,9 +38,11 @@ Suggests:
     sn,
     sp (>= 1.4-5),
     rmarkdown,
-    graphics
+    graphics,
+    knitr
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/eirikmn/bremla
 BugReports: https://github.com/eirikmn/bremla/issues
 RoxygenNote: 7.2.3
+VignetteBuilder: knitr
