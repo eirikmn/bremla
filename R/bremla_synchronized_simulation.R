@@ -213,11 +213,21 @@ time.start = Sys.time()
 
 
     La = t(chol(Qa))
-    b_temp = (-Qab%*%(tiepointsims[r,]-tie_mu))[,1]
+    b_temp = (-Qab%*%(tiepointsims[r,]-tie_mu))
+    if(!is.null(dim(b_temp))){
+      b_temp = b_temp[,1]
+    }
     w = solve(La,b_temp)
-    mu_temp = solve(t(La),w)[,1]
+    mu_temp = solve(t(La),w)
+    if(!is.null(dim(mu_temp))){
+      mu_temp = mu_temp[,1]
+    }
     z0 = rnorm(free_n)
-    v = solve(t(La),z0)[,1]
+    v = solve(t(La),z0)
+    if(!is.null(dim(v))){
+      v = v[,1]
+    }
+
     samples[free_indexes,r] = mu_temp + free_mu + v
     samples[tie_indexes,r] = tiepointsims[r,]
 

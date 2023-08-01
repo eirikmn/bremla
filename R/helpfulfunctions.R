@@ -641,7 +641,11 @@ Qsimmer = function(nsims, Q, muvek){
 
   for(i in 1:nsims){
     samples_z = rnorm(nn)
-    v = solve(La,samples_z)[,1]
+    v = solve(La,samples_z)
+    if(!is.null(dim(v))){
+      v = v[,1]
+    }
+
     samples[,i] = muvek[(length(muvek)-nn+1):length(muvek)] + v
   }
   return(samples)

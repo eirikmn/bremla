@@ -54,24 +54,23 @@
 #'
 #' # R-INLA framework example
 #' n = 300
+#' depth = 1:n
 #' ntheta = 1
-#' dy = rnorm(n)+1:n/40
+#' dy = rnorm(n)+depth/40
 #' model.rgeneric = inla.rgeneric.define(rgeneric.fitting, n=n,ntheta = 1,
 #'                                       Q = Q,
 #'                                       log.prior=log.prior)
 #'
 #' formula = dy ~ -1+depth+ f(idy, model=model.rgeneric)
 #'
-#' result = inla(formula,family="gaussian", data=data.frame(dy=dy,depth=1:n,idy=1:n),
+#' result = inla(formula,family="gaussian", data=data.frame(dy=dy,depth=depth,idy=1:n),
 #'               num.threads = 2,
 #'               control.family = list(hyper = list(prec = list(initial = 12, fixed=TRUE))) )
 #'
 #'
+#'
 #' ## bremla framework example
 #'
-#' n = 300
-#' depth = 1:n
-#' dy = rnorm(n) + depth/40
 #' y = cumsum(dy)
 #'
 #' formula = dy ~ -1+depth

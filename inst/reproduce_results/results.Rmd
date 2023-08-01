@@ -1497,6 +1497,8 @@ res3 = tiepointsimmer(res,synchronization = list(locations=tiedepths,
                                                             sd=tiesds))
                )
 res3 = bremla_synchronized_simulation(res3,control.sim=list(synchronized=TRUE))
+
+
 ggd = data.frame(depth=res3$data$depth,
                  mean = res3$simulation$summary_sync$mean-orichron,
                  lower = res3$simulation$summary_sync$lower-orichron,
@@ -1543,8 +1545,13 @@ ggprand2 = ggprand2 + ylim(ylim)+ ggtitle("(c) Synchronous chronologies: uncerta
 ggplotlist1 = c(); ggplotlist1[[1]] = ggpunc2; ggplotlist1[[2]] = ggpfix2; ggplotlist1[[3]] = ggprand2
 ggplotarrange = ggarrange(plotlist=ggplotlist1,nrow=3,ncol=1)
 plot(ggplotarrange)
-ggsave("illustrative-all-3000x3000.eps",device=cairo_ps,width=3000,height=3000,units="px")
 
+
+
+#ggsave("illustrative-all-3000x3000.eps",device=cairo_ps,width=3000,height=3000,units="px")
+ggsave("illustrative-all-3000x3400.eps",device=cairo_ps,width=3000,height=3400,units="px",dpi=500,limitsize=FALSE)
+
+#ggsave("illustrative-all-3000x4000.eps", device=cairo_ps,width=3000,height=4000,units="px",dpi=500,limitsize=FALSE,arrangeGrob(ggp,ggp2))
 
 #ggsave("illustrative-sync.eps",device=cairo_ps,width=4800,height=2000,units="px")
 
@@ -1618,7 +1625,7 @@ ggd = data.frame(y = res$data$dy,depth=res$data$depth,
     geom_line(aes(y=y),col="gray")+
     geom_line(aes(y=mean),col="blue",size=0.8)+
     geom_ribbon(aes(ymin=lower,ymax=upper),color="red",alpha=0,size=0.8)+
-    xlab("Depth (m)")+ylab("Layers per 5cm")+ggtitle("(a) Fitted layer increment model")
+    xlab("Depth (m)")+ylab("Layers per 1m")+ggtitle("(a) Fitted layer increment model")
   
   ggp
   
@@ -1638,7 +1645,7 @@ ggp2 = ggplot(data=ggd2,aes(x=depth)) + theme_bw()+
   geom_ribbon(aes(ymin=lower,ymax=upper),color="red",fill="red",alpha=0.3)+
   geom_line(aes(y=mean),color="blue") +
   geom_linerange(data=ggdtie,aes(x=locations,ymin=lower,ymax=upper),color="magenta")+
-  xlab("Depth (m)") + ylab("Deviation from simulated reference (years)")+
+  xlab("Depth (m)") + ylab("Age deviation (years)")+
   ggtitle("(b) Simulated chronologies")
 
 ggp2
@@ -1646,7 +1653,12 @@ ggp2
 ggarrange(ggp,ggp2,nrow=2)
 
 library(gridExtra)
+
 # ggsave("fitdiffsim-5500x4000.eps", device=cairo_ps,width=5500,height=4000,units="px",dpi=500,limitsize=FALSE,arrangeGrob(ggp,ggp2))
+
+ggsave("fitdiffsim-3000x2200.eps", device=cairo_ps,width=3000,height=2200,units="px",dpi=500,limitsize=FALSE,arrangeGrob(ggp,ggp2))
+
+
 dig=3
 str = ""
 str = paste0(str, " $",namevals[1],"$ & ",truevals[1]," & ", format(res$fitting$inla$hyperparameters$results$sigma_epsilon$mean,digits=dig,scientific=FALSE)," & (",format(res$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.025,digits=dig,scientific=FALSE), ", ",format(res$fitting$inla$hyperparameters$results$sigma_epsilon$quant0.975,difits=dig,scientific=FALSE),") \\\\ \n")
