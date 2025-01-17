@@ -12,43 +12,21 @@ Returns a list including default values for all variables in \code{control.fit}.
 \description{
 Sets the default variables in the list \code{control.fit} used to specify the
 fitting procedure. The list contains the following arguments:
-\itemize{
-  \item{\code{noise} }{Character which noise process is assumed for the residuals.
-  \code{"iid"}, \code{"ar1"} and \code{"ar2"} are currently. However, if synchronization is to
-  be performed only \code{"ar1"} is currently supported. Default input is \code{"ar1"}.}
-  \item{\code{method} }{Character describing which method should be used to fit the process.
-  Only \code{inla} is currently supported, but more will hopefully come in the future.}
-  \item{\code{verbose} }{Boolean telling whether or not the \code{inla}-program should run in
-  verbose mode. Default \code{FALSE}.}
- \item{\code{hyperprior}}{List corresponding to the \code{hyper} object in INLA's \code{f}
-  function which specifies the priors of the hyperparameters. Default is \code{NULL}
-  which sets INLA's default priors.}
-  \item{\code{improve.fixed} }{Boolean indicating whether or not the least squares estimate of
-  the fixed values should be used as initial values for the optimization procedure in INLA.
-  This feature has not been extensively tested so it might be unstable. Default \code{FALSE}}
-  \item{\code{ncores} }{Integer used to set the number of cores to be used in the \code{inla} fitting
-  procedure. Default value is \code{1}.}
-  \item{\code{transform} }{Character indicating which transformation should be applied to
-  the observations. Can be \code{"log"} or \code{"identity"}. If synchronization is
-  intended then only \code{"identity"} is currently supported, which is also the
-  default value here.}
-  \item{\code{rgeneric}} List containing necessary arguments for specifying a custom
-  model for the noise component of the layer increments using the \code{rgeneric}
-  framework of \code{INLA}. Note that this alternative generally performs less well
-  than using already implemented model components in \code{INLA} used when \code{noise}
-  is specified. Must include
-  \itemize{
-      \item{\code{from.theta} List of function specifying transformation from internal to original
-      parameter scaling. Function of \code{theta} (internal parameters). \code{length(from.theta)}
-      must correspond to \code{length(theta)}. This is only
-      used for transforming the parameters and can not be used in the functions below.}
-      \item{\code{param.names} Vector of names for parameters (optional).}
-      \item{\code{Q} Function that computes the precision matrix of the noise model. Must be
-      a function of \code{theta}, \code{n} and \code{ntheta}, and must return a
-      sparse matrix.}
-      \item{\code{log.prior} Function that computes the logarithm of the prior of the internal
-      parameter \code{theta}. Must be a function of \code{theta}, \code{n} and \code{ntheta}
-      (even if they are not used).}
+\describe{
+  \item{\code{noise}}{Character which noise process is assumed for the residuals. \code{"iid"}, \code{"ar1"} and \code{"ar2"} are currently. However, if synchronization is to be performed only \code{"ar1"} is currently supported. Default input is \code{"ar1"}.}
+  \item{\code{method}}{Character describing which method should be used to fit the process. Only \code{inla} is currently supported, but more will hopefully come in the future.}
+  \item{\code{verbose}}{Boolean telling whether or not the \code{inla}-program should run in verbose mode. Default \code{FALSE}.}
+ \item{\code{hyperprior}}{List corresponding to the \code{hyper} object in INLA's \code{f} function which specifies the priors of the hyperparameters. Default is \code{NULL} which sets INLA's default priors.}
+  \item{\code{improve.fixed}}{Boolean indicating whether or not the least squares estimate of the fixed values should be used as initial values for the optimization procedure in INLA. This feature has not been extensively tested so it might be unstable. Default \code{FALSE}}
+  \item{\code{ncores}}{Integer used to set the number of cores to be used in the \code{inla} fitting procedure. Default value is \code{1}.}
+  \item{\code{transform}}{Character indicating which transformation should be applied to the observations. Can be \code{"log"} or \code{"identity"}. If synchronization is intended then only \code{"identity"} is currently supported, which is also the default value here.}
+  \item{\code{rgeneric}}{List containing necessary arguments for specifying a custom model for the noise component of the layer increments using the \code{rgeneric} framework of \code{INLA}. Note that this alternative generally performs less well than using already implemented model components in \code{INLA} used when \code{noise} is specified. Must include:
+  \describe{
+      \item{\code{from.theta}}{List of function specifying transformation from internal to original parameter scaling. Function of \code{theta} (internal parameters). \code{length(from.theta)} must correspond to \code{length(theta)}. This is only used for transforming the parameters and can not be used in the functions below.}
+      \item{\code{param.names}}{Vector of names for parameters (optional).}
+      \item{\code{Q}}{Function that computes the precision matrix of the noise model. Must be a function of \code{theta}, \code{n} and \code{ntheta}, and must return a sparse matrix.}
+      \item{\code{log.prior}}{Function that computes the logarithm of the prior of the internal parameter \code{theta}. Must be a function of \code{theta}, \code{n} and \code{ntheta} (even if they are not used).}
+  }
   }
 }
 }

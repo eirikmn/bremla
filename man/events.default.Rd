@@ -12,7 +12,7 @@ Returns a list including default values for all variables in \code{events}.
 \description{
 Sets the default variables in the list \code{events} used to specify the climatic
 periods and separating events used in the linear predictor. The list contains the following arguments:
-\itemize{
+\describe{
   \item{\code{locations} }{Numeric describing the location of the transitions between climatic periods.
    Default value is \code{NULL}, and must be provided by user.}
   \item{\code{locations_unit} }{Character describing on which axis the locations are given. Can be \code{age},

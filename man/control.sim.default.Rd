@@ -12,7 +12,7 @@ Returns a list including default values for all variables in \code{control.sim}.
 \description{
 Sets the default variables in the list \code{control.sim} used to specify the
 fitting procedure. The list contains the following arguments:
-\itemize{
+\describe{
   \item{\code{synchronized} }{Boolean indicating whether or not synchronization is to be performed.
   Default value is \code{TRUE}, but this is set to \code{FALSE} if supplied tie-points are not found.}
   \item{\code{nsims} }{Integer giving how many simulations should be generated. Default value is \code{10000}.}
@@ -21,7 +21,7 @@ fitting procedure. The list contains the following arguments:
   \item{\code{store.everything} }{Boolean indicating whether or not to store superfluous information
   such as the simulated mean vectors (from fixed effects). Default \code{FALSE}.}
   \item{\code{summary} }{List object with two items
-    \itemize{
+    \describe{
     \item{\code{compute} }{Boolean indicating if summary statistics (posterior marginal means median
     and credible intervals) should be computed. Default \code{TRUE}.}
     \item{\code{CI.type} }{character giving which type of credible intervals to be computed.

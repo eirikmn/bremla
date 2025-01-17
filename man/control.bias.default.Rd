@@ -12,7 +12,7 @@ Returns a list including default values for all variables in \code{control.bias}
 \description{
 Sets the default variables in the list \code{control.bias} used to specify the
 how an unknown stochastic bias should be included. The list contains the following arguments:
-\itemize{
+\describe{
   \item{\code{bias.model} }{Character describing which model should be used for the unknown bias.
   Currently only \code{"uniform"} is supported.}
   \item{\code{biasparams} }{Gives the parameters for the \code{bias.model}. If \code{ncol}>1,

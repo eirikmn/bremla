@@ -96,6 +96,7 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
     control.fit=list(noise="ar1")
 
   }
+
   control.fit = set.options(control.fit,control.fit.default())
 
   if(!is.null(control.sim)) control.sim = set.options(control.sim,control.sim.default())
@@ -216,6 +217,7 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
   if(!is.null(control.fit)){ #add random effect to formula string for use in INLA
     if(tolower(control.fit$method) %in% "inla" ){
       if(!is.null(control.fit$rgeneric)){ #rgeneric model is specified
+
         control.fit$noise = "rgeneric"
 
         ntheta = length(control.fit$rgeneric$from.theta)
@@ -231,6 +233,7 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
 
 
       }else{
+
         hyperprior = control.fit$hyperprior
         if(!is.null(hyperprior)){
 
@@ -278,16 +281,19 @@ bremla_prepare = function(formula,data,nsims=NULL,reference.label=NULL,
     formula_inla=as.formula(formulastring)
   }
 
+
   object= list(data=data_obj,formula=formula_inla,
                initials=initials,
                original.chron = data.frame(depth=depth,age=age))
   if(!is.null(events)) object$events=events
   #store input arguments
   str = cleanstring(format(formulastring))
+
   tildepos = str_locate(str,"~")[1]
   responsename = str_sub(str,start=1L,end=tildepos-1)
 
   lat.selection = lat.selector(format(formulastring))
+
   object$.internal=list(formula.ls = as.formula(formulastring),
                         lat.selection=lat.selection)
   object$.args=list(formula.ls=as.formula(formulastring),

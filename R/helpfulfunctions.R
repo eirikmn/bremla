@@ -541,22 +541,33 @@ tiepointsimmer = function(object, synchronization,print.progress=FALSE,...){
     }
   }else{
     if(synchronization$method=="adolphi"){
+      adolphiages = c(11050,12050,13050,22050,42050)
+      adolphidepths = c(1492.50, 1502.80, 1532.70, 1767.25, 2132.40)
+
+
       tieinclude = synchronization$locations
       if(is.null(tieinclude)){
         tieinclude = rep(TRUE,5)
       }
+
       tieinclude[is.na(tieinclude)] = FALSE
       tieinclude[ tieinclude != FALSE ] = TRUE
+      if(min(object$data$age)> min(adolphiages[tieinclude]) || max(object$data$age) < max(adolphiages[tieinclude])){
+        warning("Depth axis does not cover all tie-points. These will be omitted")
+        is_within = adolphiages > min(object$data$age) & adolphiages < max(object$data$age)
+        tieinclude[!is_within] = FALSE
+      }
 
-      adolphilocs = c(11050,12050,13050,22050,42050)
+
+
       samples = adolphi_tiepoint_simmer(nsims=synchronization$nsims,
-                                        tieshifts=adolphilocs,...)
-      samples = samples[,!is.na(tieinclude)] #only use tie-points where location is not NA
+                                        tieshifts=adolphiages,...)
+      samples = samples[,tieinclude] #only use tie-points where location is not NA
       #adolphilocs = adolphilocs[!is.na(tieinclude)]
-      adolphilocs = adolphilocs[tieinclude]
+      adolphilocs = adolphiages[tieinclude]
       synchronization$locations_unit="age"
       locations_indexes = which.index(adolphilocs,object$data$age)
-      samples = samples[,tieinclude]
+      #samples = samples[,tieinclude]
       locations_indexes = locations_indexes[!is.na(locations_indexes)]
       synchronization$locations = object$data$age[locations_indexes]
       #synchronization$locations = synchronization$locations[!is.na(locations_indexes)]

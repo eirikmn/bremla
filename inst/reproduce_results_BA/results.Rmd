@@ -1,0 +1,481 @@
+# Code for Myrvoll-Nilsen et al.
+
+This file includes the data and code needed to reproduce the results for
+
+Myrvoll-Nilsen, E., Riechers, K. & Boers, N. (202x). Synchronization of layer-counted paleoclimatic proxy archives.
+
+
+## Illustration example
+
+The data used to generate the illustrative examples in the paper is as follows.
+
+```{r illustrationexample}
+# rm(list=ls())
+require(stats)
+library(ggpubr)
+library(ggplot2)
+set.seed(123)
+n=800
+y0 = 0
+z0 = 0
+phi=0.8; sigma=15
+depth = z0+seq(from=1,to=n,length.out=n)
+
+covariate = arima.sim(model=list(ar=c(0.99)),n=n)
+noise = sigma*arima.sim(model=list(ar=c(phi)),n=n,sd=sqrt(1-phi^2))
+
+dy = 10 + depth*5/n+covariate+noise
+y = y0+cumsum(dy)
+
+data=data.frame(age=c(y0,y),depth=c(z0,depth),dy=c(0,as.numeric(dy)),covariate=c(0,covariate))
+#data=rbind(c(y0,z0,0,0),df)
+formula=dy~ 1 + depth + covariate 
+nsims = 10000
+
+# Unsynchronized
+res = bremla(formula,data,reference.label="simulated time scale",nsims=nsims,
+             control.fit=list(noise="ar1"),
+             x.label="Depth",
+             y.label="Ensemble age - observed age",
+             control.sim = list(synchronized=FALSE,
+                                nsims=nsims))
+
+library(ggplot2)
+orichron = res$data$age
+ggd1 = data.frame(depth=res$data$depth,
+                 mean = res$simulation$summary$mean-orichron,
+                 lower = res$simulation$summary$lower-orichron,
+                 upper = res$simulation$summary$upper-orichron)
+ggd1_2 = data.frame(depth=res$data$depth,
+                 mean = res$simulation$summary$mean,
+                 lower = res$simulation$summary$lower,
+                 upper = res$simulation$summary$upper)
+ggpunc = ggplot(data=ggd1,aes(depth))+theme_bw()+xlab("Depth")+ylab("Ensemble age - observed age")+
+  geom_ribbon(aes(ymin=lower,ymax=upper),col="red",fill="red",alpha=0.3,linewidth=0.7)+
+  geom_line(aes(y=mean),col="blue",size=0.7)
+ggpunc2 = ggplot(data=ggd1_2,aes(depth))+theme_bw()+xlab("Depth")+ylab("Ensemble age - observed age")+
+  geom_ribbon(aes(ymin=lower,ymax=upper),col="red",fill="red",alpha=0.3,linewidth=0.7)+
+  geom_line(aes(y=mean),col="blue",size=0.7)
+# plot(res)
+#ggsave("illustrative-unsync.eps",device=cairo_ps,width=4800,height=2000,units="px")
+
+# Fixed tie-points
+ntie = 3
+tiesims = matrix(NA,nrow=nsims,ncol=ntie)
+tiedepths = c(100,400,600)
+#tieage = c(450,3000,8500)
+tieage = c(450,2000,10000)
+
+for(i in 1:ntie){
+  tiesims[,i] = rep(tieage[i],nsims)
+}
+
+res2 = tiepointsimmer(res,synchronization = list(locations=tiedepths,locations_unit="depth",
+                       samples = tiesims)
+               )
+
+res2 = bremla_synchronized_simulation(res2,control.sim=list(synchronized=TRUE))
+
+ggdfix = data.frame(depth=res2$data$depth,
+                 mean = res2$simulation$summary_sync$mean-orichron,
+                 lower = res2$simulation$summary_sync$lower-orichron,
+                 upper = res2$simulation$summary_sync$upper-orichron)
+ggd_2 = data.frame(depth=res2$data$depth,
+                 mean = res2$simulation$summary_sync$mean,
+                 lower = res2$simulation$summary_sync$lower,
+                 upper = res2$simulation$summary_sync$upper)
+
+oritie = orichron[tiedepths]
+ggd2 = data.frame(depth=res2$tie_points$locations,
+                  mean=res2$simulation$summary_sync$mean[tiedepths]-oritie)
+ggd2_2 = data.frame(depth=res2$tie_points$locations,
+                  mean=res2$simulation$summary_sync$mean[tiedepths])
+
+ggpfix = ggplot(data=ggdfix,aes(depth))+theme_bw()+xlab("Depth")+ylab("Ensemble age - observed age")+
+  geom_ribbon(data=ggd1,mapping=aes(x=depth, ymin=lower, ymax=upper), fill="black", alpha=0.2)+
+  geom_ribbon(aes(ymin=lower,ymax=upper),col="red",fill="red",alpha=0.3,size=0.6)+
+  geom_line(aes(y=mean),col="blue",size=0.7)+
+  geom_point(data=ggd2,mapping=aes(x=depth,y=mean),col="black",size=1)
+ggpfix2 = ggplot(data=ggd_2,aes(depth))+theme_bw()+xlab("Depth")+ylab("Ensemble age - observed age")+
+  geom_ribbon(data=ggd1_2,mapping=aes(x=depth, ymin=lower, ymax=upper), fill="black", alpha=0.2)+
+  geom_ribbon(aes(ymin=lower,ymax=upper),col="red",fill="red",alpha=0.3,size=0.6)+
+  geom_line(aes(y=mean),col="blue",size=0.7)+
+  geom_point(data=ggd2_2,mapping=aes(x=depth,y=mean),col="black",size=1)
+
+#plot(res)
+#ggsave("illustrative-fixedsync.eps",device=cairo_ps,width=4800,height=2000,units="px")
+
+#tiemeans = c(450,3000,8500)
+tiemeans = c(450,2000,10000)
+tiesds = c(400,500,800)
+res3 = tiepointsimmer(res,synchronization = list(locations=tiedepths,
+                                                locations_unit="depth",
+                                                method="normal",
+                                                params=list(mean=tiemeans,
+                                                            sd=tiesds))
+               )
+res3 = bremla_synchronized_simulation(res3,control.sim=list(synchronized=TRUE))
+
+
+ggd = data.frame(depth=res3$data$depth,
+                 mean = res3$simulation$summary_sync$mean-orichron,
+                 lower = res3$simulation$summary_sync$lower-orichron,
+                 upper = res3$simulation$summary_sync$upper-orichron)
+ggd_2 = data.frame(depth=res3$data$depth,
+                 mean = res3$simulation$summary_sync$mean,
+                 lower = res3$simulation$summary_sync$lower,
+                 upper = res3$simulation$summary_sync$upper)
+
+oritie = orichron[tiedepths]
+ggd2 = data.frame(depth=res3$tie_points$locations,
+                  lower=res3$simulation$summary_sync$lower[tiedepths]-oritie,
+                  upper=res3$simulation$summary_sync$upper[tiedepths]-oritie)
+ggd2_2 = data.frame(depth=res3$tie_points$locations,
+                  lower=res3$simulation$summary_sync$lower[tiedepths],
+                  upper=res3$simulation$summary_sync$upper[tiedepths])
+
+ggprand = ggplot(data=ggd,aes(depth))+theme_bw()+xlab("Depth")+ylab("Ensemble age - observed age")+
+  geom_ribbon(data=ggd1,mapping=aes(x=depth, ymin=lower, ymax=upper), fill="black", alpha=0.2)+
+  geom_ribbon(data=ggd,mapping=aes(x=depth, ymin=lower, ymax=upper), fill="black", alpha=0.2)+
+  geom_ribbon(aes(ymin=lower,ymax=upper),col="red",fill="red",alpha=0.3,size=0.7)+
+  geom_line(aes(y=mean),col="blue",size=0.7)+
+  geom_segment(data=ggd2,mapping=aes(x=depth,xend=depth,y=lower,yend=upper), 
+               col="black",size=0.7)
+ggprand2 = ggplot(data=ggd_2,aes(depth))+theme_bw()+xlab("Depth")+ylab("Ensemble age - observed age")+
+  geom_ribbon(data=ggd1_2,mapping=aes(x=depth, ymin=lower, ymax=upper), fill="black", alpha=0.2)+
+  geom_ribbon(aes(ymin=lower,ymax=upper),col="red",fill="red",alpha=0.3,size=0.7)+
+  geom_line(aes(y=mean),col="blue",size=0.7)+
+  geom_segment(data=ggd2_2,mapping=aes(x=depth,xend=depth,y=lower,yend=upper), 
+               col="black",size=0.7)
+  
+#plot(res3)
+ylim = range(res$simulation$summary$lower-orichron,res$simulation$summary$upper-orichron,
+             res3$simulation$summary_sync$lower-orichron,res3$simulation$summary_sync$upper-orichron)
+ggpunc = ggpunc + ylim(ylim) + ggtitle("(a) Unsynchronous chronologies")
+ggpfix = ggpfix + ylim(ylim)+ ggtitle("(b) Synchronous chronologies: fixed tie-points")
+ggprand = ggprand + ylim(ylim)+ ggtitle("(c) Synchronous chronologies: uncertain tie-points")
+ggplotlist0 = c(); ggplotlist0[[1]] = ggpunc; ggplotlist0[[2]] = ggpfix; ggplotlist0[[3]] = ggprand
+ggplotlist00 = ggarrange(plotlist=ggplotlist0,nrow=3,ncol=1)
+
+
+ylim = range(res$simulation$summary$lower,res$simulation$summary$upper,
+             res3$simulation$summary_sync$lower,res3$simulation$summary_sync$upper)
+ggpunc2 = ggpunc2 + ylim(ylim) + ggtitle("(a) Unsynchronous chronologies")+ylab("Ensemble age")
+ggpfix2 = ggpfix2 + ylim(ylim)+ ggtitle("(b) Synchronous chronologies: fixed tie-points")+ylab("Ensemble age")
+ggprand2 = ggprand2 + ylim(ylim)+ ggtitle("(c) Synchronous chronologies: uncertain tie-points")+ylab("Ensemble age")
+ggplotlist1 = c(); ggplotlist1[[1]] = ggpunc2; ggplotlist1[[2]] = ggpfix2; ggplotlist1[[3]] = ggprand2
+ggplotarrange = ggarrange(plotlist=ggplotlist1,nrow=3,ncol=1)
+plot(ggplotarrange)
+
+
+# ggsave("illustrative-all-3000x3400.eps",device=cairo_ps,width=3000,height=3400,units="px",dpi=500,limitsize=FALSE)
+
+
+#ggprand2 = ggprand2 + ylim(ylim)+ ggtitle("(c) Synchronous chronologies: uncertain tie-points")+ylab("Ensemble age")
+# 
+# ggprand22 =  ggprand2 + geom_ribbon(data=ggd1_2,mapping=aes(x=depth, ymin=lower,ymax=upper),fill="black",alpha=0.2)
+# ggpfix22 =  ggpfix2 + geom_ribbon(data=ggd1_2,mapping=aes(x=depth, ymin=lower,ymax=upper),fill="black",alpha=0.2)
+
+  
+ggplotlist1 = c(); ggplotlist1[[1]] = ggpunc2; ggplotlist1[[2]] = ggpfix2; ggplotlist1[[3]] = ggprand2
+ggplotlist2 = c(); ggplotlist2[[1]] = ggpunc2; ggplotlist2[[2]] = ggpfix22; ggplotlist2[[3]] = ggprand22
+ggplotarrange = ggarrange(plotlist=ggplotlist1,nrow=3,ncol=1)
+plot(ggplotarrange)
+ggplotarrange2 = ggarrange(plotlist=ggplotlist2,nrow=3,ncol=1)
+
+print(ggplotarrange2)
+
+#ggsave("illustrative-all2-3000x3400.eps",device=cairo_ps,width=3000,height=3400,units="px",dpi=500,limitsize=FALSE)
+
+
+
+
+```
+
+
+
+# Simulation example
+
+```{r}
+require(stats)
+library(ggplot2)
+set.seed(123)
+n=1000
+y0 = 0
+z0 = 0
+phi=0.8; sigma=3
+
+depth = z0+seq(from=1,1000,length.out=1000)
+depth2 = depth^2#/z0 #normalize for stability
+
+dnoise = sigma*arima.sim(n=n,model=list(ar=c(phi)),sd=sqrt(1-phi^2))
+proxy = arima.sim(n=n,model=list(ar=0.9),sd=sqrt(1-0.9^2))
+
+truevals = c(sigma,phi,       0.5, 10, 0.01, 20, 0.02, 0, 0.03)
+namevals = c("\\sigma","\\phi","b_w","a_1","b_1","a_2","b_2","a_3","b_3")
+
+events=list(locations=c(1,250,750,1000))
+a1 = c(rep(1,249),numeric(751))
+a2 = c(numeric(249),rep(1,500),numeric(251))
+a3 = c(numeric(749),rep(1,251))
+c1 = c(depth[1:249],numeric(751))
+c2 = c(numeric(249),depth[250:749],numeric(251))
+c3 = c(numeric(749),depth[750:1000])
+dy = dnoise + a1*truevals[4]+a2*truevals[6]+a3*truevals[8]+c1*truevals[5]+
+  c2*truevals[7]+c3*truevals[9] + proxy*truevals[3]
+plot(dy)
+age = y0+cumsum(dy)
+df=data.frame(age=age,dy=as.numeric(dy),proxy=as.numeric(proxy),depth=depth); data=rbind(c(y0,z0,NA,NA),df)
+formula=dy~-1+proxy#+depth2
+nsims = 1000
+
+control.sim = list(ncores=1, nsims=nsims, synchronized=TRUE)
+# Specify tie-point distribution
+control.fit=list(method="INLA", noise="ar1")
+synchronization = list(locations = c(1, 200,400,800),locations_unit="index",method="gauss", nsims=nsims,params=list(mean=c(0, 2200,6800,19000),sd=c(0, 10,50,60)), 
+                       agedisc=list(model="rw2",
+                                    options=list(restart.fromlast=FALSE,
+                                                 inla.options=list(num.threads=1,
+                                                                   verbose=TRUE,
+                                                                   control.compute=list(openmp.strategy="huge")))))
+
+synchronization = list(locations = c(1, 200,400,800),locations_unit="index",method="gauss", nsims=nsims,params=list(mean=c(0, 2200,6800,19000),sd=c(0, 10,50,60)), 
+                       agedisc=list(model="rw2"))
+
+
+```
+
+```{r}
+
+
+
+## set up model
+res = bremla_prepare(formula=formula, data=data, nsims=nsims, events=events,
+               control.fit=control.fit,
+               control.sim=control.sim,
+               synchronization=synchronization)
+
+## fit model
+res = bremla_modelfitter(res)
+
+## sample unsynchronized chronologies
+
+res = bremla_chronology_simulation(res)
+
+## generate tie-points
+
+res = tiepointsimmer(res)
+
+## sample synchronized chronologies
+res = bremla_synchronized_simulation(res, print.progress=TRUE)
+
+## To do all these steps in one call use:
+# res = bremla(formula=formula, data=data, nsims=nsims, events=events,
+#                control.fit=control.fit,
+#                control.sim=control.sim,
+#                synchronization=synchronization,
+#                print.progress=TRUE)
+
+```
+
+
+
+
+
+
+
+
+
+
+# Real data example: NGRIP/GICC05
+
+
+
+
+
+The data used is the NGRIP/GICC05 data set 'NGRIP_d18O_and_dust_5cm', downloaded from [Centre for Ice and Climate](iceandclimate.nbi.ku.dk) at the Niels Bohr Institute of the University of Copenhagen, Denmark, and the table of stadial-interstadial events presented by [Rasmussen et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0277379114003485). 
+We also use tie-points described by probability distributions obtained from Adolphi et al. (2018) and Muscheler et al. (2020). Both the NGRIP/GICC05 data and the Adolphi/Muscheler tie-points are included in the package and can be imported as follows. 
+
+```{r}
+library(INLA)
+set.seed(1991)
+require(stringr)
+data("event_intervals")
+data("events_rasmussen")
+data("NGRIP_5cm")
+
+
+age = NGRIP_5cm$age
+depth = NGRIP_5cm$depth
+d18O = NGRIP_5cm$d18O
+proxy=d18O
+formula = dy~-1+depth2
+depth2 = depth^2/depth[1]^2 #normalize for stability
+
+# set up data set with n+1 rows. Must include 'age', 'depth' and all covariates in 'formula'. In the first row, only 'y0' and 'z0' are collected:
+data = data.frame(age=age,dy=c(NA,diff(age)),depth=depth,depth2=depth2,proxy=proxy)
+
+
+nsims=1000 #number of chronologies to be sampled
+
+# specify the events which separates piecewise predictor in layer increment model. See '?events.default' for more details:
+events=list(locations = events_rasmussen$depth,
+            locations_unit="depth",degree=1)
+
+# Simulation options. Specify 'synchronization=TRUE' so it doesnt only create unsynchronized samples. See '?control.sim.default' for more details
+control.sim=list(synchronized = TRUE)
+
+# Fit options. These specify options for the model and fitting procedure in the layer-increment model. We use AR(1) noise and the INLA method. See '?control.fit.default' for more details
+control.fit=list(method="inla", noise="ar1")
+
+
+# Options for synchronization approach. Here, tie-point samples, or model specifications must be included. locations should also be included. To use the Adolphi tie-points, specify 'method="adolphi"' and use 'locations' to specify which tie-points to be included as demonstrated below:
+synchronization=list(method="adolphi", #Choose which Adolphi tie-point to use (the first one takes place after the Holocene and is therefore omitted here)
+                     locations=c(FALSE,TRUE,TRUE,TRUE,TRUE)
+                     ) 
+
+
+
+```
+
+## Fit models with bremla
+
+The bremla package will set up the bremla object with all options specified in 'events', 'control.fit', 'control.sim' and 'synchronization', using the 'bremla_prepare' function. It also contains functions to perform least squares to find good initial values for an INLA fit, and simulate 
+It will also set up the bremla object with all 
+
+
+### Assuming no systematic biases
+If we assume there are no systematic biases, then the tie-points can be considered as realizations of the cumulative of the inferred layer increment model. If this model is Gaussian we can do this very efficiently
+
+```{r}
+
+ object0 = bremla(formula=formula, data=data, nsims=nsims, events=events,
+                control.fit=control.fit,
+                control.sim=control.sim,
+                synchronization=synchronization)
+
+```
+
+#### Plot results
+
+```{r}
+
+ggdreal0 = data.frame(depth=object0$data$depth, age=object0$data$age, agemean= object0$simulation$summary$mean, agelower = object0$simulation$summary$lower, ageupper=object0$simulation$summary$upper, sagemean=object0$simulation$summary_sync$mean, 
+                 sagelower=object0$simulation$summary_sync$lower, sageupper=object0$simulation$summary_sync$upper,
+                 agediffmean=object0$simulation$summary$mean-object0$data$age,
+                 agedifflower=object0$simulation$summary$lower-object0$data$age, 
+                 agediffupper=object0$simulation$summary$upper-object0$data$age,
+                 sagediffmean=object0$simulation$summary_sync$mean-object0$data$age,
+                 sagedifflower=object0$simulation$summary_sync$lower-object0$data$age,
+                 sagediffupper=object0$simulation$summary_sync$upper-object0$data$age)
+
+
+#library(matrixStats)
+tiequants = colQuantiles(object$tie_points$samples, probs=c(0.025,0.975))
+ggdtiereal = data.frame(locations=object$data$depth[object$tie_points$locations_indexes],
+                        lower = tiequants[,1], upper = tiequants[,2],
+                        dlower = tiequants[,1] - object$data$age[object$tie_points$locations_indexes], dupper = tiequants[,2] - object$data$age[object$tie_points$locations_indexes])
+
+library(ggplot2)
+
+  
+ggpreal0 = ggplot(data=ggdreal0,aes(x=depth)) + theme_bw()+
+  geom_ribbon(aes(ymin=agedifflower, ymax=agediffupper), fill="black", alpha=0.2)+
+  geom_ribbon(aes(ymin=sagedifflower,ymax=sagediffupper), color="red", fill="red", alpha=0.3)+
+  geom_line(aes(y=sagediffmean),color="blue") +
+  geom_linerange(data=ggdtiereal,aes(x=locations,ymin=dlower,ymax=dupper),color="black")+
+  xlab("Depth (m)") + ylab("Simulated time scale - GICC05 (years)")
+
+
+```
+
+
+### Using RW2 bias
+Here we assume there could be systematic biases, and model the resulting discrepancy between the number of inferred layers and the true age, as represented by the tie-points, using a 2nd order random walk model
+
+```{r}
+
+## set up model
+
+synchronization$agedisc = list(model="rw2") #choose the 2nd order random walk for the age discrepancy model
+
+object = bremla_prepare(formula=formula, data=data, nsims=nsims, events=events,
+               control.fit=control.fit,
+               control.sim=control.sim,
+               synchronization=synchronization)
+
+## fit model
+object = bremla_modelfitter(object)
+
+## sample unsynchronized chronologies
+
+object = bremla_chronology_simulation(object)
+
+## generate tie-points
+
+object = tiepointsimmer(object)
+
+## sample synchronized chronologies
+object = bremla_synchronized_simulation(object, print.progress=TRUE)
+
+## To do all these steps at the same time use
+# object = bremla(formula=formula, data=data, nsims=nsims, events=events,
+#                control.fit=control.fit,
+#                control.sim=control.sim,
+#                synchronization=synchronization,
+#                print.progress=TRUE)
+
+```
+
+
+
+
+#### Plot results
+
+
+```{r}
+ggdreal = data.frame(depth=object$data$depth, age=object$data$age, agemean= object$simulation$summary$mean, agelower = object$simulation$summary$lower, ageupper=object$simulation$summary$upper, sagemean=object$simulation$summary_sync$mean, 
+                 sagelower=object$simulation$summary_sync$lower, sageupper=object$simulation$summary_sync$upper,
+                 agediffmean=object$simulation$summary$mean-object$data$age,
+                 agedifflower=object$simulation$summary$lower-object$data$age, 
+                 agediffupper=object$simulation$summary$upper-object$data$age,
+                 sagediffmean=object$simulation$summary_sync$mean-object$data$age,
+                 sagedifflower=object$simulation$summary_sync$lower-object$data$age,
+                 sagediffupper=object$simulation$summary_sync$upper-object$data$age)
+
+
+#library(matrixStats)
+tiequants = colQuantiles(object$tie_points$samples, probs=c(0.025,0.975))
+ggdtiereal = data.frame(locations=object$data$depth[object$tie_points$locations_indexes],
+                        lower = tiequants[,1], upper = tiequants[,2],
+                        dlower = tiequants[,1] - object$data$age[object$tie_points$locations_indexes], dupper = tiequants[,2] - object$data$age[object$tie_points$locations_indexes])
+
+library(ggplot2)
+ggpreal1 = ggplot(data=ggdreal,aes(x=depth)) + theme_bw()+
+  geom_ribbon(aes(ymin=agelower, ymax=ageupper), fill="black", alpha=0.2)+
+  geom_ribbon(aes(ymin=sagelower,ymax=sageupper), color="red", fill="red", alpha=0.3)+
+  geom_line(aes(y=sagemean),color="blue") +
+  geom_linerange(data=ggdtiereal,aes(x=locations,ymin=lower,ymax=upper),color="black")+
+  xlab("Depth (m)") + ylab("Age (yr b2k)")+
+  ggtitle("(a) Absolute time scale")
+  
+ggpreal2 = ggplot(data=ggdreal,aes(x=depth)) + theme_bw()+
+  geom_ribbon(aes(ymin=agedifflower, ymax=agediffupper), fill="black", alpha=0.2)+
+  geom_ribbon(aes(ymin=sagedifflower,ymax=sagediffupper), color="red", fill="red", alpha=0.3)+
+  geom_line(aes(y=sagediffmean),color="blue") +
+  geom_linerange(data=ggdtiereal,aes(x=locations,ymin=dlower,ymax=dupper),color="black")+
+  xlab("Depth (m)") + ylab("Age deviation (years)")+
+  ggtitle("(b) Age deviation from GICC05")
+
+
+
+
+
+```
+
+
+
+
+
+
+

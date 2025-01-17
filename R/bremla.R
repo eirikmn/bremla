@@ -186,7 +186,7 @@ bremla <- function(formula,data,
   }
 
   if(!is.null(control.sim)){
-    if(nsims>0 && control.sim$synchronized %in% c(FALSE,2)){
+    if(nsims>0){
       control.sim$nsims=nsims
       #produce samples from the chronologies
       object = bremla_chronology_simulation(object, control.sim=control.sim,
@@ -207,7 +207,7 @@ bremla <- function(formula,data,
   }
 
   if(!is.null(control.sim)){
-    if(nsims>0 && control.sim$synchronized %in% c(TRUE,2)){
+    if(nsims>0 && control.sim$synchronized ==TRUE){
       control.sim$nsims=nsims
       #produce samples from the chronologies
       object = bremla_synchronized_simulation(object, control.sim=control.sim,

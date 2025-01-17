@@ -16,18 +16,11 @@ specify the procedure for estimating the dating uncertainty of a given transitio
 following a linear ramp model fit.
 The list contains the following arguments:
    \itemize{
-     \item \code{label} Character used to describe the name of the transition in
-     future \code{plot}. Default \code{NULL}.
-     \item \code{nsims} Integer giving the number of samples to be generated for
-     onset transition age. Default value is \code{10000}.
-     \item \code{sync} Boolean indicating if the synchronized age-depth model should
-     be used. Default value is \code{TRUE}, but this is set to \code{fALSE} if
-     synchronized samples are not yet computed.
-     \item \code{age.label} Character describing what label to place on x-axis (age)
-     in a future \code{plot}.
-     Default value is \code{""}.
-     \item \code{age.ref} Numeric giving a reference value for the age which will be
-     included in a future \code{plot}.
+     \item \code{label} Character used to describe the name of the transition in future \code{plot}. Default \code{NULL}.
+     \item \code{nsims} Integer giving the number of samples to be generated for onset transition age. Default value is \code{10000}.
+     \item \code{sync} Boolean indicating if the synchronized age-depth model should be used. Default value is \code{TRUE}, but this is set to \code{fALSE} if synchronized samples are not yet computed.
+     \item \code{age.label} Character describing what label to place on x-axis (age) in a future \code{plot}. Default value is \code{""}.
+     \item \code{age.ref} Numeric giving a reference value for the age which will be included in a future \code{plot}.
      }
 }
 \seealso{

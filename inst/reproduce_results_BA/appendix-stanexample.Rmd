@@ -1,0 +1,171 @@
+# Simulation example in Section 9
+This codes generates synthetic layer increments and tie-points and fits the layer-increment and the age-discrepancy models jointly using Markov chain Monte Carlo. Specifically, we use the Stan implementation of the No-U-turn Sampler. 
+
+This approach is much more computationally intensive than using the simplification described in the paper along with R-INLA. Hence, the synthetic time series is much shorter.
+
+## Simulate data
+
+```{r}
+library(rstan)
+library(Matrix)
+library(devtools)
+library(ggplot2)
+set.seed(123)
+n = 100
+
+
+set.seed(123)
+y0 = 0
+z0 = 0
+phi=0.8; sigma=3
+
+depth = z0+seq(from=1,n,length.out=n)
+depth2 = depth^2#/z0 #normalize for stability
+
+dnoise = sigma*arima.sim(n=n,model=list(ar=c(phi)),sd=sqrt(1-phi^2))
+proxy = arima.sim(n=n,model=list(ar=0.9),sd=sqrt(1-0.9^2))
+
+truevals = c(sigma,phi,       0.5, 10, 0.01, 20, 0.02, 0, 0.03)
+namevals = c("\\sigma","\\phi","b_w","a_1","b_1","a_2","b_2","a_3","b_3")
+
+locs = c(1,25, 75, n)
+
+events=list(locations=locs)
+segs = diff(locs); segs[3] = segs[3]+1
+a1 = c(rep(1,segs[1]),numeric(segs[2]+segs[3]))
+a2 = c(numeric(segs[1]),rep(1,segs[2]),numeric(segs[3]))
+a3 = c(numeric(segs[1]+segs[2]),rep(1,segs[3]))
+c1 = c(depth[1:(locs[2]-1)],numeric(segs[2]+segs[3]))
+c2 = c(numeric(segs[1]),depth[locs[2]:(locs[3]-1)],numeric(segs[3]))
+c3 = c(numeric(segs[1]+segs[2]),depth[locs[3]:locs[4]])
+dy = dnoise + a1*truevals[4]+a2*truevals[6]+a3*truevals[8]+c1*truevals[5]+
+  c2*truevals[7]+c3*truevals[9] + proxy*truevals[3]
+truetrend = a1*truevals[4]+a2*truevals[6]+a3*truevals[8]+c1*truevals[5]+
+  c2*truevals[7]+c3*truevals[9] + proxy*truevals[3]
+#plot(dy)
+age = y0+cumsum(dy)
+df=data.frame(age=age,dy=as.numeric(dy),proxy=as.numeric(proxy),depth=depth); data=rbind(c(y0,z0,NA,NA),df)
+formula=dy~-1+proxy#+depth2
+# formula = dy ~ -1 + a1+a2+a3+c1+c2+c3 + proxy
+nsims = 10000
+
+# lmr = lm(formula,data=data.frame(dy=dy,proxy=proxy,a1=a1,a2=a2,a3=a3,c1=c1,c2=c2,c3=c3))
+
+res = bremla_prepare(formula, data,nsims, events=events)
+
+design_matrix <- model.matrix(res$.args$formula.ls, res$data)
+betatrues = c(truevals[3],truevals[4],truevals[5],truevals[6],truevals[7],truevals[8],truevals[9])
+
+fixedtrue = design_matrix%*%betatrues
+#dy = design_matrix%*%betatrues + dnoise
+
+design_matrix <- model.matrix(res$.args$formula.ls, res$data)
+
+{
+  ggd = data.frame(true=fixedtrue, dy=dy,depth=depth)
+  ggplot(ggd, aes(x=depth)) + theme_bw() + xlab("Depth") + ylab("Layer increments")+
+    geom_point(aes(y=dy),col="gray")+
+    geom_line(aes(y=fixedtrue),col="black")
+}
+
+set.seed(1)
+y_truth = cumsum(dy) # just to check where tie-points should be placed
+
+bias = 500*sin((1:n)*3*pi/(2*n))
+y_full = y_truth+bias
+
+#which_obs = sort(sample(1:n,n/5))
+#which_obs = sort(sample(1:n,n-50))
+which_obs = sort(c(10,25,50,75,90))
+is_missing = rep(TRUE,n)
+is_missing[which_obs] = FALSE
+which_missing = which(is_missing)
+is_obs = !is_missing
+y_full[which_missing]=NA
+y_obs = y_full[which_obs]
+
+
+x_y = seq(from=1,to=10,length.out=n)
+stan_data <- list(
+  N = n,
+  K = ncol(design_matrix),
+  X = design_matrix,
+  dy = dy,
+  N_obs = length(which_obs),
+  N_missing = length(which_missing),
+  which_missing = which_missing,
+  which_obs = which_obs,
+  y_obs = y_obs#,
+)
+
+```
+
+## Fit model
+```{r}
+
+nsims = 4000
+warmup = 3000
+fit <- stan(
+  file = 'AR1plusarima.stan',           # Stan model file
+  data = stan_data,                  # Data list for Stan
+  iter = nsims,                       # Number of iterations
+  warmup = warmup,
+  chains = 4,                        # Number of chains
+  seed = 123                         # Seed for reproducibility
+) 
+samples <- extract(fit)
+
+dim(samples$y)
+ycolm = colMeans(samples$y)
+ycolq = colQuantiles(samples$y, probs=c(0.025,0.975))
+Xmucolm = colMeans(samples$X_mu)
+Xmucolq = colQuantiles(samples$X_mu, probs=c(0.025,0.975))
+
+{
+  ggd1 = data.frame(x=depth,mean=Xmucolm, lower=Xmucolq[,1], upper=Xmucolq[,2], obs = dy, truetrend = truetrend)
+  ggp1 = ggplot(data=ggd1, aes(x=x)) + theme_bw() + xlab("Depth") + ylab("Layers per unit of depth")+
+    ggtitle("(a) Fitted layer increments") +
+    geom_ribbon(aes(ymin=lower,ymax=upper),fill="red",col="red",alpha=0.3)+
+    geom_point(aes(y=obs),col="black")+
+    #geom_line(aes(y=obs),col="gray")+
+    geom_line(aes(y=truetrend),col="blue")+
+    geom_line(aes(y=mean))
+}
+
+{
+  cumsumXmu = matrix(NA,ncol=ncol(samples$X_mu),nrow=nrow(samples$X_mu))
+  for(i in 1:nrow(samples$X_mu)){
+    cumsumXmu[i,] = cumsum(samples$X_mu[i,])
+  }
+  cumxm = colSums(cumsumXmu)
+  cumxquant = colQuantiles(cumsumXmu, probs=c(0.025,0.975))
+
+  #plot(y_noise)
+  #y_full = y_truth+bias
+  y_og = cumsum(dy)
+  #ggd2 = data.frame(x=depth,mean=ycolm-y_og,lower=ycolq[,1]-y_og,upper=ycolq[,2]-y_og, bias=bias)
+  ggd2 = data.frame(x=depth,mean=ycolm,lower=ycolq[,1],upper=ycolq[,2], bias=bias+cumsum(dy),
+                    xmean = cumxm, xlower=cumxquant[,1],xupper=cumxquant[,2])
+  ggp2 = ggplot(data=ggd2,aes(x=x)) + theme_bw()+xlab("Depth")+ylab("Estimated age") +
+    ggtitle("(b) Synchronized chronologies") +
+    geom_ribbon(aes(ymin=xlower,ymax=xupper),fill="black", alpha=0.2)+
+    geom_ribbon(aes(ymin=lower,ymax=upper),col="red",fill="red",alpha=0.3)+
+    geom_line(aes(y=bias),col="blue")+
+    geom_line(aes(y=mean))+
+    #geom_point(data=data.frame(x=depth[which_obs],y=y_obs-y_og[which_obs]),aes(x=x,y=y),col="black")
+    geom_point(data=data.frame(x=depth[which_obs],y=y_obs),aes(x=x,y=y),col="black")
+
+
+  print(ggp2)
+}
+library(ggpubr)
+ggboth1 = ggarrange(ggp1,ggp2,nrow=2)
+#ggboth2 = ggarrange(ggp1,ggp3,nrow=1)
+
+#ggpall = ggarrange(ggp11,ggp222,nrow=2)
+ggsave(paste0("MCMCexample-3000x2000.eps"),ggboth1,device=cairo_ps, width=3000, height=2200, units="px")
+
+#ggsave("MCMCexample2-4800x2000.eps", device=cairo_ps,plot=ggboth2,width=4800,height=2000, units="px",dpi=500,limitsize=FALSE)
+
+traceplot(fit)
+```

@@ -63,6 +63,7 @@
 #' @keywords simulation synchronization tiepoint
 #'
 #' @export
+#' @importFrom utils write.table
 bremla_synchronized_simulation = function(object,control.sim,print.progress=FALSE){
 
 time.start = Sys.time()
@@ -70,7 +71,7 @@ time.start = Sys.time()
 
     if(!is.null(object$.args$control.sim)){
       if(print.progress){
-        cat("'control.sim' missing. Importing information from 'object'.",sep="")
+        # cat("'control.sim' missing. Importing information from 'object'.",sep="")
       }
       control.sim = object$.args$control.sim
     }else{
@@ -127,122 +128,395 @@ time.start = Sys.time()
 
   if(tolower(object$.args$control.fit$method) == "inla"){ # && is.null(object$simulation)){ #if INLA is used
 
-    reg.model = object$.internal$lat.selection
-    latentselection = object$.internal$lat.selection
 
-
-    timecoef.start = Sys.time()
-    ncores_postsamp = max(1,object$.args$control.sim$ncores)
-    latentsamples = INLA::inla.posterior.sample(nsims,object$fitting$inla$fit,
-                                                selection=latentselection,verbose=FALSE,
-                                                add.names=FALSE,num.threads = ncores_postsamp)
-    #int_hyper = latentsamples[[i]]
-
-    #int_hyper = data.frame(matrix(NA, nrow=nsims,ncol=length(latentsamples[[1]]$hyperpar))) #get hyperparameters from joint distribution
-
-    #colnames(int_hyper) = names(latentsamples[[1]]$hyperpar)
-    timecoef.end = Sys.time()
-    if(print.progress) cat(" completed in ",difftime(timecoef.end,timecoef.start,units="secs")[[1]]," seconds.\n",sep="")
-    samples = matrix(NA,nrow=n,ncol=nsims)
+    ## Collect unsynchronized samples
 
 
 
+    if(print.progress){
+      cat("Preparing synchronization...\n",sep="")
+    }
+    if(is.null(object$.args$synchronization$agedisc)){
 
-  if(print.progress) cat("Sampling fixed coefficients...",sep="")
+      ## Old
+      if(print.progress){
+        cat("Assuming no structural biases...\n",sep="")
+      }
+
+      reg.model = object$.internal$lat.selection
+      latentselection = object$.internal$lat.selection
 
 
-  if(print.progress) cat("\nSimulating synchronized chronologies...\n",sep="")
-  timeage.start = Sys.time()
-  for(r in 1:nsims){
-    hypersamples = latentsamples[[r]]$hyperpar
-    int_hyper = hypersamples
+      timecoef.start = Sys.time()
+      ncores_postsamp = max(1,object$.args$control.sim$ncores)
+      latentsamples = INLA::inla.posterior.sample(nsims,object$fitting$inla$fit,
+                                                  selection=latentselection,verbose=FALSE,
+                                                  add.names=FALSE,num.threads = ncores_postsamp)
+      #int_hyper = latentsamples[[i]]
 
-    if(tolower(noise) %in% c("rgeneric","custom")){
+      #int_hyper = data.frame(matrix(NA, nrow=nsims,ncol=length(latentsamples[[1]]$hyperpar))) #get hyperparameters from joint distribution
 
-      param.names = object$.args$control.fit$rgeneric$param.names
-      for(i in 1:length(object$.args$control.fit$rgeneric$from.theta)){
-        paramsamp = object$.args$control.fit$rgeneric$from.theta[[i]](hypersamples[i])
-        if(is.null(param.names[i]) || is.na(param.names[i])){
-          tempname = paste0("hyperparameter",i)
-          object$simulation$params[[tempname]][i] = paramsamp
+      #colnames(int_hyper) = names(latentsamples[[1]]$hyperpar)
+      timecoef.end = Sys.time()
+      if(print.progress) cat(" completed in ",difftime(timecoef.end,timecoef.start,units="secs")[[1]]," seconds.\n",sep="")
+      samples = matrix(NA,nrow=n,ncol=nsims)
+
+
+
+
+      if(print.progress) cat("Sampling fixed coefficients...",sep="")
+
+
+      if(print.progress) cat("\nSimulating synchronized chronologies...\n",sep="")
+      timeage.start = Sys.time()
+      for(r in 1:nsims){
+        hypersamples = latentsamples[[r]]$hyperpar
+        int_hyper = hypersamples
+
+        if(tolower(noise) %in% c("rgeneric","custom")){
+
+          param.names = object$.args$control.fit$rgeneric$param.names
+          for(i in 1:length(object$.args$control.fit$rgeneric$from.theta)){
+            paramsamp = object$.args$control.fit$rgeneric$from.theta[[i]](hypersamples[i])
+            if(is.null(param.names[i]) || is.na(param.names[i])){
+              tempname = paste0("hyperparameter",i)
+              object$simulation$params[[tempname]][i] = paramsamp
+            }else{
+              object$simulation$params[[param.names[i] ]][i] = paramsamp
+            }
+          }
+
+          theta = hypersamples
+
+          Qx = object$.args$control.fit$rgeneric$Q(theta,n,ntheta=length(theta))
+
+          Qfull = Qymaker(Qx)
+
+        }else if( tolower(noise) %in% c(1,"ar1","ar(1)") ){
+
+          hypersamples = int_hyper
+          #hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
+          object$simulation$params$sigma[r] = 1/sqrt(hypersamples[1])
+          object$simulation$params$phi[r] = hypersamples[2]
+
+          sigma_sample = object$simulation$params$sigma[r]
+          phi_sample = object$simulation$params$phi[r]
+
+          if(object$.args$control.fit$noise=="ar1"){
+            Qfull = Qmaker_ar1cum(n,sigma_sample,phi_sample)
+          }else{
+            # 'noise' is the precision matrix of the layer differences Q_x
+            Qfull = Qymaker(object$.args$control.fit$noise)
+          }
+
+
         }else{
-          object$simulation$params[[param.names[i] ]][i] = paramsamp
+          stop("Currently, only the 'ar1' noise model is implemented. Other models can be specified via the 'rgeneric' model, see '?rgeneric.fitting' for details.")
+        }
+
+        Qa = Qfull[-tie_indexes,-tie_indexes]
+        Qab = Qfull[-tie_indexes,tie_indexes]
+        if(m==1){
+          Qab = as.matrix(Qab,ncol=1)
+        }
+
+        coefs = latentsamples[[r]]$latent
+        dmeansim = meanmaker( coefs, latentselection,data = object$data )
+
+        y_mu = cumsum(c(object$initials$age,dmeansim))[2:(n+1)]
+        free_mu = y_mu[free_indexes]
+        tie_mu = y_mu[tie_indexes]
+
+
+        La = t(chol(Qa))
+        b_temp = (-Qab%*%(tiepointsims[r,]-tie_mu))
+        if(!is.null(dim(b_temp))){
+          b_temp = b_temp[,1]
+        }
+        w = solve(La,b_temp)
+        mu_temp = solve(t(La),w)
+        if(!is.null(dim(mu_temp))){
+          mu_temp = mu_temp[,1]
+        }
+        z0 = rnorm(free_n)
+        v = solve(t(La),z0)
+        if(!is.null(dim(v))){
+          v = v[,1]
+        }
+
+        samples[free_indexes,r] = mu_temp + free_mu + v
+        samples[tie_indexes,r] = tiepointsims[r,]
+
+        #mu_amidb = (free_mu - solve(Qa)%*%Qab%*%(skewsamples[r]-tie_mu))[,1]
+
+        #samples[free_indexes,r] = Qsimmer(1,Qa,mu_amidb)
+        if(print.progress && (r %% 1000) == 0){
+          cat("Synchronous age simulation ",r,"/",nsims,". Elapsed time: ",difftime(Sys.time(),timeage.start,units="secs")[[1]]," seconds...","\n",sep="")
         }
       }
 
-      theta = hypersamples
+      object$simulation$age_sync = samples
 
-      Qx = object$.args$control.fit$rgeneric$Q(theta,n,ntheta=length(theta))
 
-      Qfull = Qymaker(Qx)
 
-    }else if( tolower(noise) %in% c(1,"ar1","ar(1)") ){
 
-      hypersamples = int_hyper
-      #hypersamples = INLA::inla.hyperpar.sample(nsims,object$fitting$inla$fit)
-      object$simulation$params$sigma[r] = 1/sqrt(hypersamples[1])
-      object$simulation$params$phi[r] = hypersamples[2]
 
-      sigma_sample = object$simulation$params$sigma[r]
-      phi_sample = object$simulation$params$phi[r]
 
-      if(object$.args$control.fit$noise=="ar1"){
-        Qfull = Qmaker_ar1cum(n,sigma_sample,phi_sample)
-      }else{
-        # 'noise' is the precision matrix of the layer differences Q_x
-        Qfull = Qymaker(object$.args$control.fit$noise)
+
+    }else{ #define age discrepancy method
+
+
+
+
+
+
+
+      # Set up tie-points
+      n_tie = length(object$tie_points$locations_indexes)
+
+      mt = matrix(NA,nrow=n,ncol=nsims)
+      mt[object$tie_points$tie_indexes,] = t(object$tie_points$samples)
+
+      y2mat = mt - object$simulation$age #discrepancies
+
+
+
+      if(!is.null(object$.args$synchronization$agedisc)){
+        if(is.null(object$.args$synchronization$agedisc$model)){
+          object$.args$synchronization$agedisc$model = "rw2"
+        }
+        if(is.null(object$.args$synchronization$agedisc$method)){
+          object$.args$synchronization$agedisc$method = "INLA"
+        }
+        if(is.null(object$.args$synchronization$agedisc$options)){
+          object$.args$synchronization$agedisc$options$stepsizes = c(0.005,0.001,0.01)
+          object$.args$synchronization$agedisc$options$restart.fromlast = FALSE
+          if(is.null(object$.args$synchronization$agedisc$options$inla.options)){
+            object$.args$synchronization$agedisc$options$inla.options = list(
+              control.compute=list(config=TRUE),
+              silent=1L,
+              num.threads=object$.args$control.fit$ncores,
+              control.family = list(hyper=list(prec=list(initial=12, fixed=TRUE)))
+            )
+          }
+        }
+
+        if(is.null(object$.args$synchronization$agedisc$hyperprior)){
+          if(object$.args$synchronization$agedisc$model %in% c("rw2", "randomwalk2")){
+            #object$.args$synchronization$agedisc$hyperprior=NULL
+          }else{
+            stop("No hyperprior for age discrepancy model given, and no default value available!")
+          }
+        }
       }
 
 
-    }else{
-      stop("Currently, only the 'ar1' noise model is implemented. Other models can be specified via the 'rgeneric' model, see '?rgeneric.fitting' for details.")
+
+
+      if(tolower(object$.args$synchronization$agedisc$method) != "inla"){
+        stop("Currently, only INLA method is available for age discrepancies")
+      }
+      # Assigning default values
+
+
+      disc.model=object$.args$synchronization$agedisc$model
+
+      if(print.progress){
+        cat("Assuming age discrepancy is described by a ", disc.model, " model.\n",sep="")
+      }
+      if(tolower(disc.model) %in% c("rw1","randomwalk1")){
+        if(is.null(object$.args$synchronization$agedisc$hyperprior)){
+          object$.args$synchronization$agedisc$hyperprior=list(prec=list(param=c(10,5e-05)))
+        }
+        idx2 = seq(1,1000,length.out=n)
+        control.mode =list(restart=TRUE, theta=-2)
+        formula2 = y2 ~ -1 + f(idx2,model="rw1", values=idx2, constr=FALSE,
+                               hyper=object$.args$synchronization$agedisc$hyperprior)
+      }else if(tolower(disc.model) %in% c("rw2","randomwalk2")){
+        idx2 = seq(1,1000,length.out=n)
+        if(is.null(object$.args$synchronization$agedisc$hyperprior)){
+          object$.args$synchronization$agedisc$hyperprior=list(prec=list(param=c(10,5e-05)))
+        }
+        #control.mode =list(restart=TRUE, theta=-2)
+        control.mode =NULL
+        formula2 = y2 ~ -1 + f(idx2,model="rw2", values=idx2, constr=FALSE,
+                               hyper=object$.args$synchronization$agedisc$hyperprior)
+      }else{
+        idx2 = 1:n
+        control.mode =list(restart=TRUE, theta=c(2,2))
+        if(is.null(object$.args$synchronization$agedisc$hyperprior)){
+          object$.args$synchronization$agedisc$hyperprior =
+            list(prec=list(param=c(8, 5e-05),initial=2),
+                 rho=list(param=c(2,0.15), initial=2))
+        }
+        formula2 = y2 ~ -1 + f(idx2,model="ar1",
+                               hyper=object$.args$synchronization$agedisc$hyperprior
+                                )
+      }
+
+      object$age_discrepancy = object$.args$synchronization$agedisc
+      object$age_discrepancy$formula=formula2
+      object$age_discrepancy$options$inla.options$control.mode=control.mode
+
+      x2sims = matrix(NA,nrow=n,ncol=nsims)
+
+
+
+      time.agedisc.start = Sys.time()
+
+      for(i in 1:nsims){
+
+
+        elapsed.time = Sys.time()-time.agedisc.start
+        if(i==1 && print.progress){
+            cat("Starting fitting the model with INLA and simulating from posterior predictor.\n",sep="")
+        }
+        #if( (i %% round(0.1*nsims) == 0) && print.progress ){
+        if( print.progress ){
+        #if(i %% 1000 == 0 && print.progress){
+          cat("Fitting age discrepancy sample #",i," / ",nsims, " - elapsed time: ",round(difftime(Sys.time(),time.agedisc.start,units="secs")[[1]], digits=1)," seconds...\n",sep="")
+        }
+
+
+        if(i>1 && object$.args$synchronization$agedisc$options$restart.fromlast){
+          #object$age_discrepancy$options$control.mode
+          control.mode$result=r2
+          control.mode$restart=TRUE
+        }else{
+          control.mode$result=NULL
+          control.mode = object$age_discrepancy$options$inla.options$control.mode
+        }
+        inla.options = object$age_discrepancy$options$inla.options
+        inla.options$control.mode = control.mode
+
+
+        safe_function <- function(stepHs, inla.options){
+          success = FALSE
+          #stepHs = c(0.005, 0.001, 0.01,0.002,0.003,0.008)
+
+          attempt = 1
+          while(!success){
+            tryCatch({
+              if(attempt > length(stepHs)){
+                stepH = rnorm(1,mean=0.005,sd=0.02)
+              }else{
+                stepH = stepHs[attempt]
+              }
+
+              #cat("attempt: ",attempt,"\n",sep="")
+              if(attempt >7){
+                success <- TRUE #break to avoid infinite loop
+                return(NA)
+              }
+              inla.options$control.inla$h = stepH
+              inla.options$control.compute$config=TRUE #this needs to be set to TRUE
+
+
+
+              r2 = do.call(INLA::inla, c(list(formula = formula2,
+                                              data = data.frame(y2=y2mat[,i], idx2=idx2)),
+                                         inla.options) )
+
+              success <- TRUE
+              if(attempt>1){
+                cat("Function succeeded after ",attempt," attemps.\n",sep="")
+              }
+
+              return(r2)
+            },error = function(e){
+              #message("error",e$message)
+              #res = inla.climate(yw,fw, model=model, inla.options=inla.options, stepLength=0.001)
+              message("Attempt ", attempt, " failed with error: ", e$message)
+              attempt <<- attempt + 1
+
+              #return(res)
+            })
+          }
+
+        }
+
+        # Doing some stuff as recommended by INLA, to prevent errors
+        if(tolower(disc.model) %in% c("rw2", "randomwalk2")){
+          invisible(INLA::inla.models())
+          m = get("inla.models", INLA::inla.get.inlaEnv())
+          m.old = m
+          m$latent$rw2$min.diff = NULL
+          assign("inla.models", m, INLA::inla.get.inlaEnv())
+        }
+
+        r2 = safe_function(object$.args$synchronization$agedisc$options$stepsizes, inla.options = inla.options)
+
+        # Reverting
+        if(tolower(disc.model) %in% c("rw2", "randomwalk2")){
+          m$latent$rw2$min.diff = m.old$latent$crw2$min.diff
+          assign("inla.models", m, INLA::inla.get.inlaEnv())
+        }
+
+
+        r2s = INLA::inla.posterior.sample(1,r2, selection=list(Predictor=1:n))
+
+        x2sims[,i] = r2s[[1]]$latent
+
+        if(is.character(object$.args$synchronization$agedisc$options$backupfilename)){
+          # backup if filename is specified
+           write.table(x2sims + object$simulation$age, file=object$.args$synchronization$agedisc$options$backupfilename)
+        }
+
+      }
+      if(print.progress){
+
+      }
+
+
+      # chronsims = object$simulation$age + x2sims
+
+
+      object$simulation$age_sync = object$simulation$age + x2sims
+
+
+      #compute mean and credible intervals
+
+      # object = bremla_simulationsummarizer(object,sync=TRUE,print.progress=print.progress)
+#
+#       mean=numeric(n)
+#       lower=numeric(n)
+#       upper=numeric(n)
+#       for(i in 1:n){
+#         dens=density(chronsims[i,]); dens=data.frame(x=dens$x,y=dens$y)
+#         zm = inla.zmarginal(dens,silent=TRUE)
+#         mean[i] = zm$mean
+#         lower[i] = zm$quant0.025
+#         upper[i] = zm$quant0.975
+#       }
+
+
     }
 
-    Qa = Qfull[-tie_indexes,-tie_indexes]
-    Qab = Qfull[-tie_indexes,tie_indexes]
-    if(m==1){
-      Qab = as.matrix(Qab,ncol=1)
-    }
+#     if(FALSE){
+#   plot(object$simulation$summary_sync$mean-object$data$age,
+#        ylim=range(object$simulation$summary_sync$lower-object$data$age,
+#                   object$simulation$summary_sync$upper-object$data$age),type="l")
+#   lines(object$simulation$summary_sync$lower-object$data$age,col="red")
+#   lines(object$simulation$summary_sync$upper-object$data$age,col="red")
+#
+#   for(ii in 1:4){
+#     quants = quantile(tiepointsims[,ii], probs = c(0.025,0.975)) - object$data$age[object$tie_points$locations_indexes[ii]]
+#     segments(object$tie_points$locations_indexes[ii], quants[1],
+#              object$tie_points$locations_indexes[ii], quants[2])
+#   }
+#
+#   object$tie_points$tie_indexes
+#
+# }
 
-    coefs = latentsamples[[r]]$latent
-    dmeansim = meanmaker( coefs, latentselection,data = object$data )
-
-    y_mu = cumsum(c(object$initials$age,dmeansim))[2:(n+1)]
-    free_mu = y_mu[free_indexes]
-    tie_mu = y_mu[tie_indexes]
 
 
-    La = t(chol(Qa))
-    b_temp = (-Qab%*%(tiepointsims[r,]-tie_mu))
-    if(!is.null(dim(b_temp))){
-      b_temp = b_temp[,1]
-    }
-    w = solve(La,b_temp)
-    mu_temp = solve(t(La),w)
-    if(!is.null(dim(mu_temp))){
-      mu_temp = mu_temp[,1]
-    }
-    z0 = rnorm(free_n)
-    v = solve(t(La),z0)
-    if(!is.null(dim(v))){
-      v = v[,1]
-    }
 
-    samples[free_indexes,r] = mu_temp + free_mu + v
-    samples[tie_indexes,r] = tiepointsims[r,]
 
-    #mu_amidb = (free_mu - solve(Qa)%*%Qab%*%(skewsamples[r]-tie_mu))[,1]
-
-    #samples[free_indexes,r] = Qsimmer(1,Qa,mu_amidb)
-    if(print.progress && (r %% 1000) == 0){
-      cat("Synchronous age simulation ",r,"/",nsims,". Elapsed time: ",difftime(Sys.time(),timeage.start,units="secs")[[1]]," seconds...","\n",sep="")
-    }
-  }
   }
 
   timeage.end = Sys.time()
 
-  object$simulation$age_sync = samples
   object$tie_points$free_indexes=free_indexes
   object$tie_points$tie_indexes=tie_indexes
   object$tie_points$free_n=length(free_indexes)

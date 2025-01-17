@@ -212,7 +212,7 @@ rgeneric.uneven.AR1 = function( #specifies necessary functions for INLA to defin
       # }else{
       lprior = lprior + dnorm(theta[3],mean=ystart,sd=5,log=TRUE) #y0
       lprior = lprior + dnorm(theta[4],mean=0,sd=10.0,log=TRUE) #dy
-      lprior = lprior + dgamma(exp(theta[5]),2.5,rate = 0.15,log=TRUE) + theta[6] #tau/rho
+      lprior = lprior + dgamma(exp(theta[5]),2.5,rate = 0.15,log=TRUE) + theta[5] #tau/rho
       lprior = lprior + dgamma(exp(theta[6]),2,rate = 0.15,log=TRUE) + theta[6] #sigma/kappa
       # }
     }

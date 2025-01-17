@@ -14,40 +14,21 @@ Sets the default variables in the list \code{control.linramp} used to specify th
 linear ramp model fitting procedure for a given transition. The list contains the following arguments:
 \itemize{
   \item \code{label} Character used to describe the name of the transition in future \code{plot}. Default \code{NULL}.
-   \item \code{proxy} Numeric giving the proxy data to perform the linear ramp model fit.
-   Default value is \code{NULL} meaning that it must be provided by the user.
-   \item \code{interval} Interval describing the window of \code{proxy} to perform the
-   linear ramp model fit. Default value is \code{NULL} so it must be given by the user.
-   \item \code{interval.unit} Character giving which axis is used for interval. Can be
-   \code{"depth"} (default), \code{"age"} or \code{"index"}.
-   \item \code{depth.label} Character describing what label to place on x-axis (depth) in a
-   future \code{plot}. Default value is \code{""}.
-   \item \code{depth.ref} Numeric giving a reference value for the depth which will be
-   included in a future \code{plot}.
-   \item \code{opt.params} Numeric describing initial values for \code{\link{optim}} function
-   used to find good initial values for the \code{inla} fitting procedure. If
-   this is set to \code{NULL} (default) the code will provide its own initial values.
-   \item \code{compute.t1} Boolean indicating whether or not transition end point \code{t1}
-   should be computed. Default \code{TRUE}.
-   \item \code{nsims} Integer giving how many Monte Carlo samples should be used to
-   compute transition end point \code{t1} if \code{compute.t1} is \code{TRUE}.
-   \item \code{rescale.y.factor} If proxies (y-axis) should be rescaled, this can be done using
-   this command. \code{y_new = y_old*rescale.y.factor}.
+   \item \code{proxy} Numeric giving the proxy data to perform the linear ramp model fit. Default value is \code{NULL} meaning that it must be provided by the user.
+   \item \code{interval} Interval describing the window of \code{proxy} to perform the linear ramp model fit. Default value is \code{NULL} so it must be given by the user.
+   \item \code{interval.unit} Character giving which axis is used for interval. Can be \code{"depth"} (default), \code{"age"} or \code{"index"}.
+   \item \code{depth.label} Character describing what label to place on x-axis (depth) in a future \code{plot}. Default value is \code{""}.
+   \item \code{depth.ref} Numeric giving a reference value for the depth which will be included in a future \code{plot}.
+   \item \code{opt.params} Numeric describing initial values for \code{\link{optim}} function used to find good initial values for the \code{inla} fitting procedure. If this is set to \code{NULL} (default) the code will provide its own initial values.
+   \item \code{compute.t1} Boolean indicating whether or not transition end point \code{t1} should be computed. Default \code{TRUE}.
+   \item \code{nsims} Integer giving how many Monte Carlo samples should be used to compute transition end point \code{t1} if \code{compute.t1} is \code{TRUE}.
+   \item \code{rescale.y.factor} If proxies (y-axis) should be rescaled, this can be done using this command. \code{y_new = y_old*rescale.y.factor}.
    \item \code{imp.fit} Boolean indicating whether initial values for \code{inla} be computed using \code{optim}.
-  \item{\code{log.theta.prior}}{Function argument which returns the logarithmic value of the joint
-  prior of the rescaled hyperparameters \code{theta} used in the linear ramp model.
-  If \code{NULL} (default) then default priors  will be assumed (see code in
-  \code{rgeneric.r} file).}
-   \item \code{h} Step length of optimization procedure in the \code{inla}-program.
-   Default value is \code{0.01}.
-   \item \code{ncores} Integer giving the number of cores used in the \code{inla}-program.
-   For \code{rgeneric} models which are used here, stability can sometimes be
-   improved if the number of cores is set to \code{1}, which is why it is the
-   default here.
-   \item \code{silent} If equal to \code{TRUE} or \code{1L}, then \code{inla} will run in "silent" mode,
-   If equal to \code{2L} then error messages will also be suppressed.
-   \item \code{verbose} Boolean stating whether or not the \code{inla}-program should
-   run in verbose mode. Default \code{FALSE}.
+  \item \code{log.theta.prior} Function argument which returns the logarithmic value of the joint prior of the rescaled hyperparameters \code{theta} used in the linear ramp model. If \code{NULL} (default) then default priors  will be assumed (see code in \code{rgeneric.r} file).
+   \item \code{h} Step length of optimization procedure in the \code{inla}-program. Default value is \code{0.01}.
+   \item \code{ncores} Integer giving the number of cores used in the \code{inla}-program. For \code{rgeneric} models which are used here, stability can sometimes be improved if the number of cores is set to \code{1}, which is why it is the default here.
+   \item \code{silent} If equal to \code{TRUE} or \code{1L}, then \code{inla} will run in "silent" mode, If equal to \code{2L} then error messages will also be suppressed.
+   \item \code{verbose} Boolean stating whether or not the \code{inla}-program should run in verbose mode. Default \code{FALSE}.
 }
 }
 \seealso{

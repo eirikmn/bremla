@@ -15,8 +15,8 @@ Description: Performs efficient Bayesian regression modeling of layer-counted cl
     INLA package (<https://www.r-inla.org>). An ensemble of plausible chronologies are then sampled from 
     the estimated posterior distributions, on which further analyses can be performed such that dating 
     uncertainty propagation is treated rigorously. Additionally, the package also allows the chronologies 
-    to be constrained using tie-points. The simulated chronologies can also be used to estimate the dating 
-    uncertainty of the onsets of climate transitions. Details on the age-depth model in Myrvoll-Nilsen, 
+    to be constrained using supplied tie-points. The simulated chronologies can also be used to estimate 
+    the dating uncertainty of the onsets of climate transitions. Details on the age-depth model in Myrvoll-Nilsen, 
     Riechers, Rypdal and Boers (2022) <doi:10.5194/cp-18-1275-2022>, and on how to incorporate tie-points 
     in Myrvoll-Nilsen, Riechers and Boers (preprint).
 License: GPL (>= 2)
@@ -44,5 +44,5 @@ Encoding: UTF-8
 LazyData: true
 URL: https://github.com/eirikmn/bremla
 BugReports: https://github.com/eirikmn/bremla/issues
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 VignetteBuilder: knitr
