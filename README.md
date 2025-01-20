@@ -13,13 +13,13 @@ output: github_document
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 <!-- badges: end -->
 
-This repository contains the bremla package (**B**ayesian **Re**gression **M**odeling of **L**ayer-counted **a**rchives) for uncertainty quantification and synchronization for layer-counted proxy archives, including the data and code to reproduce the results for
+This repository contains the bremla package (**B**ayesian **Re**gression **M**odeling of **L**ayer-counted **a**rchives) for uncertainty quantification and synchronization for layer-counted proxy archives. This repository also includes, in the 'inst/' folder, the data and code to reproduce the results for
 
 Myrvoll-Nilsen, E., Riechers, K., Rypdal, M. & Boers, N. (2022). Comprehensive uncertainty estimation of the timing of Greenland warmings of the Greenland Ice core records. Climate of the Past, 18, 1275-1294. doi.org/10.5194/cp-18-1275-2022
 
 and 
 
-Myrvoll-Nilsen, E., Riechers, K. & Boers, N. (202x). Tie-point paper (title TBD)
+Myrvoll-Nilsen, E., Riechers, K. & Boers, N. (2025). Synchronization of layer-counted paleoclimatic proxy archives using a Bayesian regression modeling framework. Bayesian Analysis. In review.
 
 ## Installation
 

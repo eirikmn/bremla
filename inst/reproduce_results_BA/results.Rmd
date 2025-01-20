@@ -357,9 +357,11 @@ If we assume there are no systematic biases, then the tie-points can be consider
 ```
 
 #### Plot results
+This code generates the plots included in the paper. The important results can be illustrated simply by using 'plot(object0)', but this code also includes the shaded area representing the unsynchronized chronology ensemble.
 
 ```{r}
 
+#plot(object0)
 ggdreal0 = data.frame(depth=object0$data$depth, age=object0$data$age, agemean= object0$simulation$summary$mean, agelower = object0$simulation$summary$lower, ageupper=object0$simulation$summary$upper, sagemean=object0$simulation$summary_sync$mean, 
                  sagelower=object0$simulation$summary_sync$lower, sageupper=object0$simulation$summary_sync$upper,
                  agediffmean=object0$simulation$summary$mean-object0$data$age,
@@ -434,6 +436,8 @@ object = bremla_synchronized_simulation(object, print.progress=TRUE)
 
 
 ```{r}
+
+#plot(object)
 ggdreal = data.frame(depth=object$data$depth, age=object$data$age, agemean= object$simulation$summary$mean, agelower = object$simulation$summary$lower, ageupper=object$simulation$summary$upper, sagemean=object$simulation$summary_sync$mean, 
                  sagelower=object$simulation$summary_sync$lower, sageupper=object$simulation$summary_sync$upper,
                  agediffmean=object$simulation$summary$mean-object$data$age,
