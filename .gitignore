@@ -47,3 +47,5 @@ po/*~
 # DS_Store files
 **/.DS_Store
 inst/doc
+
+inst/reproduce_results_Science/

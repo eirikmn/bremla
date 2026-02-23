@@ -304,6 +304,8 @@ time.start = Sys.time()
         if(is.null(object$.args$synchronization$agedisc$hyperprior)){
           if(object$.args$synchronization$agedisc$model %in% c("rw2", "randomwalk2")){
             #object$.args$synchronization$agedisc$hyperprior=NULL
+          }else if(object$.args$synchronization$agedisc$model %in% c("rw1", "randomwalk1")){
+
           }else{
             stop("No hyperprior for age discrepancy model given, and no default value available!")
           }
