@@ -232,6 +232,10 @@ summary.bremla = function(object,
                        depth.reference=object$linramp$.args$depth.reference)
     ut = c(ut,linramplist)
   }
+  if(!is.null(object$age_discrepancy)){
+    agediscmodel = list(object$age_discrepancy$model)
+    ut = c(ut,agediscmodel)
+  }
 
   if(!is.null(object$event_dating)){
     event_age = matrix(round(c(object$event_dating$mean,
@@ -247,6 +251,7 @@ summary.bremla = function(object,
     eventlist = list(event_age=event_age,datingsims = object$event_dating$.args$nsims,label=object$event_dating$.args$label,age.reference=object$event_dating$.args$age.reference)
     ut = c(ut,eventlist)
   }
+
 
   if(!is.null(object$biases)){
     nbiases = object$biases$.args$nbiases
@@ -268,6 +273,7 @@ summary.bremla = function(object,
     ut = c(ut,biaslist)
   }
     ut = c(ut,reference.label=list(reference.label=object$.args$reference.label))
+
 
   class(ut) = "summary.bremla"
 
@@ -386,9 +392,18 @@ print.summary.bremla = function(x,
     print(x$hyperramp)
   }
 
+
+
+
   if(!is.null(x$tiepoints)){
+    if(!is.null(x$agedisc)){
+      cat("\nChronologies are synchronized using a ",x$agediscmodel," age discrepancy model\n.",sep="")
+    }else{
+      cat("\nChronologies are synchronized assuming no age discrepancy\n.",sep="")
+    }
       cat("\n",x$tiepoints$nsims, " synchronized chronologies sampled using ", x$tiepoints$tie_n ,
           " tie-point distributions",sep="")
+
 
 
     if(tolower(x$tiepoints$method) %in% c("adolphi")){

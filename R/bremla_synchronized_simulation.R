@@ -81,6 +81,7 @@ time.start = Sys.time()
   #if(!is.null(control.sim))
   control.sim = set.options(control.sim,control.sim.default())
 
+
   object$.args$control.sim = control.sim
   if(control.sim$synchronized==FALSE) control.sim$synchronized=2
 
