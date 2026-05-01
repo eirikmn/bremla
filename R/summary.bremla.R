@@ -399,7 +399,7 @@ print.summary.bremla = function(x,
     if(!is.null(x$agedisc)){
       cat("\nChronologies are synchronized using a ",x$agediscmodel," age discrepancy model\n.",sep="")
     }else{
-      cat("\nChronologies are synchronized assuming no age discrepancy\n.",sep="")
+      cat("\nChronologies are synchronized assuming no age discrepancy.\n",sep="")
     }
       cat("\n",x$tiepoints$nsims, " synchronized chronologies sampled using ", x$tiepoints$tie_n ,
           " tie-point distributions",sep="")
